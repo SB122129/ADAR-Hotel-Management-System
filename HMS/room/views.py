@@ -88,6 +88,7 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         room = get_object_or_404(Room, id=self.kwargs['room_id'])
+        context['room_image'] = room.room_image
         context['room_number'] = room.room_number  # Assuming 'number' is the field for room number
         context['room_type'] = room.room_type  # Assuming 'type' is the field for room type
         return context
