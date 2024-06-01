@@ -1,0 +1,47 @@
+{% extends "accountss/base.html" %}
+
+{% block content %}
+
+{% load widget_tweaks %}
+
+
+<div class="container mt-5 mb-5">
+    <h1 class="text-center mb-3" style="margin-top: 6rem;">Payment</h1>
+    <div class="row justify-content-center">
+        <!-- User Details Column -->
+        <div class="col-md-6 mt-3">
+            <h2 class="mb-4"><i class="bi bi-file-earmark-person-fill"></i>&ensp;User Details</h2>
+            <p><i class="bi bi-person"></i>&ensp;First Name - {{ booking.user.first_name }}</p>
+            <p><i class="bi bi-person"></i>&ensp;Last Name - {{ booking.user.last_name }}</p>
+            <p><i class="bi bi-envelope-fill"></i>&ensp;Email - {{ booking.user.email }}</p>
+        </div>
+        <!-- Booking Details Column -->
+        <div class="col-md-6 mt-3">
+            <h2 class="mb-4"><i class="bi bi-box-arrow-down"></i>&ensp;Booking Details</h2>
+            <p class="mb-2"><i class="bi bi-list-ol"></i>&ensp;Room Number - {{ booking.room }}</p>
+            <p class="mb-2"><i class="bi bi-calendar-plus-fill"></i>&ensp;Check-in Date - {{ booking.check_in_date }}</p>
+            <p class="mb-2"><i class="bi bi-calendar-minus-fill"></i>&ensp;Check-out Date -  {{ booking.check_out_date }}</p>
+            <p class="mb-2"><i class="bi bi-cash"></i>&ensp;Amount Due -  {{ amount }}</p>
+        </div>
+    </div>
+    <!-- Payment Form -->
+    <form method="post" enctype="multipart/form-data" class="mt-5" target="_blank">
+        {% csrf_token %}
+        
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="d-flex justify-content-center">
+                    <button class="btn btn-success w-100 rounded" type="submit">Pay with Chapa</button>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="d-flex justify-content-center">
+    <div class="alert alert-warning rounded mt-3 w-50 text-center" role="alert">
+        <i class="bi bi-info-circle-fill"></i> Note upload your payment receipt  <a href="{% url 'upload_receipt' booking_id=booking.id%}" class="alert-link">here</a> after you have made your payment on Chapa
+      </div>
+    </div>
+      
+</div>
+
+        </div>{% endblock content %}

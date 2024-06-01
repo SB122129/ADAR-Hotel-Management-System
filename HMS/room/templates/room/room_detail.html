@@ -1,0 +1,20 @@
+{% extends "accountss/base.html" %}
+{% block content %}
+<div class="container mt-5 mb-5">
+  <div class="row ">
+    <div class="col-md-6 mt-5 mb-5">
+      <img src="{{ room.room_image.url }}" alt="{{ room.room_type }}" class="img-fluid rounded">
+    </div>
+    <div class="col-md-6 mt-5 mb-5">
+      <h1 class="mb-3">{{ room.room_number }} - {{ room.room_type }} Suite</h1>
+      <p>{{ room.description }}</p>
+      <p><strong>Price per night </strong> {{ room.price_per_night }}</p>
+      <p><strong>Status </strong> {{ room.room_status }}</p>
+      <p><strong>Capacity </strong> {{ room.capacity }} person</p>
+      <p><strong>Floor </strong> {{ room.floor }}st</p>
+      <a href="GIT " class="btn rounded btn-success mr-2">Book Now</a>
+      <a href="{% url 'reservation_create' room.id %}" class="btn rounded btn-warning">Reserve Now</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

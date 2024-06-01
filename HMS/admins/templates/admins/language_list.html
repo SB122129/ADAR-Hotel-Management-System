@@ -1,0 +1,3 @@
+{% block content %}   
+    {% include 'admins/components/list.html' with object_list=languages update_url='admins:language_update'  delete_url='admins:language_delete' detail_url='admins:language_detail' create_url='admins:language_add' %}
+{% endblock content %}

@@ -1,0 +1,32 @@
+{% extends 'accountss/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container d-flex justify-content-center mt-5">
+        <form class="form w-50 mb-5 mt-5" method='post'>
+            {% csrf_token %}
+            {% if messages %}
+            <div class="alert alert-warning text-danger text-center alert-dismissible fade show" role="alert">
+                {% for message in messages %}
+                {{ message }}
+                {% endfor %}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endif %}
+        <h2 class=" text-center mt-5 mb-3">Sign in</h2>
+        <label for="inputUsername" class="form-label mt-3">Username</label>
+        <input type="text" id="inputUsername" class="form-control mt-2" placeholder="Username" required autofocus name="username">
+        <label for="inputPassword" class="form-label mt-2">Password</label>
+        <input type="password" id="inputPassword" class="form-control mt-2" placeholder="Password" required name="password">
+        <button class="btn  btn-custom btn-block mt-2 rounded" type="submit">Sign in</button>
+        <div class="d-flex justify-content-center">
+            <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn  btn-danger mt-2 w-100 rounded">
+                <i class="bi bi-google"></i> Sign in with Google</a><br>
+            </div>
+        <a class="text-center mt-2" href="{% url 'signup' %}">
+            Don't have an account? Sign up</a>
+    </form>
+</div>
+{% endblock content %}

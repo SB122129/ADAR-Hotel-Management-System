@@ -1,0 +1,5 @@
+{% block content %}
+    {% with title="Create/Edit Language" form=form submit_text="Save" list_url='language_list' %}
+        {% include 'admins/components/form.html' %}
+    {% endwith %}
+{% endblock %}
