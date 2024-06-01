@@ -1,0 +1,115 @@
+{% extends 'admins/base.html' %}
+{% load static %}
+
+
+
+
+{% block content %}
+
+{% load widget_tweaks %}
+<link rel="stylesheet" href="{% static 'css/style4.css' %}">
+<h3 class="text-center text-danger mt-2">ADAR AI</h3>
+<div class="container mt-5">
+    
+    <div class="chat-box" id="chat-box">
+        {% for chat in chats %}
+            <div class="user-message m-3">
+                <strong>{{ chat.user.username }}</strong> <br> {{ chat.message }}
+                <button  id="copy_button" class="btn btn-sm  copy-button" data-content="{{ chat.message }}"><i class="bi bi-clipboard"></i></button>
+            </div>
+            
+            <div class="bot-response">
+                <strong><i class="bi bi-robot"></i></strong><br>
+                 {{ chat.response|safe }}
+                 
+                 <button  id="copy_button" class="btn btn-sm  copy-button" data-content="{{ chat.response }}"><i class="bi bi-clipboard"></i></button>
+                </div>
+           
+            
+        {% endfor %}
+    </div>
+    <form method="post" id="chat-form" class="">
+        {% csrf_token %}
+    {% for field in form %}
+        <div class="mb-3">
+            {{ field|add_class:"form-control rounded-pill" }}
+            {% if field.errors %}
+                <div class="alert alert-danger mt-2">
+                    {{ field.errors|first }}
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+        <div class="d-flex justify-content-center">
+        <button type="submit" class="btn btn-success mt-2  rounded pr-5 pl-5 ">Send</button>
+    </div>
+    </form>
+</div>
+<script>
+    // Function to copy text to clipboard
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text);
+    }
+
+    // Function to clear clipboard content
+    function clearClipboard() {
+        navigator.clipboard.writeText('');
+    }
+
+    // Function to strip HTML tags from a string
+    function stripHTMLTags(text) {
+        let doc = new DOMParser().parseFromString(text, 'text/html');
+        return doc.body.textContent || "";
+    }
+
+    // Add event listeners to copy buttons
+    document.querySelectorAll('.copy-button').forEach(button => {
+        let isCopied = false;  // Flag to keep track of copy state
+
+        button.addEventListener('click', () => {
+            const content = button.getAttribute('data-content');
+            const strippedContent = stripHTMLTags(content);  // Strip HTML tags
+            
+            if (isCopied) {
+                // If already copied, clear clipboard and revert button
+                clearClipboard();
+                button.innerHTML = '<i class="bi bi-clipboard"></i>';
+            } else {
+                // If not copied, copy stripped content and change button to tick
+                copyToClipboard(strippedContent);
+                button.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+            }
+
+            // Toggle the copy state
+            isCopied = !isCopied;
+        });
+    });
+
+// Scroll chat box to the last response
+function scrollToLastResponse() {
+    const chatBox = document.getElementById('chat-text-box');
+    const lastResponse = document.querySelector('.bot-response:last-of-type');
+    if (lastResponse) {
+        setTimeout(() => {
+            lastResponse.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100); // delay of 100ms
+    }
+}
+
+// Call the scrollToLastResponse function to scroll to the last response
+scrollToLastResponse();
+
+// Optionally, you can also observe the chat box for new messages
+const observer = new MutationObserver(() => {
+    scrollToLastResponse();
+});
+observer.observe(document.getElementById('chat-box'), { childList: true });
+
+
+</script>
+
+</body>
+</html>
+
+{% endblock content %}
+    

@@ -1,0 +1,39 @@
+{% extends 'accountss/base.html' %}
+{% load static %}
+
+{% block content %}
+
+    <div class="container d-flex justify-content-center mt-5 mb-5">
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            
+            {% load widget_tweaks %}
+            
+    <form class="form w-50 mt-3" method="post" enctype="multipart/form-data">
+        <h2 class=" text-center mt-5 mb-3">Sign up</h2>
+        {% csrf_token %}
+        {% load widget_tweaks %}
+
+        {% for field in form %}
+            <div class="form-group">
+                {{ field.label_tag }}
+                {{ field|add_class:"form-control" }}
+                {% if field.errors %}
+                    <div class="alert alert-danger">
+                        {{ field.errors|first }}
+                    </div>
+                {% endif %}
+             </div>
+        {% endfor %}
+        <button class="btn btn-lg btn-custom btn-block mt-2 rounded" type="submit">Sign up</button>
+    </form>
+            
+             
+    </div>
+    
+    {% endblock content %}

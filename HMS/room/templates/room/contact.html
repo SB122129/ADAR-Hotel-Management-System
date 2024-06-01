@@ -1,0 +1,113 @@
+{% extends 'accountss/base.html' %}
+{% load static %}
+ 
+
+{% block content %}
+  <!-- Header -->
+
+  <div class="overlay"></div>
+  <header class="masthead contact-masthead mb-5">
+    <div class="container h-100">
+      <div class="row h-100 align-items-center">
+        <div class="col-12 text-center">
+          <h1 class="font-weight-light text-light">Contact</h1>
+          <p class="lead text-light">Lorem ipsum dolor sit amet consectetur adipisicing elit atque odio</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- End of Header -->
+
+  <!-- Main -->
+
+  <div class="container">
+
+    <!-- Map -->
+
+    <iframe width="100%" height="350" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"
+      src="https://www.openstreetmap.org/export/embed.html?bbox=-77.40087032318117%2C25.06410335392493%2C-77.38070011138917%2C25.07656189968967&amp;layer=mapnik&amp;marker=25.070330841488666%2C-77.39077663369244"
+      style="border: 1px solid black"></iframe><br /><small><a
+        href="https://www.openstreetmap.org/?mlat=25.0703&amp;mlon=-77.3908#map=16/25.0703/-77.3908">View Larger
+        Map</a></small>
+
+    <!-- End of Map -->
+
+    <div class="row">
+
+      <!-- Contact Form -->
+
+      <div class="col-md-8 py-5">
+        <div class="container">
+
+          <section class="mb-5">
+
+            <form>
+
+              <fieldset class="form-group">
+
+                <legend class="pb-2">Contact form</legend>
+
+                <div class="form-group">
+                  <label class="form-control-label sr-only" for="ownername">Name</label>
+                  <input class="form-control" type="text" id="ownername" placeholder="Your name">
+                </div> <!-- form-group -->
+
+                <div class="form-group">
+                  <label class="form-control-label sr-only" for="owneremail">Email address</label>
+                  <input class="form-control" type="email" id="owneremail" aria-describedby="email"
+                    placeholder="Your email">
+                </div> <!-- form-group -->
+
+                <div class="form-group">
+                  <label class="form-control-label sr-only" for="subject">Subject</label>
+                  <input class="form-control" type="text" id="subject" aria-describedby="subject" placeholder="Subject">
+                </div> <!-- form-group -->
+
+                <div class="form-group">
+                  <label class="form-control-label sr-only" for="yourmessage">Message</label>
+                  <textarea class="form-control" id="yourmessage" rows="3" placeholder="Enter your message"></textarea>
+                </div> <!-- form-group -->
+
+                <button class="btn btn-primary" type="submit">Submit</button>
+
+              </fieldset>
+
+            </form>
+
+          </section>
+
+        </div> <!-- container -->
+      </div> <!-- col-md-8 -->
+
+      <!-- End of Contact Form -->
+
+      <!-- Sidebar -->
+
+      <div class="col-md-4 pt-sm-0 pt-md-5">
+        <div class="container pb-5 pl-5">
+          <div class="row">
+
+            <h3 class="col-sm-12 pb-2 pl-0">Our Address</h3>
+
+            <div>
+              <p class="mb-0"><i class="fas fa-map-marker-alt text-primary pr-2"></i> Main Street, 123</p>
+              <p class="pl-4">Nassau, Bahamas</p>
+              <p><i class="fas fa-phone text-primary pr-2"></i>Phone: 111-222-1234</p>
+              <p><i class="fas fa-envelope text-primary pr-2"></i>Email: friviznhotel@gmail.com</p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- End of Sidebar -->
+
+    </div> <!-- row -->
+
+  </div> <!-- container -->
+
+  <!-- End of Main -->
+
+
+{% endblock content %}

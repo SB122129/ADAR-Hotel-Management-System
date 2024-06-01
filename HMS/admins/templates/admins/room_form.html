@@ -1,0 +1,5 @@
+{% block content %}
+    {% with title="Create/Edit Room" form=form submit_text="Save" list_url='room_list' %}
+        {% include 'admins/components/form.html' %}
+    {% endwith %}
+{% endblock %}

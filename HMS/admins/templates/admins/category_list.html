@@ -1,0 +1,5 @@
+
+
+{% block content %}      
+{% include 'admins/components/list.html' with object_list=object_list update_url='admins:category_update'  delete_url='admins:category_delete' detail_url='admins:category_detail' create_url='admins:category_add' %}  
+{% endblock content %}

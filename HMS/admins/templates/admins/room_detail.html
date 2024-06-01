@@ -1,0 +1,31 @@
+{% extends 'admins/base.html' %}
+{% block content %}
+<div class="row">
+    <div class="col-4">
+        <img alt="" style="width: 400px;height: 400px;object-fit: cover;" title="" class="rounded img-thumbnail isTooltip mt-5" src="{% if object.room_image %}{{ object.room_image.url }}{% else %}https://bootdey.com/img/Content/avatar/avatar7.png{% endif %}" data-original-title="Usuario">
+    </div>
+    <div class="col-8">
+        
+            <div class="card mt-5" style="width: 45rem;border-radius: 10px;">
+                <div class="card-body rounded">
+                    <h3 class="card-title text-center">Room Details</h3>
+                    <p class="card-text"><strong>Room Number:</strong> {{ object.room_number }}</p>
+                    <p class="card-text"><strong>Room Type:</strong> {{ object.room_type }}</p>
+                    <p class="card-text"><strong>Price Per Night:</strong> {{ object.price_per_night }}</p>
+                    <p class="card-text"><strong>Discount:</strong> {{ object.discount }}</p>
+                    <p class="card-text"><strong>Room Status:</strong> {{ object.room_status }}</p>
+                    <p class="card-text"><strong>Capacity:</strong> {{ object.capacity }}</p>
+                    <p class="card-text"><strong>Description:</strong> {{ object.description }}</p>
+                    <p class="card-text"><strong>Floor:</strong> {{ object.floor }}</p>
+                </div>
+                <div class="card-footer d-flex justify-content-center bg-light">
+                    <a href="{% url 'admins:room_update' object.pk %}" class="btn btn-warning rounded">Edit</a>&ensp;
+                    <a href="{% url 'admins:room_list' %}" class="btn btn-secondary rounded">Back to List</a>
+                </div>
+            </div>
+        
+        
+    </div>
+</div>
+
+{% endblock %}

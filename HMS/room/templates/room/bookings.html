@@ -1,0 +1,69 @@
+{% extends "accountss/base.html" %}
+
+{% block content %}
+
+{% load widget_tweaks %}
+<br>
+<div class="container mt-5">
+    <h3 class="text-center mb-3">My Bookings</h3>
+    <div class="row">
+        {% for booking in bookings %}
+            <div class="col-md-4">
+                <div class="card mb-5 rounded">
+                    <div class="card-body">
+                        <h5 class="card-title">Room number - {{ booking.room.room_number }}</h5>
+                        <p class="card-text">{{ booking.room.room_type }} Suite</p>
+                        <p class="card-text">Checkin date - {{ booking.check_in_date }} </p>
+                        <p class="card-text">Checkout date - {{ booking.check_out_date }}</p>
+                    </div>
+                    <div class="d-flex justify-content-center m-3">
+                        {% if not booking.has_receipt %}
+                    <a href="{% url 'upload_receipt' booking_id=booking.id%}" class="btn btn-sm btn-primary rounded">
+                        Upload Receipt
+                    </a>&ensp;
+                {% endif %}
+                        <button type="button" class="btn btn-sm btn-danger rounded" data-toggle="modal" data-target="#deleteModal{{booking.id}}">
+                            Delete booking
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+        
+            <!-- The Modal -->
+            <div class="modal" id="deleteModal{{booking.id}}">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+        
+                        <!-- Modal Header -->
+                        <div class="modal-header">
+                            <h4 class="modal-title">Delete Booking</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+        
+                        <!-- Modal body -->
+                        <div class="modal-body">
+                            Are you sure you want to delete your booking?
+                        </div>
+        
+                        <!-- Modal footer -->
+                        <div class="modal-footer">
+                            <form method="post" action="{% url 'booking_delete' pk=booking.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm rounded btn-danger">Confirm</button>
+                            </form>
+                            <button type="button" class="btn btn-sm rounded btn-secondary" data-dismiss="modal">Cancel</button>
+                        </div>
+        
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+        
+            <div class="alert alert-info rounded" role="alert">
+                <h6 class="text-center">No bookings found.</h6>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock content %}
