@@ -70,6 +70,7 @@ class Booking(models.Model):
     check_out_date = models.DateField()
     is_paid = models.BooleanField(default=False)
     guests = models.IntegerField(null=True, blank=True)
+    tx_ref = models.CharField(max_length=100, unique=True, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 
     def clean(self):
@@ -102,6 +103,27 @@ class Booking(models.Model):
     def __str__(self):
         return f"Booking for {self.user} in {self.room} from {self.check_in_date} to {self.check_out_date}"
 
+
+
+class Payment(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    )
+    booking = models.OneToOneField(Booking, on_delete=models.CASCADE)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    transaction_id = models.CharField(max_length=100, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.status == 'completed':
+            self.booking.is_paid = True
+            self.booking.save()
+        elif self.status == 'failed':
+            self.booking.delete()
+
 class Receipt(models.Model):
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE)
     file = models.FileField(upload_to='media/receipts/')
@@ -124,24 +146,6 @@ class Reservation(models.Model):
         super().save(*args, **kwargs)
         self.room.update_room_status()
 
-class Payment(models.Model):
-    STATUS_CHOICES = (
-        ('pending', 'Pending'),
-        ('completed', 'Completed'),
-        ('failed', 'Failed'),
-    )
-    booking = models.OneToOneField(Booking, on_delete=models.CASCADE)
-    payment_date = models.DateTimeField(auto_now_add=True)
-    transaction_id = models.CharField(max_length=100, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.status == 'completed':
-            self.booking.is_paid = True
-            self.booking.save()
-        elif self.status == 'failed':
-            self.booking.delete()
 
 class RoomRating(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)

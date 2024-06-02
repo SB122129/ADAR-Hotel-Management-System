@@ -79,7 +79,6 @@ class BookingListView(LoginRequiredMixin, ListView):
         return Booking.objects.filter(user=self.request.user)
 
 
-
 class BookingCreateView(LoginRequiredMixin, CreateView):
     model = Booking
     form_class = BookingForm
@@ -97,6 +96,7 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         form.instance.user = self.request.user
         form.instance.room = room
         form.instance.status = 'pending'
+        form.instance.tx_ref = f"{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
         self.object = form.save()
         return redirect('payment_create', booking_id=self.object.id)
     
@@ -106,7 +106,7 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
-
+    
 
 
 class PaymentView(View):
@@ -134,15 +134,19 @@ class PaymentView(View):
         return render(request, self.template_name, self.get_context_data())
     
     def post(self, request, *args, **kwargs):
+        if self.booking.is_paid or self.booking.status != 'pending':
+            messages.warning(request, 'Payment already completed')
+            return render(request, self.template_name, self.get_context_data())
         amount = str(self.booking.total_amount)
         tx_ref = f"{self.booking.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+        self.booking.tx_ref = tx_ref  # Store the new tx_ref in booking
+        self.booking.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
         current_site = Site.objects.get_current()
         relative_url = reverse('bookings')
-        relative_url2 = reverse('chapa_webhook')
         redirect_url = f'https://{current_site.domain}{relative_url}'
-        webhook_url = f'https://{current_site.domain}{relative_url2}'
+        webhook_url = 'https://0247-196-189-113-116.ngrok-free.app/room/chapa-webhook/'
         payload = {
             "amount": amount,
             "currency": "ETB",
@@ -161,17 +165,8 @@ class PaymentView(View):
         
         response = requests.post(url, json=payload, headers=headers)
         data = response.json()
-        print(data)
         if response.status_code == 200:
-            Payment.objects.create(
-                booking=self.booking,
-                status='pending',
-                transaction_id=tx_ref,
-            )
-            self.booking.status = 'confirmed'
-            # self.booking.is_paid = True
-            # self.booking.room.room_status = 'occupied'
-            self.booking.save()
+
             checkout_url = data['data']['checkout_url']
             return redirect(checkout_url)
         else:
@@ -181,8 +176,60 @@ class PaymentView(View):
         booking_id = self.kwargs.get('booking_id')
         return get_object_or_404(Booking, id=booking_id)
 
-
 from django.db import transaction
+
+from django.db.models import Q
+
+import json
+import logging
+from django.http import HttpResponseNotFound
+from django.http import HttpResponseServerError
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ChapaWebhookView(View):
+    def post(self, request, *args, **kwargs):
+        payload = json.loads(request.body)
+        
+        
+        tx_ref = payload.get('tx_ref')
+
+        if not tx_ref:
+            return HttpResponseBadRequest("Invalid tx_ref")
+
+        try:
+            booking = Booking.objects.get(tx_ref=tx_ref)
+        except Booking.DoesNotExist:
+            return HttpResponseNotFound("Booking not found")
+        except Booking.MultipleObjectsReturned:
+            return HttpResponseServerError("Multiple bookings found")
+
+        # Process the payment here, e.g., update booking status, create payment record
+        
+        payment = Payment.objects.create(
+                booking=booking,
+                status='completed',
+                transaction_id=tx_ref,
+            )
+
+        booking.is_paid = True
+        booking.status = 'confirmed'
+        booking.room.room_status = 'occupied'
+        booking.room.save()
+        booking.save()
+
+        payment.status = 'completed'
+        payment.save()
+
+
+        return HttpResponse("Webhook processed successfully")
+
+
+
+
+
 
 class BookingDeleteView(LoginRequiredMixin, DeleteView):
     model = Booking
@@ -206,7 +253,8 @@ class BookingDeleteView(LoginRequiredMixin, DeleteView):
             print(f"Exception when deleting booking: {e}")
             return HttpResponseBadRequest("Error occurred while deleting the booking.")
 
-from django.db.models import Q
+
+
 
 class ReceiptUploadView(CreateView):
     model = Receipt
@@ -216,25 +264,12 @@ class ReceiptUploadView(CreateView):
     def form_valid(self, form):
         booking = Booking.objects.get(id=self.kwargs['booking_id'])
         form.instance.booking = booking
-        booking.is_paid = True
-        booking.status = 'confirmed'
-        booking.room.room_status = 'occupied'
-        booking.room.save()
-        booking.save()
-
-        # Update the status of the payment to 'completed' if it exists
-        Payment.objects.filter(Q(booking=booking) & Q(status='pending')).update(status='completed')
 
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy('bookings')
 
-@method_decorator(csrf_exempt, name='dispatch')
-class ChapaWebhookView(View):
-    def post(self, request, *args, **kwargs):
-        print(request.body)
-        return HttpResponse('success')
 
 
 from django.db.models.signals import post_save, post_delete
