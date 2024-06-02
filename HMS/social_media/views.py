@@ -6,6 +6,18 @@ from django.views.generic import FormView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import ChatBot
 from .forms import ChatBotForm
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from .models import Custom_user, ChatMessage
+from telegram import Bot
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from .models import ChatMessage, Custom_user
+from telegram import Bot
+
+
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -46,3 +58,42 @@ class ChatBotView(LoginRequiredMixin, FormView, ListView):
         # Enclose asterisk-enclosed words in bold tags
         formatted_response = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', response_content)
         return formatted_response
+
+
+
+@csrf_exempt
+def telegram_webhook(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        
+        if "message" in data:
+            message = data["message"]
+            user_id = message["from"]["id"]
+            username = message["from"]["username"]
+            text = message["text"]
+
+            # Create or get the user
+            user, created = Custom_user.objects.get_or_create(telegram_id=user_id, defaults={'username': username})
+
+            # Save the message
+            ChatMessage.objects.create(user=user, message=text, timestamp=timezone.now())
+
+        return JsonResponse({"status": "success"})
+    return JsonResponse({"status": "invalid request"}, status=400)
+
+
+def send_message_to_telegram(request):
+    if request.method == "POST":
+        user_id = request.POST.get("user_id")
+        message_text = request.POST.get("message")
+
+        user = get_object_or_404(Custom_user, id=user_id)
+        telegram_bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+
+        telegram_bot.send_message(chat_id=user.telegram_id, text=message_text)
+        
+        # Save the message in the ChatMessage model
+        ChatMessage.objects.create(user=user, message=message_text, timestamp=timezone.now())
+
+        return JsonResponse({"status": "success"})
+    return JsonResponse({"status": "invalid request"}, status=400)

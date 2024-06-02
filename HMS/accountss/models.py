@@ -16,6 +16,7 @@ class Custom_user(AbstractUser):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
+    telegram_username = models.CharField(max_length=100, unique=True, null=True, blank=True)
     country = models.CharField(max_length=100, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     profile_picture = models.ImageField(upload_to='media',blank=True, null=True)

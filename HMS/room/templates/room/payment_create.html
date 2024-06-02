@@ -18,18 +18,18 @@
   
 
 <div class="container  mb-5">
-    <h1 class="text-center mb-3" style="margin-top: 1rem;">Payment</h1>
+    <h3 class="text-center mb-3" style="margin-top: 1rem;">Payment</h3>
     <div class="row justify-content-center">
         <!-- User Details Column -->
         <div class="col-md-6 mt-3">
-            <h2 class="mb-4"><i class="bi bi-file-earmark-person-fill"></i>&ensp;User Details</h2>
+            <h5 class="mb-4"><i class="bi bi-file-earmark-person-fill"></i>&ensp;User Details</h5>
             <p><i class="bi bi-person"></i>&ensp;First Name - {{ booking.user.first_name }}</p>
             <p><i class="bi bi-person"></i>&ensp;Last Name - {{ booking.user.last_name }}</p>
             <p><i class="bi bi-envelope-fill"></i>&ensp;Email - {{ booking.user.email }}</p>
         </div>
         <!-- Booking Details Column -->
         <div class="col-md-6 mt-3">
-            <h2 class="mb-4"><i class="bi bi-box-arrow-down"></i>&ensp;Booking Details</h2>
+            <h5 class="mb-4"><i class="bi bi-box-arrow-down"></i>&ensp;Booking Details</h5>
             <p class="mb-2"><i class="bi bi-list-ol"></i>&ensp;Room Number - {{ booking.room }}</p>
             <p class="mb-2"><i class="bi bi-calendar-plus-fill"></i>&ensp;Check-in Date - {{ booking.check_in_date }}</p>
             <p class="mb-2"><i class="bi bi-calendar-minus-fill"></i>&ensp;Check-out Date -  {{ booking.check_out_date }}</p>
