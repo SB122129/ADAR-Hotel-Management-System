@@ -42,6 +42,7 @@
           <a class="nav-item nav-link text-warning" href="{% url 'about' %}">About</a>
           <a class="nav-item nav-link text-warning" href="{% url 'rooms' %}">Rooms</a>
           <a class="nav-item nav-link text-warning" href="{% url 'contact' %}">Contact</a>
+          <a class="nav-item nav-link text-warning" href="{% url 'bookings' %}">My Bookings</a>
     
           {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
           
@@ -56,9 +57,7 @@
             <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                 <a class="dropdown-item" href="{% url 'profile_detail' user.pk %}">Profile</a>
                 <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="{% url 'bookings' %}">My Bookings</a>
-                <div class="dropdown-divider"></div>
-                <form method="post" action="{% url 'logout' %}">
+                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
                     <button type="submit" class="dropdown-item text-danger text-uppercase">Logout</button>
                 </form>
@@ -86,7 +85,7 @@
   
   <!-- Footer -->
 
-  <footer class="page-footer font-small text-center text-md-left">
+  <footer class="page-footer font-small text-center text-md-left " style="margin-top: 15rem;">
 
     <!-- Footer Links -->
     <div class="container py-5">

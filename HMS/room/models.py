@@ -19,7 +19,8 @@ class RoomManager(models.Manager):
         now = timezone.now().date()
         return self.filter(
             ~Q(booking__check_in_date__lte=now, booking__check_out_date__gte=now) & 
-            ~Q(reservation__check_in_date__lte=now, reservation__check_out_date__gte=now)
+            ~Q(reservation__check_in_date__lte=now, reservation__check_out_date__gte=now) &
+            ~Q(room_status='occupied')
         ).distinct()
 
 class Room(models.Model):
@@ -30,7 +31,7 @@ class Room(models.Model):
     )
 
     room_number = models.CharField(max_length=20)
-    room_type = models.ForeignKey(Category, on_delete=models.CASCADE,default=1)
+    room_type = models.ForeignKey(Category, on_delete=models.CASCADE, default=1)
     price_per_night = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
     room_status = models.CharField(max_length=20, choices=ROOM_STATUS_CHOICES, default='vacant')
@@ -52,6 +53,7 @@ class Room(models.Model):
         elif not self.booking_set.exists() and not self.reservation_set.filter(check_out_date__gte=now).exists():
             self.room_status = 'vacant'
         self.save()
+
 
 
 
@@ -89,7 +91,12 @@ class Booking(models.Model):
             self.total_amount = self.room.price_per_night * duration
 
         super().save(*args, **kwargs)
-        self.room.update_room_status()
+        # self.room.update_room_status()
+    
+    def delete(self, *args, **kwargs):
+        room = self.room
+        super().delete(*args, **kwargs)
+        room.update_room_status()
     def has_receipt(self):
         return Receipt.objects.filter(booking=self).exists()
     def __str__(self):

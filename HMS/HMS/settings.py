@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-kvg73ir99on-u4xg=d#))cu8bfm*ig8(hvrb8xj$n$h=@5=(bj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [ 'loud-tips-jam.loca.lt']
 
 
 # Application definition

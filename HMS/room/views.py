@@ -29,7 +29,7 @@ from django.db.models.signals import post_save
 
 
 def home(request):
-    rooms = Room.objects.available().filter(room_status='vacant').order_by('room_type', 'id')
+    rooms = Room.objects.available().filter(room_status='vacant').order_by('room_type', 'id').distinct('room_type')
     print(rooms)
     return render(request, 'room/home.html', {'rooms': rooms})
 
@@ -165,12 +165,12 @@ class PaymentView(View):
         if response.status_code == 200:
             Payment.objects.create(
                 booking=self.booking,
-                status='completed',
+                status='pending',
                 transaction_id=tx_ref,
             )
             self.booking.status = 'confirmed'
-            self.booking.is_paid = True
-            self.booking.room.room_status = 'occupied'
+            # self.booking.is_paid = True
+            # self.booking.room.room_status = 'occupied'
             self.booking.save()
             checkout_url = data['data']['checkout_url']
             return redirect(checkout_url)
@@ -180,15 +180,19 @@ class PaymentView(View):
     def get_booking(self):
         booking_id = self.kwargs.get('booking_id')
         return get_object_or_404(Booking, id=booking_id)
+
+
 from django.db import transaction
-    
+
 class BookingDeleteView(LoginRequiredMixin, DeleteView):
     model = Booking
     template_name = 'room/booking_confirm_delete.html'
     success_url = reverse_lazy('bookings')
+
     def get_queryset(self):
         owner_queryset = super().get_queryset()
         return owner_queryset.filter(user=self.request.user)
+
     @transaction.atomic
     def delete(self, request, *args, **kwargs):
         try:
@@ -196,11 +200,13 @@ class BookingDeleteView(LoginRequiredMixin, DeleteView):
             room_id = booking.room.id
             response = super().delete(request, *args, **kwargs)
             room = Room.objects.get(id=room_id)
-            room.room_status = 'vacant'
-            room.save()
+            room.update_room_status()  # Explicitly call update_room_status
             return response
         except Exception as e:
             print(f"Exception when deleting booking: {e}")
+            return HttpResponseBadRequest("Error occurred while deleting the booking.")
+
+from django.db.models import Q
 
 class ReceiptUploadView(CreateView):
     model = Receipt
@@ -208,12 +214,21 @@ class ReceiptUploadView(CreateView):
     template_name = 'room/upload_receipt.html'
 
     def form_valid(self, form):
-        form.instance.booking = Booking.objects.get(id=self.kwargs['booking_id'])
+        booking = Booking.objects.get(id=self.kwargs['booking_id'])
+        form.instance.booking = booking
+        booking.is_paid = True
+        booking.status = 'confirmed'
+        booking.room.room_status = 'occupied'
+        booking.room.save()
+        booking.save()
+
+        # Update the status of the payment to 'completed' if it exists
+        Payment.objects.filter(Q(booking=booking) & Q(status='pending')).update(status='completed')
+
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse_lazy('bookings')
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ChapaWebhookView(View):
@@ -222,8 +237,13 @@ class ChapaWebhookView(View):
         return HttpResponse('success')
 
 
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
 @receiver(post_save, sender=Booking)
+@receiver(post_delete, sender=Booking)
 @receiver(post_save, sender=Reservation)
+@receiver(post_delete, sender=Reservation)
 def update_room_status(sender, instance, **kwargs):
     instance.room.update_room_status()
 

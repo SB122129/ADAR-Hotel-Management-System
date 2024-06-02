@@ -90,8 +90,7 @@
   <div class="container">
     <div class="row">
         {% for room in rooms %}
-        {% ifchanged room.room_type %}
-        <div class="col-md-6 d-block-sm p-5   mb-4">
+         <div class="col-md-6 d-block-sm p-5   mb-4">
           
           
           <img src="{{ room.room_image.url }}" alt="{{ room.room_type.name }}" class="img-fluid">  
@@ -109,8 +108,7 @@
             </div>
   
         </div>
-        {% endifchanged %}
-        {% endfor %}
+           {% endfor %}
     </div>
   </div>
   
