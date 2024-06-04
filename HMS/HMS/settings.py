@@ -61,9 +61,9 @@ MESSAGE_TAGS = {
 }
 
 
-ALLOWED_HOSTS = [ '0247-196-189-113-116.ngrok-free.app']
+ALLOWED_HOSTS = [ '*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://0247-196-189-113-116.ngrok-free.app'
+    'https://a7a4-196-189-112-211.ngrok-free.app'
 ]
 
 CSRF_COOKIE_SECURE = False
@@ -156,6 +156,7 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'  # Options are 'mandatory', 'optional', or '
 ACCOUNT_EMAIL_REQUIRED = True
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = "74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com"
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = "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"
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://a7a4-196-189-112-211.ngrok-free.app/social/complete/google-oauth2/'
 
 # SOCIAL_AUTH_GOOGLE_OAUTH2 = {
 #     'CLIENT_ID': '74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com',
