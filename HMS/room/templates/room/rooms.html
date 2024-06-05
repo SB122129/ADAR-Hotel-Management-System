@@ -36,10 +36,11 @@
           <p>Capacity: {{ room.capacity }} guests</p>
 
 
-          <div>
-              <a href="{% url 'room_detail' room.id %}" class="btn btn-sm btn-primary pb-2 my-4  rounded">Details</a>
-              <a href="{% url 'booking_create' room.id %}" class="btn btn-sm btn-success pb-2 my-4  rounded">Book now</a>
-          </div>
+          <div class="mt-auto d-flex justify-content-center">
+            <a href="{% url 'room_detail' room.id %}" class="btn btn-sm btn-warning pb-1 w-50 my-4 text-uppercase rounded">Details</a>&ensp;
+            <a href="{% url 'booking_create' room.id %}" class="btn btn-sm btn-success pb-1 w-50 my-4 text-uppercase rounded">Book now</a>
+        </div>
+
           
       </div>
       {% endfor %}

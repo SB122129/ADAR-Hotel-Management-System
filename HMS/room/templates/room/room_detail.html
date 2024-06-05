@@ -6,14 +6,15 @@
       <img src="{{ room.room_image.url }}" alt="{{ room.room_type }}" class="img-fluid rounded">
     </div>
     <div class="col-md-6 mt-5 mb-5">
-      <h1 class="mb-3">{{ room.room_number }} - {{ room.room_type }} Suite</h1>
+      <h1 class="mb-3"><i class="bi bi-list-ol"></i>&ensp;{{ room.room_number }} &emsp; {{ room.room_type }} Suite</h1>
       <p>{{ room.description }}</p>
-      <p><strong>Price per night </strong> {{ room.price_per_night }}</p>
-      <p><strong>Status </strong> {{ room.room_status }}</p>
-      <p><strong>Capacity </strong> {{ room.capacity }} person</p>
-      <p><strong>Floor </strong> {{ room.floor }}st</p>
-      <a href="GIT " class="btn rounded btn-success mr-2">Book Now</a>
-      <a href="{% url 'reservation_create' room.id %}" class="btn rounded btn-warning">Reserve Now</a>
+      <p><strong><i class="bi bi-tag"></i>&ensp;Price per night </strong>&emsp; {{ room.price_per_night }}</p>
+      <p><strong><i class="bi bi-door-open-fill"></i>&ensp;Status </strong>&emsp; {{ room.room_status }}</p>
+      <p><strong><i class="bi bi-person-fill"></i>&ensp;Capacity </strong>&emsp; {{ room.capacity }} person</p>
+      <p><strong><i class="bi bi-building-up"></i>&ensp;Floor </strong>&emsp; {{ room.floor }}</p>
+      <div class="d-flex justify-content-center">
+      <a href="{% url 'booking_create' room.id %}" class="btn rounded btn-success mt-4 w-75">Book Now</a>
+    </div>
     </div>
   </div>
 </div>
