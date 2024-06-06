@@ -63,7 +63,8 @@ MESSAGE_TAGS = {
 
 ALLOWED_HOSTS = [ '*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://a7a4-196-189-112-211.ngrok-free.app'
+    'https://a7a4-196-189-112-211.ngrok-free.app',
+    'http://127.0.0.1:8000/'
 ]
 
 CSRF_COOKIE_SECURE = False
@@ -88,6 +89,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'oauth2_provider',
     'social_django',
     'rest_framework_social_oauth2',
@@ -134,11 +136,21 @@ MIDDLEWARE = [
 
 SITE_ID = 1
 
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
-    'social_core.backends.google.GoogleOAuth2',
-)
+
+
+# SOCIAL_ACCOUNT_PROVIDERS = {
+#     'google': {
+#         'SCOPE': [
+#             'profile',
+#             'email',
+#         ],
+#         'AUTH_PARAMS': {
+#             'access_type': 'online',
+#         },
+#         'OAUTH2_CLIENT_ID': '74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com',
+#         'OAUTH2_CLIENT_SECRET': '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',
+#     }
+# }
 
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
@@ -156,7 +168,7 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'  # Options are 'mandatory', 'optional', or '
 ACCOUNT_EMAIL_REQUIRED = True
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = "74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com"
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = "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"
-SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://a7a4-196-189-112-211.ngrok-free.app/social/complete/google-oauth2/'
+#SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://a7a4-196-189-112-211.ngrok-free.app/social/complete/google-oauth2/'
 
 # SOCIAL_AUTH_GOOGLE_OAUTH2 = {
 #     'CLIENT_ID': '74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com',
@@ -252,3 +264,8 @@ LOGIN_REDIRECT_URL = '/'
 AUTH_USER_MODEL = 'accountss.Custom_user'
 
 
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+    'social_core.backends.google.GoogleOAuth2',
+)

@@ -8,8 +8,8 @@
     <div class="container h-100">
         <div class="row h-100 align-items-center">
             <div class="col-12 text-center">
-                <h1 class="font-weight-light text-light">Rooms</h1>
-                <p class="lead text-light">We hope you’ll enjoy your stay</p>
+                <h2 class="font-weight-light text-light">Rooms</h2>
+                <p class=" text-light">We hope you’ll enjoy your stay</p>
             </div>
         </div>
     </div>
@@ -29,11 +29,11 @@
       {% for room in rooms %}
       <div class="col-md-6 d-block-sm p-5   mb-4">
         <img src="{{ room.room_image.url }}" alt="{{ room.room_type.name }}" class="img-fluid rounded">
-          <h2>{{ room.room_type.name}} Suite</h2>
-        <p class="lead">{{ room.description|truncatewords:20 }}</p>
-        <p>Room Number: {{ room.room_number }}</p>
-          <p>Price per night: ETB {{ room.price_per_night }}</p>
-          <p>Capacity: {{ room.capacity }} guests</p>
+        <h3><strong>{{ room.room_type.name}} Suite</strong></h3>
+        <p class="">{{ room.description|truncatewords:20 }}</p>
+        <p><strong> Room Number</strong>&ensp; {{ room.room_number }}</p>
+          <p><strong>Price per night</strong>&ensp; ETB {{ room.price_per_night }}</p>
+          <p><strong>Capacity</strong>&ensp; {{ room.capacity }} guests</p>
 
 
           <div class="mt-auto d-flex justify-content-center">

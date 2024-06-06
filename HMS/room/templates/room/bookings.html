@@ -35,20 +35,20 @@
             </div>
             
             <!-- The Modal -->
-            <div class="modal" id="deleteModal{{booking.id}}">
-                <div class="modal-dialog">
-                    <div class="modal-content">
+            <div class="modal rounded" id="deleteModal{{booking.id}}">
+                <div class="modal-dialog rounded">
+                    <div class="modal-content rounded">
                         <!-- Modal Header -->
-                        <div class="modal-header">
-                            <h4 class="modal-title">Delete Booking</h4>
+                        <div class="modal-header border-0 rounded">
+                            <h5 class="modal-title">Delete Booking</h5>
                             <button type="button" class="close" data-dismiss="modal">&times;</button>
                         </div>
                         <!-- Modal body -->
-                        <div class="modal-body">
+                        <div class="modal-body  border-0 rounded">
                             Are you sure you want to delete your booking?
                         </div>
                         <!-- Modal footer -->
-                        <div class="modal-footer">
+                        <div class="modal-footer border-0 rounded">
                             <form method="post" action="{% url 'booking_delete' pk=booking.id %}">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm rounded btn-danger">Confirm</button>
@@ -59,9 +59,11 @@
                 </div>
             </div>
         {% empty %}
-            <div class="alert alert-info rounded" role="alert">
-                <h6 class="text-center">No bookings found.</h6>
+        <div class="container d-flex justify-content-center">
+            <div class="alert alert-warning rounded mt-5" role="alert">
+                <h6 class="text-center"><i class="bi bi-info-circle"></i>&ensp;No bookings have been made</h6>
             </div>
+        </div>
         {% endfor %}
     </div>
 </div>

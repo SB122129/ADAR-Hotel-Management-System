@@ -13,8 +13,13 @@ box-shadow: none !important;
 outline: none !important;
 }
 
+
 /* Ensure the carousel takes full width and height */
 /* Ensure the carousel takes full width and height */
+.carousel-item.slide-1 {
+    background-image: url('../images/lobby.jpg');
+}
+
 .carousel-fade {
     overflow: hidden;
 }

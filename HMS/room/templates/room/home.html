@@ -21,16 +21,16 @@
       <div class="carousel-item active slide-1">
         <div class="overlay"></div>
         <div class="carousel-caption">
-          <h1>Welcome to ADAR Hotel</h1>
-          <p class="lead pt-3">Where Ethiopian tradition meets modern luxury. Experience unparalleled hospitality in the heart of Addis Ababa</p>
+          <h2>Welcome to ADAR Hotel</h2>
+          <p class="pt-3">Where Ethiopian tradition meets modern luxury. Experience unparalleled hospitality in the heart of Addis Ababa</p>
         </div>
       </div>
 
       <div class="carousel-item slide-2">
         <div class="overlay"></div>
         <div class="carousel-caption">
-          <h1>Enjoy Luxury Experience</h1>
-          <p class="lead pt-3">Experience the warmth of Ethiopian hospitality. Unwind in luxury, right in the heart of Addis Ababa.
+          <h2>Enjoy Luxury Experience</h2>
+          <p class=" pt-3">Experience the warmth of Ethiopian hospitality. Unwind in luxury, right in the heart of Addis Ababa.
             </p>
         </div>
       </div>
@@ -38,8 +38,8 @@
       <div class="carousel-item slide-3">
         <div class="overlay"></div>
         <div class="carousel-caption">
-          <h1>A Place to Stay and Relax</h1>
-          <p class="lead pt-3">A gateway to Ethiopia's vibrant heritage and modern comforts. Your exceptional journey begins here</p>
+          <h2>A Place to Stay and Relax</h2>
+          <p class="pt-3">A gateway to Ethiopia's vibrant heritage and modern comforts. Your exceptional journey begins here</p>
         </div>
       </div>
 
@@ -47,7 +47,7 @@
 
     <a class="carousel-control-prev" href="#featured" role="button" data-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true">
-        <span class="sr-only">Previus</span>
+        <span class="sr-only">Previous</span>
       </span>
     </a>
 
@@ -66,17 +66,17 @@
   <div class="container">
     <div class="row py-5">
 
-      <div class="col-md-6 d-block-sm pb-4">
+      <div class="col-md-4 d-block-sm pb-4">
         <h2>About Us</h2>
-        <p class="lead">Nestled in the heart of Addis Ababa, Adar Hotel offers a perfect blend of modern luxury and traditional Ethiopian charm. Our hotel provides comfortable and elegantly furnished rooms, exceptional dining experiences, and top-notch amenities to ensure a memorable stay. Conveniently located close to major attractions and business districts, Adar Hotel is ideal for both leisure and business travelers. Enjoy warm hospitality and a serene atmosphere, making Adar Hotel your home away from home in Ethiopia's vibrant capital.</p>
+        <p class="">Nestled in the heart of Addis Ababa, Adar Hotel offers a perfect blend of modern luxury and traditional Ethiopian charm. Our hotel provides comfortable and elegantly furnished rooms, exceptional dining experiences, and top-notch amenities to ensure a memorable stay. Conveniently located close to major attractions and business districts, Adar Hotel is ideal for both leisure and business travelers. Enjoy warm hospitality and a serene atmosphere, making Adar Hotel your home away from home in Ethiopia's vibrant capital.</p>
         <div>
-          <a href="about.html" class="btn btn-primary text-uppercase pb-2 active" role="button" aria-pressed="true">Read
+          <a href="{% url 'about'%}" class="btn btn-sm btn-primary rounded rounded pb-1 active" role="button" aria-pressed="true">Read
             more</a>
         </div>
       </div>
 
-      <div class="col-md-6 d-block-sm">
-        <img class="w-100" src="{% static 'images/hotel-lobby.jpg' %}" alt="Hotel lobby">
+      <div class="col-md-8 d-block-sm">
+        <img class="w-100 rounded" src="{% static 'images/hotel-indoors.jpg' %}" alt="Hotel lobby">
       </div>
 
     </div> <!-- row -->
@@ -92,12 +92,12 @@
     <div class="row">
       {% for room in rooms %}
       <div class="col-md-6 border-0 d-block-sm p-5 mb-4 d-flex flex-column">
-          <img src="{{ room.room_image.url }}" alt="{{ room.room_type.name }}" class="img-fluid">  
-          <h2>{{ room.room_type.name}} Suite</h2>
-          <p class="lead">{{ room.description|truncatewords:20 }}</p>
-          <p>Room Number: {{ room.room_number }}</p>
-          <p>Price per night: ETB {{ room.price_per_night }}</p>
-          <p>Capacity: {{ room.capacity }} guests</p>
+          <img src="{{ room.room_image.url }}" alt="{{ room.room_type.name }}" class="img-fluid rounded">  
+          <h3><strong>{{ room.room_type.name}} Suite</strong></h3>
+        <p class="">{{ room.description|truncatewords:20 }}</p>
+        <p><strong> Room Number</strong>&ensp; {{ room.room_number }}</p>
+          <p><strong>Price per night</strong>&ensp; ETB {{ room.price_per_night }}</p>
+          <p><strong>Capacity</strong>&ensp; {{ room.capacity }} guests</p>
   
           <div class="mt-auto d-flex justify-content-center">
               <a href="{% url 'room_detail' room.id %}" class="btn btn-sm btn-warning pb-1 w-50 my-4 text-uppercase rounded">Details</a>&ensp;
