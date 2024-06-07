@@ -1,0 +1,50 @@
+{% extends 'admins/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-center">
+    <div class="card  mt-5" style="width: 35rem;border-radius: 10px;">
+        <div class="card-body rounded">
+            <h3 class="card-title text-center mb-4">Booking Details</h3>
+            <div class="row mb-2">
+                <div class="col-sm-6 text-left"><strong>Customer Name</strong></div>
+                <div class="col-sm-6 text-center">{{ object.user.first_name }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm-6 text-left"><strong>Room Number</strong></div>
+                <div class="col-sm-6 text-center">{{ object.room.room_number }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm-6 text-leftt"><strong>Room Type</strong></div>
+                <div class="col-sm-6 text-center">{{ object.room.room_type }} Suite</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm-6 text-left"><strong>Total Amount</strong></div>
+                <div class="col-sm-6 text-center">{{ object.total_amount }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm-6 text-left"><strong>Check In Date</strong></div>
+                <div class="col-sm-6 text-center">{{ object.check_in_date }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm-6 text-left"><strong>Check Out Date</strong></div>
+                <div class="col-sm-6 text-center">{{ object.check_out_date }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm-6 text-left"><strong>Paid</strong></div>
+                <div class="col-sm-6 text-center">{{ object.is_paid }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm-6 text-left"><strong>Guests</strong></div>
+                <div class="col-sm-6 text-center">{{ object.guests }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-sm-6 text-left"><strong>Status</strong></div>
+                <div class="col-sm-6 text-center">{{ object.status }}</div>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-center bg-light">
+            <a href="{% url 'admins:booking_list' %}" class="btn btn-sm btn-secondary rounded">Back to List</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

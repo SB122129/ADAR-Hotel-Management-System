@@ -24,15 +24,20 @@
                 {% if item.username %}
                 <td class="align-middle">{{ item.username }}</td>
                 {% endif %}
+                {% if item.room.room_number %}
+                <td class="align-middle">Room &ensp;{{ item.room.room_number }}</td>
+                {% endif %}
+                {% if item.booking.room.room_number %}
+                <td class="align-middle">Room &ensp;{{ item.booking.room.room_number }}</td>
+                {% endif %}
                     <td class="text-center">
                         <div class="btn-group" role="group">
-                            <a href="{% url create_url %}" class="btn  btn-link text-success"><span class="material-symbols-outlined">
-                                add_box
-                                </span></a>
+                            {% if request.resolver_match.url_name != 'booking_list' and request.resolver_match.url_name != 'payment_list' %}
                             <!-- Edit button -->
                             <a href="{% url update_url item.id %}" class="btn btn-link text-primary"><span class="material-symbols-outlined">
                                 edit_note
                                 </span></a>
+                                {% endif %}
                 
                             {% if detail_url %}
                             <!-- View button -->
@@ -57,7 +62,13 @@
             {% endif %}
         </tbody>
     </table>
+    
 </div>
+{% if request.resolver_match.url_name != 'booking_list' and request.resolver_match.url_name != 'payment_list' %}
+<div class="d-flex justify-content-center">
+    <a href="{% url create_url %}" class="btn  btn-success w-25 mt-5">Create</a>
+</div>
+{% endif %}
     
     
 </div>

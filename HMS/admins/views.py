@@ -6,6 +6,7 @@ from room.models import *
 from social_media.models import *
 from .mixins import OwnerRequiredMixin
 from django.shortcuts import render
+from django import forms
 
 # Custom User Views
 # class CustomUserListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
@@ -134,7 +135,7 @@ class BookingListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
     template_name = 'admins/booking_list.html'
     context_object_name = 'bookings'
     def get_queryset(self):
-        return Category.objects.order_by('name')
+        return Booking.objects.order_by('id')
 
 
 class BookingDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
@@ -147,10 +148,10 @@ class BookingCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
     fields = '__all__'
     success_url = reverse_lazy('admins:booking_list')
 
+
 class BookingUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = Booking
     template_name = 'admins/booking_form.html'
-    fields = '__all__'
     success_url = reverse_lazy('admins:booking_list')
 
 class BookingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
@@ -194,7 +195,7 @@ class PaymentListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
     template_name = 'admins/payment_list.html'
     context_object_name = 'payments'
     def get_queryset(self):
-        return Category.objects.order_by('name')
+        return Payment.objects.order_by('id')
 
 
 class PaymentDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):

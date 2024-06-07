@@ -84,9 +84,9 @@ html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
         box-shadow: none;
     }
     .form-control {
-        border-radius: 1px; /* Makes the border pill-shaped */
+        border-radius: 10px; /* Makes the border pill-shaped */
         padding: 10px 20px; /* Adds padding to the text */
-        border: 0px solid #ced4da;
+        border: 1px solid #0c0c0c;
         resize: none 
     }
         

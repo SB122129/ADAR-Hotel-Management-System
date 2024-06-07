@@ -10,10 +10,22 @@
                 <div class="card mb-5 rounded">
                     <div class="card-body">
                         <h5 class="card-title"><strong><i class="bi bi-list-ol"></i>&ensp;Room number</strong>  {{ booking.room.room_number }}</h5>
-                        <p class="card-text"><strong><i class="bi bi-border-style"></i>&ensp;{{ booking.room.room_type }} Suite</strong></p>
-                        <p class="card-text"><strong><i class="bi bi-calendar-plus"></i>&ensp;Check-in date</strong> &ensp; {{ booking.check_in_date }}</p>
-                        <p class="card-text"><strong><i class="bi bi-calendar-minus"></i>&ensp;Check-out date</strong> &ensp; {{ booking.check_out_date }}</p>
-                        <p class="card-text"><strong><i class="bi bi-door-open-fill"></i>&ensp;Booking Status</strong> &ensp; {{ booking.status }}</p>
+                        <div class="row mb-2 mt-3">
+                            <div class="col-sm-12 text-center"><strong><i class="bi bi-border-style"></i>&ensp;{{ booking.room.room_type }} Suite</strong></div>
+                            
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-6 text-left"><strong><i class="bi bi-calendar-plus"></i>&ensp;Check-in date</strong></div>
+                            <div class="col-sm-6 text-center">{{ booking.check_in_date }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-6 text-left"><strong><i class="bi bi-calendar-minus"></i>&ensp;Check-out date</strong></div>
+                            <div class="col-sm-6 text-center">{{ booking.check_out_date }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-6 text-left"><strong><i class="bi bi-door-open-fill"></i>&ensp;Booking Status</strong></div>
+                            <div class="col-sm-6 text-center">{{ booking.status }}</div>
+                        </div>
                     </div>
                     <div class="d-flex justify-content-center m-3">
                         {% if booking.status == 'pending' %}
