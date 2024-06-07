@@ -4,7 +4,8 @@
 
 {% block content %}
   
-
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
   
   <!-- Image Slider -->
 
@@ -83,7 +84,7 @@
     <h2 class="text-center">Our Rooms</h2>
     <div class="row">
       {% for room in rooms %}
-      <div class="col-md-6 border-0 d-block-sm p-5 mb-4 d-flex flex-column">
+      <div class="col-md-6 border-0 d-block-sm p-5 mb-4 d-flex flex-column" data-aos="fade" data-aos-duration="4000"  data-aos-offset="300" data-aos-delay="500"  data-aos-once="false">
           <img src="{{ room.room_image.url }}" alt="{{ room.room_type.name }}" class="img-fluid rounded">  
           <h3><strong>{{ room.room_type.name}} Suite</strong></h3>
         <p class="">{{ room.description|truncatewords:20 }}</p>
@@ -116,18 +117,18 @@
     <div class="row">
         <!-- Attraction 1: Entoto Hill -->
         <div class="col-md-4">
-            <div class="card  rounded border-0 mb-4">
+            <div class="card  rounded border-0 mb-4" data-aos="fade" data-aos-duration="4000" data-aos-delay="50"  data-aos-offset="300">
                 <img src="{% static 'images/entoto.jpg' %}" style="width: 400;height: 270px;" class="card-img-top rounded" alt="Entoto Hill">
                 <div class="card-body">
                     <h5 class="card-title">Entoto Hill</h5>
                     <p class="card-text">Experience breathtaking views of Addis Ababa from Entoto Hill, a historic site with significant religious landmarks and natural beauty.</p>
-                    <a href="https://www.google.com/maps/dir/?api=1&destination=Entoto+Hill,+Addis+Ababa,+Ethiopia" class="btn btn-sm rounded btn-primary" target="_blank"><i class="bi bi-map"></i> Get Directions</a>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=Entoto+Park,+Addis+Ababa,+Ethiopia" class="btn btn-sm rounded btn-primary" target="_blank"><i class="bi bi-map"></i> Get Directions</a>
                 </div>
             </div>
         </div>
         <!-- Attraction 2: Adwa Museum -->
         <div class="col-md-4">
-            <div class="card rounded border-0 mb-4">
+            <div class="card rounded border-0 mb-4" data-aos="fade" data-aos-duration="4000" data-aos-delay="50" data-aos-offset="300">
                 <img src="{% static 'images/adwa.png' %}" style="width: 400;height: 270px;" class="card-img-top rounded" alt="Adwa Museum">
                 <div class="card-body">
                     <h5 class="card-title">Adwa Museum</h5>
@@ -138,7 +139,7 @@
         </div>
         <!-- Attraction 3: Friendship Park -->
         <div class="col-md-4">
-            <div class="card border-0 rounded mb-4">
+            <div class="card border-0 rounded mb-4" data-aos="fade" data-aos-duration="4000" data-aos-delay="50" data-aos-offset="300">
                 <img src="{% static 'images/friendship.webp' %}" style="width: 400;height: 270px;" class="card-img-top rounded" alt="Friendship Park">
                 <div class="card-body">
                     <h5 class="card-title">Friendship Park</h5>
@@ -149,5 +150,8 @@
         </div>
     </div>
 </div>
+<script>
+  AOS.init();
+</script>
   {% endblock content %}
   
