@@ -1,5 +1,149 @@
 {% extends 'admins/base.html' %}
 
 {% block content %}
-<p>Home</p>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+
+    
+<style>
+    #container {
+        width: 100%;
+        height: 400px;
+        margin: 0 auto;
+    }
+</style>
+</head>
+<body>
+<div id="roomTypePopularityChart"></div>
+<div id="revenueByRoomTypeChart"></div>
+    
+<div id="roomAvailabilityChart"></div>
+<div id="bookingTrendsChart"></div>
+<div id="revenueTrendsChart"></div>
+<div id="bookingStatusChart"></div>
+<div id="paymentStatusChart"></div>
+
+<script>
+    Highcharts.setOptions({
+        colors: ['#FFD700', '#000000']
+    });
+
+    // Room Availability Chart
+    Highcharts.chart('roomAvailabilityChart', {
+        chart: {
+            type: 'pie'
+        },
+        title: {
+            text: 'Room Availability'
+        },
+        series: [{
+            name: 'Rooms',
+            colorByPoint: true,
+            data: {{ room_status_data|safe }}
+        }]
+    });
+
+    // Booking Trends Chart
+    Highcharts.chart('bookingTrendsChart', {
+        chart: {
+            type: 'line'
+        },
+        title: {
+            text: 'Booking Trends'
+        },
+        xAxis: {
+            type: 'datetime'
+        },
+        series: [{
+            name: 'Bookings',
+            data: {{ booking_trends_data|safe }}
+        }]
+    });
+
+    // Revenue Trends Chart
+    Highcharts.chart('revenueTrendsChart', {
+        chart: {
+            type: 'line'
+        },
+        title: {
+            text: 'Revenue Trends'
+        },
+        xAxis: {
+            type: 'datetime'
+        },
+        series: [{
+            name: 'Revenue',
+            data: {{ revenue_trends_data|safe }}
+        }]
+    });
+
+    // Booking Status Chart
+    Highcharts.chart('bookingStatusChart', {
+        chart: {
+            type: 'pie'
+        },
+        title: {
+            text: 'Booking Status'
+        },
+        series: [{
+            name: 'Bookings',
+            colorByPoint: true,
+            data: {{ booking_status_data|safe }}
+        }]
+    });
+
+    // Payment Status Chart
+    Highcharts.chart('paymentStatusChart', {
+        chart: {
+            type: 'pie'
+        },
+        title: {
+            text: 'Payment Status'
+        },
+        series: [{
+            name: 'Payments',
+            colorByPoint: true,
+            data: {{ payment_status_data|safe }}
+        }]
+    });
+
+    // Room Type Popularity Chart
+    Highcharts.chart('roomTypePopularityChart', {
+        chart: {
+            type: 'bar'
+        },
+        title: {
+            text: 'Room Type Popularity'
+        },
+        xAxis: {
+            type: 'category',
+            title: {
+                text: 'Room Type'
+            }
+        },
+        series: [{
+            name: 'Bookings',
+            data: {{ room_type_popularity_data|safe }}
+        }]
+    });
+
+    // Revenue by Room Type Chart
+    Highcharts.chart('revenueByRoomTypeChart', {
+        chart: {
+            type: 'bar'
+        },
+        title: {
+            text: 'Revenue by Room Type'
+        },
+        xAxis: {
+            type: 'category',
+            title: {
+                text: 'Room Type'
+            }
+        },
+        series: [{
+            name: 'Revenue',
+            data: {{ revenue_by_room_type_data|safe }}
+        }]
+    });
+</script>
 {% endblock %}

@@ -146,7 +146,7 @@ class PaymentView(View):
         current_site = Site.objects.get_current()
         relative_url = reverse('bookings')
         redirect_url = f'https://{current_site.domain}{relative_url}'
-        webhook_url = 'https://a7a4-196-189-112-211.ngrok-free.app/room/chapa-webhook/'
+        webhook_url = 'https://b3aa-102-218-51-28.ngrok-free.app/room/chapa-webhook/'
         payload = {
             "amount": amount,
             "currency": "ETB",

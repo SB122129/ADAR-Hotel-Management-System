@@ -19,7 +19,10 @@ from telegram import Bot
 
 
 
-openai.api_key = settings.OPENAI_API_KEY
+import google.generativeai as genai
+
+# Configure the Gemini API key
+genai.configure(api_key="AIzaSyBfK-J0sAekVr5GMfof-QjyiDlcuFCPaO8")
 
 class ChatBotView(LoginRequiredMixin, FormView, ListView):
     model = ChatBot
@@ -33,30 +36,28 @@ class ChatBotView(LoginRequiredMixin, FormView, ListView):
 
     def form_valid(self, form):
         user_message = form.cleaned_data['message']
-        response = self.get_gpt3_5_response(user_message)
+        response_text = self.get_gemini_response(user_message)
         
         ChatBot.objects.create(
             user=self.request.user,
             message=user_message,
-            response=response
+            response=response_text
         )
         
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({"data": {"text": response_text}})
         return super().form_valid(form)
 
-    def get_gpt3_5_response(self, user_message):
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": user_message},
-            ],
-        )
-        # Get the response content
-        response_content = response.choices[0].message['content']
-        # Replace newline characters with HTML line breaks
+    def get_gemini_response(self, user_message):
+        model = genai.GenerativeModel("gemini-pro")
+        chat = model.start_chat()
+        response = chat.send_message(user_message)
+        
+        # Assuming response.text contains the relevant response data
+        response_content = response.text
         response_content = response_content.replace("\n", "<br>")
-        # Enclose asterisk-enclosed words in bold tags
         formatted_response = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', response_content)
+        
         return formatted_response
 
 

@@ -37,9 +37,74 @@ from django import forms
 
 # Language Views
 
+from django.db.models import Count, Sum, Avg, F, ExpressionWrapper, fields
+from django.db.models.functions import TruncMonth,TruncDay
+from datetime import timedelta
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+
+from datetime import datetime
 
 def admin_dashboard(request):
-    return render(request, 'admins/admin_dashboard.html')
+    # Room Availability with room types
+    room_status_counts = list(Room.objects.values('room_status', 'room_type__name').annotate(count=Count('id')))
+    room_status_data = [{'name': f"{item['room_status']} ({item['room_type__name']})", 'y': item['count']} for item in room_status_counts]
+
+    # Booking Trends (per day)
+    booking_trends = list(Booking.objects.annotate(day=TruncDay('check_in_date')).values('day').annotate(count=Count('id')))
+    booking_trends_data = [
+        {'x': int(datetime.combine(item['day'], datetime.min.time()).timestamp()) * 1000, 'y': item['count']}
+        for item in booking_trends
+    ]
+
+    # Revenue Over Time (per day)
+    revenue_trends = list(Booking.objects.filter(is_paid=True).annotate(day=TruncDay('check_in_date')).values('day').annotate(total_revenue=Sum('total_amount')))
+    revenue_trends_data = [
+        {'x': int(datetime.combine(item['day'], datetime.min.time()).timestamp()) * 1000, 'y': float(item['total_revenue'])}
+        for item in revenue_trends
+    ]
+
+    # Booking Status Distribution with room types
+    booking_status_counts = list(Booking.objects.values('status', 'room__room_type__name').annotate(count=Count('id')))
+    booking_status_data = [{'name': f"{item['status']} ({item['room__room_type__name']})", 'y': item['count']} for item in booking_status_counts]
+
+    # Payment Status Distribution with room types
+    payment_status_counts = list(Payment.objects.values('status', 'booking__room__room_type__name').annotate(count=Count('id')))
+    payment_status_data = [{'name': f"{item['status']} ({item['booking__room__room_type__name']})", 'y': item['count']} for item in payment_status_counts]
+
+    # Room Type Popularity
+    room_type_popularity = list(Booking.objects.values('room__room_type__name').annotate(count=Count('id')))
+    room_type_popularity_data = [{'name': item['room__room_type__name'], 'y': item['count']} for item in room_type_popularity]
+
+    # Revenue by Room Type
+    revenue_by_room_type = list(Booking.objects.filter(is_paid=True).values('room__room_type__name').annotate(total_revenue=Sum('total_amount')))
+    revenue_by_room_type_data = [
+        {'name': item['room__room_type__name'], 'y': float(item['total_revenue'])}
+        for item in revenue_by_room_type
+    ]
+
+    # Print JSON data for debugging
+    print(json.dumps(room_status_data, cls=DjangoJSONEncoder))
+    print(json.dumps(booking_trends_data, cls=DjangoJSONEncoder))
+    print(json.dumps(revenue_trends_data, cls=DjangoJSONEncoder))
+    print(json.dumps(booking_status_data, cls=DjangoJSONEncoder))
+    print(json.dumps(payment_status_data, cls=DjangoJSONEncoder))
+    print(json.dumps(room_type_popularity_data, cls=DjangoJSONEncoder))
+    print(json.dumps(revenue_by_room_type_data, cls=DjangoJSONEncoder))
+
+    context = {
+        'room_status_data': json.dumps(room_status_data, cls=DjangoJSONEncoder),
+        'booking_trends_data': json.dumps(booking_trends_data, cls=DjangoJSONEncoder),
+        'revenue_trends_data': json.dumps(revenue_trends_data, cls=DjangoJSONEncoder),
+        'booking_status_data': json.dumps(booking_status_data, cls=DjangoJSONEncoder),
+        'payment_status_data': json.dumps(payment_status_data, cls=DjangoJSONEncoder),
+        'room_type_popularity_data': json.dumps(room_type_popularity_data, cls=DjangoJSONEncoder),
+        'revenue_by_room_type_data': json.dumps(revenue_by_room_type_data, cls=DjangoJSONEncoder),
+    }
+
+    return render(request, 'admins/admin_dashboard.html', context)
+
+    
 
 class LanguageListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
     model = Language

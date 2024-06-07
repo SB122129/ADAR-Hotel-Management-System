@@ -63,8 +63,8 @@ MESSAGE_TAGS = {
 
 ALLOWED_HOSTS = [ '*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://89d9-196-189-113-2.ngrok-free.app',
-    'http://127.0.0.1:8000/'
+    'https://b3aa-102-218-51-28.ngrok-free.app',
+    'http://127.0.0.1:8000/',
 ]
 
 

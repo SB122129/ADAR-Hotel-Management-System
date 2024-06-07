@@ -49,7 +49,7 @@ html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
 
         
         .user-message {
-            background-color: #28a745;
+            background-color: cyan;
             color: #fff;
             border-radius: 15px;
             padding: 5px 10px;
@@ -58,8 +58,8 @@ html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
 
         }
         .bot-response {
-            background-color: #1d84f3;
-            color: #ffffff;
+            background-color: wheat;
+            color: #403d3d;
             border-radius: 15px;
             padding:10px;
             margin-right: 10px;
