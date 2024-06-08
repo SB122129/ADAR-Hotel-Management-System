@@ -1,0 +1,31 @@
+{% extends "accountss/base.html" %}
+{% block content %}
+<div class="container w-50" style="margin-top: 7rem;">
+
+    <h3 class="text-center mb-3">Payment for Extended Stay</h3>
+
+    <div class="row mb-3">
+        <div class="col-sm-6 text-left"><strong><i class="bi bi-calendar-plus"></i>&ensp;New Check-out date</strong></div>
+        <div class="col-sm-6 text-center">{{booking.extended_check_out_date}}</div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-sm-6 text-left"><strong><i class="bi bi-cash"></i>&ensp;Amount Due</strong></div>
+        <div class="col-sm-6 text-center">{{ amount }}</div>
+    </div>
+    
+    {% if field.errors %}
+    <div class="alert alert-danger mt-2">
+        {{ field.errors|first }}
+    </div>
+{% endif %}
+
+<form method="post" target="_blank">
+    {% csrf_token %}
+    <div class="d-flex justify-content-center ">
+    <button type="submit" class="btn btn-sm  mt-4 rounded w-50 btn-success">Pay with Chapa</button>
+</div>
+</form>
+</div>
+    
+{% endblock %}

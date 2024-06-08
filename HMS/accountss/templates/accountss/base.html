@@ -42,7 +42,9 @@
           <a class="nav-item nav-link text-warning" href="{% url 'about' %}">About</a>
           <a class="nav-item nav-link text-warning" href="{% url 'rooms' %}">Rooms</a>
           <a class="nav-item nav-link text-warning" href="{% url 'contact' %}">Contact</a>
+          {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
           <a class="nav-item nav-link text-warning" href="{% url 'bookings' %}">My Bookings</a>
+          {% endif %}
     
           {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
           

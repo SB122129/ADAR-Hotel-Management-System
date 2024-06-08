@@ -24,7 +24,12 @@ from django.utils import timezone
 from django.contrib import messages
 from django.views.generic.base import View
 from django.db.models.signals import post_save
-
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.views import View
+from .forms import BookingExtendForm
+from .models import Booking
+from datetime import timedelta, date
 
 
 
@@ -106,7 +111,134 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
+
+
+from .forms import BookingExtendForm
+
+class BookingExtendView(View):
+    template_name = 'room/booking_extend.html'
+
+    def get(self, request, *args, **kwargs):
+        booking = self.get_booking()
+        form = BookingExtendForm(instance=booking)
+        context = self.get_context_data(booking, form)
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        booking = self.get_booking()
+        form = BookingExtendForm(request.POST, instance=booking)
+
+        if form.is_valid():
+            extended_check_out_date = form.cleaned_data['extended_check_out_date']
+            if extended_check_out_date <= booking.check_out_date:
+                form.add_error('extended_check_out_date', 'Extended check-out date must be after the current check-out date.')
+                return self.form_invalid(form)
+            elif extended_check_out_date <= booking.check_in_date:
+                form.add_error('extended_check_out_date', 'Extended check-out date cannot be before the current check-in date.')
+                return self.form_invalid(form)
+            else:
+                booking.extended_check_out_date = extended_check_out_date
+                booking.status = 'pending'
+                booking.save()
+                return redirect('payment_extend', booking_id=booking.id)
+        else:
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        booking = self.get_booking()
+        return render(self.request, self.template_name, self.get_context_data(booking=booking, form=form))
+
+    def get_booking(self):
+        booking_id = self.kwargs.get('booking_id')
+        return get_object_or_404(Booking, id=booking_id)
+
+    def get_context_data(self, booking, form):
+        context = {
+            'booking': booking,
+            'form': form
+        }
+        return context
+
     
+
+
+
+class PaymentExtendView(View):
+    template_name = 'room/payment_extend.html'
+
+    def get(self, request, *args, **kwargs):
+        booking = self.get_booking()
+        context = self.get_context_data(booking)
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        booking = self.get_booking()
+        # print(booking.is_paid)
+        # if booking.is_paid:
+        #     messages.warning(request, 'Payment already completed')
+        #     return render(request, self.template_name, self.get_context_data(booking=booking))
+        print(booking.is_paid, booking.status)
+        if booking.is_paid or booking.status != 'confirmed':
+            booking.status = 'pending'
+            booking.save()
+            amount = str(booking.calculate_additional_amount())
+            print(amount)
+            tx_ref = f"{booking.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+            booking.tx_ref = tx_ref
+            booking.save()
+
+            url = "https://api.chapa.co/v1/transaction/initialize"
+            current_site = Site.objects.get_current()
+            relative_url = reverse('bookings')
+            redirect_url = f'https://{current_site.domain}{relative_url}'
+            webhook_url = 'https://b3aa-102-218-51-28.ngrok-free.app/room/chapa-webhook/'
+
+            
+            
+            payload = {
+                "amount": amount,
+                "currency": "ETB",
+                "email": booking.user.email,
+                "first_name": booking.user.first_name,
+                "last_name": booking.user.last_name,
+                "phone_number": booking.user.phone_number,
+                "redirect_url": redirect_url,
+                "tx_ref": tx_ref,
+                "callback_url": webhook_url,
+            }
+            headers = {
+                'Authorization': 'Bearer CHASECK_TEST-h6dv4n5s2yutNrgiwTgWUpJKSma6Wsh9',
+                'Content-Type': 'application/json'
+            }
+
+            response = requests.post(url, json=payload, headers=headers)
+            data = response.json()
+            print(payload)
+            if response.status_code == 200:
+                checkout_url = data['data']['checkout_url']
+                print("Redirecting to Chapa checkout URL.")
+                return redirect(checkout_url)
+            else:
+                print("Chapa API response error:", response.text)
+                return HttpResponse(response.text)
+
+        else:
+            messages.warning(request, 'Booking cannot be extended.')
+            return redirect('bookings')
+
+    def get_booking(self):
+        booking_id = self.kwargs.get('booking_id')
+        return get_object_or_404(Booking, id=booking_id)
+
+    def get_context_data(self, booking):
+        context = {
+            'booking': booking,
+            'amount': booking.calculate_additional_amount()
+        }
+        return context
+
+
+
 
 
 class PaymentView(View):
@@ -146,7 +278,7 @@ class PaymentView(View):
         current_site = Site.objects.get_current()
         relative_url = reverse('bookings')
         redirect_url = f'https://{current_site.domain}{relative_url}'
-        webhook_url = 'https://b3aa-102-218-51-28.ngrok-free.app/room/chapa-webhook/'
+        webhook_url = ' https://b3aa-102-218-51-28.ngrok-free.app/room/chapa-webhook/'
         payload = {
             "amount": amount,
             "currency": "ETB",
@@ -186,46 +318,69 @@ from django.http import HttpResponseNotFound
 from django.http import HttpResponseServerError
 
 # Set up logging
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ChapaWebhookView(View):
     def post(self, request, *args, **kwargs):
+        print("Webhook received")
         payload = json.loads(request.body)
-        
+        print("Payload:", payload)
         
         tx_ref = payload.get('tx_ref')
+        print("Transaction reference:", tx_ref)
 
         if not tx_ref:
+            print("Invalid tx_ref")
             return HttpResponseBadRequest("Invalid tx_ref")
 
         try:
             booking = Booking.objects.get(tx_ref=tx_ref)
         except Booking.DoesNotExist:
+            print("Booking not found")
             return HttpResponseNotFound("Booking not found")
         except Booking.MultipleObjectsReturned:
+            print("Multiple bookings found")
             return HttpResponseServerError("Multiple bookings found")
 
-        # Process the payment here, e.g., update booking status, create payment record
-        
-        payment = Payment.objects.create(
-                booking=booking,
-                status='completed',
-                transaction_id=tx_ref,
-            )
+        print("Booking found:", booking)
 
+        # Check if a payment already exists for this booking
+        payment, created = Payment.objects.get_or_create(
+            booking=booking,
+            defaults={
+                'status': 'completed',
+                'transaction_id': tx_ref,
+            }
+        )
+
+        if not created:
+            print("Payment already exists for this booking.")
+            # Update payment status if necessary
+            payment.status = 'completed'
+            payment.transaction_id = tx_ref
+            payment.save()
+
+        print("Payment record created or updated:", payment)
+
+        # Update booking and room status
         booking.is_paid = True
         booking.status = 'confirmed'
+        if booking.extended_check_out_date:
+            print(booking.check_out_date)
+            print(booking.extended_check_out_date)
+
+            # booking.check_out_date = booking.extended_check_out_date
+            print(booking.check_out_date)
         booking.room.room_status = 'occupied'
         booking.room.save()
         booking.save()
-
-        payment.status = 'completed'
-        payment.save()
-
+        print("Booking and room updated")
 
         return HttpResponse("Webhook processed successfully")
 
+
+        
 
 
 

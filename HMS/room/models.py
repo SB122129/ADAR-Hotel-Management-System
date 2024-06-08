@@ -57,6 +57,10 @@ class Room(models.Model):
 
 
 
+from django.db import models
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
 class Booking(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
@@ -68,19 +72,30 @@ class Booking(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     check_in_date = models.DateField()
     check_out_date = models.DateField()
+    extended_check_out_date = models.DateField(null=True, blank=True)  # New field for extended checkout date
     is_paid = models.BooleanField(default=False)
     guests = models.IntegerField(null=True, blank=True)
     tx_ref = models.CharField(max_length=100, unique=True, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
 
+    def calculate_additional_amount(self):
+        if self.extended_check_out_date and self.extended_check_out_date > self.check_out_date:
+            extended_days = (self.extended_check_out_date - self.check_out_date).days
+            return self.room.price_per_night * extended_days
+        else:
+            return 0
     def clean(self):
         # Ensure check-in date is not in the past
-        if self.check_in_date < date.today():
+        if self.check_in_date < timezone.now().date():
             raise ValidationError('Check-in date cannot be in the past.')
 
         # Ensure check-out date is not before check-in date
         if self.check_out_date <= self.check_in_date:
             raise ValidationError('Check-out date must be after the check-in date.')
+
+        # Ensure extended check-out date is after check-out date
+        if self.extended_check_out_date and self.extended_check_out_date <= self.check_out_date:
+            raise ValidationError('Extended check-out date must be after the current check-out date.')
 
     def save(self, *args, **kwargs):
         self.full_clean()  # Call clean method to perform validations
@@ -93,15 +108,18 @@ class Booking(models.Model):
 
         super().save(*args, **kwargs)
         # self.room.update_room_status()
-    
+
     def delete(self, *args, **kwargs):
         room = self.room
         super().delete(*args, **kwargs)
         room.update_room_status()
+
     def has_receipt(self):
         return Receipt.objects.filter(booking=self).exists()
+
     def __str__(self):
         return f"Booking for {self.user} in {self.room} from {self.check_in_date} to {self.check_out_date}"
+
 
 
 

@@ -1,6 +1,16 @@
 from django import forms
 from .models import Booking, Reservation, Payment, RoomRating
 from datetime import date
+from django import forms
+from .models import Booking
+
+class BookingExtendForm(forms.ModelForm):
+    class Meta:
+        model = Booking
+        fields = ['extended_check_out_date']
+        widgets = {
+            'extended_check_out_date': forms.DateInput(attrs={'type': 'date'}),
+        }
 
 class BookingForm(forms.ModelForm):
     class Meta:
