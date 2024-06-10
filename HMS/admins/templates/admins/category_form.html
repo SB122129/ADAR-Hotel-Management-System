@@ -1,7 +1,7 @@
 
 
 {% block content %}
-    {% with title="Create/Edit Category" form=form submit_text="Save" list_url='category_list' %}
+    {% with title="Create/Edit Category" form=form submit_text="Save" list_url='admins:category_list' %}
         {% include 'admins/components/form.html' %}
     {% endwith %}
 {% endblock %}

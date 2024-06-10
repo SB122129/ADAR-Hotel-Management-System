@@ -90,8 +90,9 @@ class ProfileDetailView(LoginRequiredMixin,DetailView):
 
 class ProfileUpdateView(LoginRequiredMixin,UpdateView):
     model = Custom_user
+    form_class = CustomUserUpdateForm
     template_name = 'accountss/profile_update.html'
-    fields = ['username','first_name', 'last_name', 'email', 'country', 'city', 'profile_picture', 'phone_number']
+    
 
     def get_success_url(self):
         user = self.request.user

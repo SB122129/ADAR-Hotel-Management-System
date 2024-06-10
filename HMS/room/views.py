@@ -84,10 +84,21 @@ class BookingListView(LoginRequiredMixin, ListView):
         return Booking.objects.filter(user=self.request.user)
 
 
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic.edit import CreateView
+from .models import Room, Booking
+from .forms import BookingForm
+
 class BookingCreateView(LoginRequiredMixin, CreateView):
     model = Booking
     form_class = BookingForm
     template_name = 'room/booking_create.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['room'] = get_object_or_404(Room, id=self.kwargs['room_id'])
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -96,6 +107,7 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         context['room_number'] = room.room_number  # Assuming 'number' is the field for room number
         context['room_type'] = room.room_type  # Assuming 'type' is the field for room type
         return context
+
     def form_valid(self, form):
         room = get_object_or_404(Room, id=self.kwargs['room_id'])
         form.instance.user = self.request.user
@@ -104,7 +116,7 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         form.instance.tx_ref = f"{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
         self.object = form.save()
         return redirect('payment_create', booking_id=self.object.id)
-    
+
     def form_invalid(self, form):
         print("Form is invalid")
         print(form.errors)  # Print form errors to the console for debugging

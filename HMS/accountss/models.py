@@ -3,6 +3,7 @@ from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 from django.utils.translation import gettext as _
+from django_countries.fields import CountryField
 
 class Custom_user(AbstractUser):
     ROLE_CHOICES = (
@@ -17,8 +18,7 @@ class Custom_user(AbstractUser):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     telegram_username = models.CharField(max_length=100, unique=True, null=True, blank=True)
-    country = models.CharField(max_length=100, blank=True, null=True)
-    city = models.CharField(max_length=100, blank=True, null=True)
+    country = CountryField(blank_label='(select country)', default='ET')
     profile_picture = models.ImageField(upload_to='media',blank=True, null=True)
 
     groups = models.ManyToManyField(

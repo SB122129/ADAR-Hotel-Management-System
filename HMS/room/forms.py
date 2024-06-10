@@ -3,6 +3,7 @@ from .models import Booking, Reservation, Payment, RoomRating
 from datetime import date
 from django import forms
 from .models import Booking
+from django.core.exceptions import ValidationError
 
 class BookingExtendForm(forms.ModelForm):
     class Meta:
@@ -12,7 +13,12 @@ class BookingExtendForm(forms.ModelForm):
             'extended_check_out_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
+
 class BookingForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.room = kwargs.pop('room', None)
+        super().__init__(*args, **kwargs)
+
     class Meta:
         model = Booking
         fields = ['check_in_date', 'check_out_date', 'guests']
@@ -20,20 +26,17 @@ class BookingForm(forms.ModelForm):
             'check_in_date': forms.DateInput(attrs={'type': 'date'}),
             'check_out_date': forms.DateInput(attrs={'type': 'date'}),
         }
-        def clean(self):
-            cleaned_data = super().clean()
-            check_in_date = cleaned_data.get("check_in_date")
-            check_out_date = cleaned_data.get("check_out_date")
 
-            # Ensure check-in date is not in the past
-            if check_in_date and check_in_date < date.today():
-                self.add_error('check_in_date', 'Check-in date cannot be in the past.')
+    def clean_guests(self):
+        guests = self.cleaned_data.get('guests')
+        room_capacity = self.room.capacity
 
-            # Ensure check-out date is not before check-in date
-            if check_in_date and check_out_date and check_out_date <= check_in_date:
-                self.add_error('check_out_date', 'Check-out date must be after the check-in date.')
+        if guests < 1:
+            raise ValidationError('The number of guests must be at least 1.')
+        elif guests > room_capacity:
+            raise ValidationError(f'The number of guests cannot exceed the room capacity which is {self.room.capacity} for this room.')
 
-            return cleaned_data
+        return guests
         
 class ReservationForm(forms.ModelForm):
     class Meta:

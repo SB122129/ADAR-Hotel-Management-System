@@ -94,9 +94,11 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'oauth2_provider',
     'social_django',
-    'rest_framework_social_oauth2',
     'admins',
-    'django_daraja',
+    'gym',
+    'django_countries',
+    
+    
 ]
 
 import environ

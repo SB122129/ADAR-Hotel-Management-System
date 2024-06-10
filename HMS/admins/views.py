@@ -7,6 +7,7 @@ from social_media.models import *
 from .mixins import OwnerRequiredMixin
 from django.shortcuts import render
 from django import forms
+from .forms import *
 
 # Custom User Views
 # class CustomUserListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
@@ -150,15 +151,14 @@ class CategoryDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
 class CategoryCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
     model = Category
     template_name = 'admins/category_form.html'
-    fields = '__all__'
+    form_class = CategoryForm
     success_url = reverse_lazy('admins:category_list')
 
 class CategoryUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = Category
     template_name = 'admins/category_form.html'
-    fields = '__all__'
+    form_class = CategoryForm
     success_url = reverse_lazy('admins:category_list')
-
 class CategoryDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Category
     template_name = 'admins/category_confirm_delete.html'
@@ -180,13 +180,13 @@ class RoomDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
 class RoomCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
     model = Room
     template_name = 'admins/room_form.html'
-    fields = '__all__'
+    form_class = RoomForm
     success_url = reverse_lazy('admins:room_list')
 
 class RoomUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = Room
     template_name = 'admins/room_form.html'
-    fields = '__all__'
+    form_class = RoomForm
     success_url = reverse_lazy('admins:room_list')
 
 class RoomDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):

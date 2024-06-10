@@ -16,6 +16,7 @@ urlpatterns = [
     path('contact', contact, name='contact'),
     path('accounts/', include('allauth.urls')),
     path('social/', include('social_django.urls', namespace='social')),
+    path('gym', include('gym.urls')),
     
     
 ]

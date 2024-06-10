@@ -1,5 +1,5 @@
 {% block content %}
-    {% with title="Create/Edit Room" form=form submit_text="Save" list_url='room_list' %}
+    {% with title="Create/Edit Room" form=form submit_text="Save" list_url='admins:room_list' %}
         {% include 'admins/components/form.html' %}
     {% endwith %}
 {% endblock %}
