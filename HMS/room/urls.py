@@ -16,4 +16,6 @@ urlpatterns = [
     path('booking/delete/<int:pk>/', BookingDeleteView.as_view(), name='booking_delete'),
     path('chapa-webhook/', ChapaWebhookView.as_view(), name='chapa_webhook'),
     path('booking/<int:booking_id>/upload_receipt/', ReceiptUploadView.as_view(), name='upload_receipt'),
+    path('paypal-return/', PayPalReturnView.as_view(), name='paypal_return'),
+    path('paypal-cancel/', PayPalCancelView.as_view(), name='paypal_cancel'),
 ]

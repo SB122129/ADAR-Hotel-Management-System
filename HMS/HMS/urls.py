@@ -17,6 +17,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('social/', include('social_django.urls', namespace='social')),
     path('gym', include('gym.urls')),
+    path('', include('paypal.standard.ipn.urls')),
     
     
 ]

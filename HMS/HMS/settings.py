@@ -63,10 +63,23 @@ MESSAGE_TAGS = {
 
 ALLOWED_HOSTS = [ '*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://b3aa-102-218-51-28.ngrok-free.app',
+    'https://12b9-102-218-51-161.ngrok-free.app',
     'http://127.0.0.1:8000/',
 ]
+import paypalrestsdk
+from django.conf import settings
 
+
+# PAYPAL_CLIENT_ID='AYNPJUQasP8KSVVXj-LE0yJ5XVoI53hoXTf2NJm5R4bNHUsvaA9eV-EexHSoUtqDbO4qfdNDC8KPcCwY'
+# PAYPAL_CLIENT_SECRET='EE2-V7XWYHZ-xGMsR1FrLrhPOPIBdZ4t-idAnNt6DI8_xvFzmAu0PatzLJk5PbFp1dTT99OBuKb6Zz1V'
+# PAYPAL_TEST = True
+# paypalrestsdk.configure({
+#     "mode": "sandbox",  # or "live"
+#     "client_id": settings.PAYPAL_CLIENT_ID,
+#     "client_secret": settings.PAYPAL_CLIENT_SECRET,
+# })
+
+# PAYPAL_RECEIVER_EMAIL = 'merchant33@gmail.com'
 
 
 CSRF_COOKIE_SECURE = False
@@ -97,6 +110,7 @@ INSTALLED_APPS = [
     'admins',
     'gym',
     'django_countries',
+    'paypal.standard.ipn',
     
     
 ]

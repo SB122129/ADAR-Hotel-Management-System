@@ -6,7 +6,9 @@ from .models import Room, Booking, Reservation, Payment, RoomRating,Receipt
 from .forms import BookingForm, ReservationForm, RoomRatingForm
 import requests
 import random
+from django.http import HttpResponseRedirect
 import string
+from paypalrestsdk import Payment as PayPalPayment
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.dispatch import receiver
@@ -30,6 +32,15 @@ from django.views import View
 from .forms import BookingExtendForm
 from .models import Booking
 from datetime import timedelta, date
+from django.db import transaction
+from django.db.models import Q
+import json
+import logging
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.conf import settings
+from django.http import HttpResponseNotFound
+from django.http import HttpResponseServerError
 
 
 
@@ -250,9 +261,11 @@ class PaymentExtendView(View):
         return context
 
 
+# Set up logging
+logger = logging.getLogger(__name__)
+import paypalrestsdk
 
-
-
+from django.http import JsonResponse
 class PaymentView(View):
     template_name = 'room/payment_create.html'
     success_url = reverse_lazy('bookings')
@@ -278,9 +291,23 @@ class PaymentView(View):
         return render(request, self.template_name, self.get_context_data())
     
     def post(self, request, *args, **kwargs):
-        if self.booking.is_paid or self.booking.status != 'pending':
-            messages.warning(request, 'Payment already completed')
+        payment_method = request.POST.get('payment_method')
+        if payment_method == 'chapa':
+            return self.process_chapa_payment()
+        elif payment_method == 'paypal':
+            return self.process_paypal_payment()
+        else:
+            messages.error(request, 'Invalid payment method selected.')
             return render(request, self.template_name, self.get_context_data())
+
+    def get_booking(self):
+        booking_id = self.kwargs.get('booking_id')
+        return get_object_or_404(Booking, id=booking_id)
+    
+    def process_chapa_payment(self):
+        if self.booking.is_paid or self.booking.status != 'pending':
+            messages.warning(self.request, 'Payment already completed')
+            return render(self.request, self.template_name, self.get_context_data())
         amount = str(self.booking.total_amount)
         tx_ref = f"{self.booking.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
         self.booking.tx_ref = tx_ref  # Store the new tx_ref in booking
@@ -289,8 +316,8 @@ class PaymentView(View):
         url = "https://api.chapa.co/v1/transaction/initialize"
         current_site = Site.objects.get_current()
         relative_url = reverse('bookings')
-        redirect_url = f'https://{current_site.domain}{relative_url}'
-        webhook_url = ' https://b3aa-102-218-51-28.ngrok-free.app/room/chapa-webhook/'
+        redirect_url = f'https://12b9-102-218-51-161.ngrok-free.app/room/bookings'
+        webhook_url = f'https://12b9-102-218-51-161.ngrok-free.app/room/chapa-webhook/'
         payload = {
             "amount": amount,
             "currency": "ETB",
@@ -310,27 +337,97 @@ class PaymentView(View):
         response = requests.post(url, json=payload, headers=headers)
         data = response.json()
         if response.status_code == 200:
-
             checkout_url = data['data']['checkout_url']
             return redirect(checkout_url)
         else:
             return HttpResponse(response)
-        
-    def get_booking(self):
-        booking_id = self.kwargs.get('booking_id')
-        return get_object_or_404(Booking, id=booking_id)
+   
+    
+    from django.http import JsonResponse
 
-from django.db import transaction
+    from django.http import HttpResponseRedirect
 
-from django.db.models import Q
+    def process_paypal_payment(self):
+        paypalrestsdk.configure({
+            "mode": "sandbox",  # sandbox or live
+            "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
+            "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
+        })
 
-import json
-import logging
-from django.http import HttpResponseNotFound
-from django.http import HttpResponseServerError
+        payment = paypalrestsdk.Payment({
+            "intent": "sale",
+            "payer": {
+                "payment_method": "paypal"},
+            "redirect_urls": {
+                "return_url": f"https://12b9-102-218-51-161.ngrok-free.app/room/paypal-return/?booking_id={self.booking.id}",
+                "cancel_url": f"https://12b9-102-218-51-161.ngrok-free.app/room/paypal-cancel/?booking_id={self.booking.id}"},
+            "transactions": [{
+                "item_list": {
+                    "items": [{
+                        "name": "room booking",
+                        "sku": "item",
+                        "price": str(self.booking.total_amount),
+                        "currency": "USD",
+                        "quantity": 1}]},
+                "amount": {
+                    "total": str(self.booking.total_amount),
+                    "currency": "USD"},
+                "description": "This is the payment transaction description."}]})
 
-# Set up logging
-# logger = logging.getLogger(__name__)
+        if payment.create():
+            for link in payment.links:
+                if link.rel == "approval_url":
+                    approval_url = link.href
+                    break
+            else:
+                return HttpResponse("No approval URL returned by PayPal")
+            return HttpResponseRedirect(approval_url)
+        else:
+            return HttpResponse("Error: " + payment.error)
+    
+    
+
+
+
+
+
+class PayPalReturnView(View):
+    def get(self, request, *args, **kwargs):
+        payment_id = request.GET.get('paymentId')
+        payer_id = request.GET.get('PayerID')
+        booking_id = request.GET.get('booking_id')
+        booking = get_object_or_404(Booking, id=booking_id)
+
+        # Execute the payment
+        payment = paypalrestsdk.Payment.find(payment_id)
+        if payment.execute({"payer_id": payer_id}):
+            if payment.state == "approved":
+                booking.is_paid = True
+                booking.status = 'confirmed'
+                booking.save()
+                payment, created = Payment.objects.get_or_create(
+                            booking=booking,
+                            defaults={
+                                'status': 'completed',
+                                'transaction_id': booking.tx_ref,
+                                }
+                                )
+                messages.success(request, 'Payment completed successfully.')
+                return redirect('bookings')
+            else:
+                messages.error(request, 'Payment was not successful.')
+                return redirect('payment_page', booking_id=booking.id)
+        else:
+            messages.error(request, 'There was an issue with your PayPal payment.')
+            return redirect('payment_page', booking_id=booking.id)
+
+class PayPalCancelView(View):
+    def get(self, request, *args, **kwargs):
+        booking_id = request.GET.get('booking_id')
+        messages.warning(request, 'Payment was cancelled.')
+        return redirect('payment_page', booking_id=booking_id)
+
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ChapaWebhookView(View):
@@ -439,8 +536,6 @@ class ReceiptUploadView(CreateView):
 
 
 
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
 
 @receiver(post_save, sender=Booking)
 @receiver(post_delete, sender=Booking)
