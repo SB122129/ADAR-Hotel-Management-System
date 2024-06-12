@@ -348,6 +348,9 @@ class PaymentView(View):
     from django.http import HttpResponseRedirect
 
     def process_paypal_payment(self):
+        if self.booking.is_paid or self.booking.status != 'pending':
+            messages.warning(self.request, 'Payment already completed')
+            return render(self.request, self.template_name, self.get_context_data())
         paypalrestsdk.configure({
             "mode": "sandbox",  # sandbox or live
             "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
