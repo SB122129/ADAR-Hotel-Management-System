@@ -17,11 +17,19 @@ class Category(models.Model):
 class RoomManager(models.Manager):
     def available(self):
         now = timezone.now().date()
-        return self.filter(
-            ~Q(booking__check_in_date__lte=now, booking__check_out_date__gte=now) & 
-            ~Q(reservation__check_in_date__lte=now, reservation__check_out_date__gte=now) &
-            ~Q(room_status='occupied')
+        print(f"Fetching available rooms at {now}")
+
+        available_rooms = self.filter(
+            Q(room_status='vacant') | (
+                ~Q(booking__status__in=['pending', 'confirmed'], booking__check_in_date__lte=now, booking__check_out_date__gte=now) &
+                ~Q(reservation__status__in=['pending', 'confirmed'], reservation__check_in_date__lte=now, reservation__check_out_date__gte=now)
+            )
         ).distinct()
+
+        print(f"Available rooms: {[room.room_number for room in available_rooms]}")
+        return available_rooms
+
+
 
 class Room(models.Model):
     ROOM_STATUS_CHOICES = (
@@ -38,21 +46,33 @@ class Room(models.Model):
     room_image = models.ImageField(upload_to='media/room_images/', blank=True)
     capacity = models.IntegerField()
     description = models.TextField(blank=True)
-    objects = RoomManager()
     floor = models.IntegerField()
+    objects = RoomManager()
 
     def __str__(self):
         return self.room_number
 
     def update_room_status(self):
-        now = timezone.now()
-        if self.booking_set.filter(is_paid=False).exists() or self.reservation_set.filter(check_in_date__gt=now).exists():
+        now = timezone.now().date()
+        print(f"Updating room status for room {self.room_number}")
+        
+        if self.booking_set.filter(status='pending', check_out_date__gte=now).exists():
             self.room_status = 'reserved'
-        elif self.booking_set.filter(is_paid=True, check_out_date__gte=now).exists():
+        elif self.booking_set.filter(status='confirmed', check_out_date__gte=now).exists():
             self.room_status = 'occupied'
-        elif not self.booking_set.exists() and not self.reservation_set.filter(check_out_date__gte=now).exists():
+        elif self.reservation_set.filter(check_in_date__gt=now).exists():
+            self.room_status = 'reserved'
+        elif not self.booking_set.exclude(status='cancelled').exists() and not self.reservation_set.filter(check_out_date__gte=now).exists():
             self.room_status = 'vacant'
+        else:
+            self.room_status = 'vacant'
+        
+        print(f"Room {self.room_number} status updated to {self.room_status}")
         self.save()
+
+
+# Update room status when booking or reservation is saved
+
 
 
 
@@ -129,10 +149,15 @@ class Payment(models.Model):
         ('completed', 'Completed'),
         ('failed', 'Failed'),
     )
+    PAYMENT_METHOD_CHOICES = (
+        ('chapa', 'Chapa'),
+        ('paypal', 'PayPal'),
+    )
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE)
     payment_date = models.DateTimeField(auto_now_add=True)
     transaction_id = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='chapa')
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

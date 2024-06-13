@@ -18,29 +18,29 @@
 
 <div class="container mb-5">
     <h3 class="text-center mb-3" style="margin-top: 1rem;">Payment</h3>
-    <div class="row justify-content-center">
-        <!-- User Details Column -->
-        <div class="col-md-6 mt-3">
-            <div class="rounded border p-3">
-                <h5 class="mb-4"><i class="bi bi-file-earmark-person-fill"></i>&ensp;User Details</h5>
-                <p><i class="bi bi-person"></i>&ensp;First Name - {{ booking.user.first_name }}</p>
-                <p><i class="bi bi-person"></i>&ensp;Last Name - {{ booking.user.last_name }}</p>
-                <p><i class="bi bi-envelope-fill"></i>&ensp;Email - {{ booking.user.email }}</p>
-            </div>
-        </div>
-        <!-- Booking Details Column -->
-        <div class="col-md-6 mt-3">
-            <div class="rounded border p-3">
-                <h5 class="mb-4"><i class="bi bi-box-arrow-down"></i>&ensp;Booking Details</h5>
-                <p class="mb-2"><i class="bi bi-list-ol"></i>&ensp;Room Number - {{ booking.room }}</p>
-                <p class="mb-2"><i class="bi bi-calendar-plus-fill"></i>&ensp;Check-in Date - {{ booking.check_in_date }}</p>
-                <p class="mb-2"><i class="bi bi-calendar-minus-fill"></i>&ensp;Check-out Date -  {{ booking.check_out_date }}</p>
-                <p class="mb-2"><i class="bi bi-cash"></i>&ensp;Amount Due -  {{ amount }}</p>
-            </div>
+    <div class="row justify-content-center flex-container">
+    <!-- User Details Column -->
+    <div class="col-md-6 mt-3 flex-child">
+        <div class="rounded border p-3">
+            <h5 class="mb-4"><i class="bi bi-file-earmark-person-fill"></i>&ensp;User Details</h5>
+            <p><i class="bi bi-person"></i>&ensp;First Name - {{ booking.user.first_name }}</p>
+            <p><i class="bi bi-person"></i>&ensp;Last Name - {{ booking.user.last_name }}</p>
+            <p><i class="bi bi-envelope-fill"></i>&ensp;Email - {{ booking.user.email }}</p>
         </div>
     </div>
+    <!-- Booking Details Column -->
+    <div class="col-md-6 mt-3 flex-child">
+        <div class="rounded border p-3">
+            <h5 class="mb-4"><i class="bi bi-box-arrow-down"></i>&ensp;Booking Details</h5>
+            <p class="mb-2"><i class="bi bi-list-ol"></i>&ensp;Room Number - {{ booking.room }}</p>
+            <p class="mb-2"><i class="bi bi-calendar-plus-fill"></i>&ensp;Check-in Date - {{ booking.check_in_date }}</p>
+            <p class="mb-2"><i class="bi bi-calendar-minus-fill"></i>&ensp;Check-out Date -  {% if booking.extended_check_out_date %} {{booking.extended_check_out_date}} {% else %} {{ booking.check_out_date }} {% endif %}</p>
+            <p class="mb-2"><i class="bi bi-cash"></i>&ensp;Amount Due -  {{ amount }}</p>
+        </div>
+    </div>
+</div>
     <!-- Payment Form -->
-    <form method="post" enctype="multipart/form-data" target="_blank" class="mt-5">
+    <form id="paymentForm" method="post" enctype="multipart/form-data" class="mt-5">
         {% csrf_token %}
         <div class="row justify-content-center">
             <div class="col-md-6">
@@ -48,13 +48,13 @@
                     <h5 class="mb-4 text-center">Payment Method</h5>
                     <div class="d-flex flex-column align-items-center gap-3">
                         <label class="payment-option d-flex align-items-center w-75 justify-content-center rounded">
-                            <input type="radio" name="payment_method" value="chapa" hidden>
+                            <input id="chapaRadio" type="radio" name="payment_method" value="chapa" hidden>
                             <span class="custom-radio"></span>
                             <img src="{% static 'images/chapa-logo.png' %}" alt="Chapa" style="height: 30px; margin-left: 10px;">
                             <span class="ml-3">Chapa</span>
                         </label>
                         <label class="payment-option d-flex align-items-center w-75 justify-content-center rounded">
-                            <input type="radio" name="payment_method" value="paypal" hidden checked>
+                            <input id="paypalRadio" type="radio" name="payment_method" value="paypal" hidden checked>
                             <span class="custom-radio"></span>
                             <img src="{% static 'images/paypal-logo.png' %}" alt="PayPal" style="height: 30px; margin-left: 10px;">
                             <span class="ml-3">PayPal</span>
@@ -87,6 +87,14 @@
             });
         });
     });
+    document.getElementById('paymentForm').addEventListener('submit', function(event) {
+    var chapaRadio = document.getElementById('chapaRadio');
+    if (chapaRadio.checked) {
+        this.target = '_blank';
+    } else {
+        this.target = '_self';
+    }
+});
 </script>
 
 <style>

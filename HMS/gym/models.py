@@ -10,7 +10,6 @@ class MembershipPlan(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     duration_months = models.PositiveIntegerField()  # Duration of the plan in months
     description = models.TextField()
-    features = models.TextField(null=True, blank=True)  # Additional field for plan features
 
     def __str__(self):
         return self.name

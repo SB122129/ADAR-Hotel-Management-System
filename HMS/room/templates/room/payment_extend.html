@@ -1,5 +1,6 @@
 {% extends "accountss/base.html" %}
 {% block content %}
+{% load static %}
 <div class="container w-50" style="margin-top: 7rem;">
 
     <h3 class="text-center mb-3">Payment for Extended Stay</h3>
@@ -20,22 +21,63 @@
     </div>
 {% endif %}
 
-<form method="post" target="_blank" id="paymentForm">
+
+
+
+<form id="paymentForm" method="post" enctype="multipart/form-data"  class="mt-5">
     {% csrf_token %}
-    <div class="d-flex justify-content-center ">
-        <button type="submit" class="btn btn-sm mt-4 rounded w-50 btn-success" id="payButton">Pay with Chapa</button>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card p-4 rounded">
+                <h5 class="mb-4 text-center">Payment Method</h5>
+                <div class="d-flex flex-column align-items-center gap-3">
+                    <label class="payment-option d-flex align-items-center w-75 justify-content-center rounded">
+                        <input id="chapaRadio" type="radio" name="payment_method" value="chapa" hidden>
+                        <span class="custom-radio"></span>
+                        <img src="{% static 'images/chapa-logo.png' %}" alt="Chapa" style="height: 30px; margin-left: 10px;">
+                        <span class="ml-3">Chapa</span>
+                    </label>
+                    <label class="payment-option d-flex align-items-center w-75 justify-content-center rounded">
+                        <input id="paypalRadio" type="radio" name="payment_method" value="paypal" hidden checked>
+                        <span class="custom-radio"></span>
+                        <img src="{% static 'images/paypal-logo.png' %}" alt="PayPal" style="height: 30px; margin-left: 10px;">
+                        <span class="ml-3">PayPal</span>
+                    </label>
+                </div>
+            </div>
+            <div class="d-flex justify-content-center mt-4">
+                <button class="btn btn-success w-100 rounded" type="submit">Proceed to Payment</button>
+            </div>
+        </div>
     </div>
-    <div class="d-flex justify-content-center">
-    <a href="{% url 'bookings' %}" class="btn btn-sm mt-4 rounded w-50 btn-primary"id="goButton" style="display: none;">Go to Bookings</a>
-</div>
 </form>
 
-<script>
-    document.getElementById('paymentForm').addEventListener('submit', function(e) {
-        document.getElementById('payButton').disabled = true;
-        document.getElementById('goButton').style.display = 'block';
-    });
-</script>
 </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const options = document.querySelectorAll('.payment-option');
+        
+        options.forEach(option => {
+            option.addEventListener('click', function() {
+                options.forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                this.querySelector('input').checked = true;
+            });
+        });
+    });
     
+document.getElementById('paymentForm').addEventListener('submit', function(event) {
+    var chapaRadio = document.getElementById('chapaRadio');
+    if (chapaRadio.checked) {
+        this.target = '_blank';
+    } else {
+        this.target = '_self';
+    }
+});
+</script>
+
+
+
 {% endblock %}

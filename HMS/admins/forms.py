@@ -2,7 +2,8 @@ from django import forms
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from room.models import *
-
+from django import forms
+from gym.models import MembershipPlan
 class CategoryForm(forms.ModelForm):
     name_regex = RegexValidator(
         regex=r'^[a-zA-Z]{3,10}$',
@@ -56,3 +57,14 @@ class RoomForm(forms.ModelForm):
     class Meta:
         model = Room
         fields = ['room_number', 'room_type', 'price_per_night', 'discount', 'room_image', 'capacity', 'description', 'floor']    
+
+
+
+
+
+# forms.py
+
+class MembershipPlanForm(forms.ModelForm):
+    class Meta:
+        model = MembershipPlan
+        fields = ['name', 'price', 'duration_months', 'description']

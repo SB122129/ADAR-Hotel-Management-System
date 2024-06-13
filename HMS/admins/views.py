@@ -7,6 +7,7 @@ from social_media.models import *
 from .mixins import OwnerRequiredMixin
 from django.shortcuts import render
 from django import forms
+from gym.models import *
 from .forms import *
 
 # Custom User Views
@@ -194,6 +195,9 @@ class RoomDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     template_name = 'admins/room_confirm_delete.html'
     success_url = reverse_lazy('admins:room_list')
 
+
+
+
 # Booking Views
 class BookingListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
     model = Booking
@@ -225,6 +229,50 @@ class BookingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     success_url = reverse_lazy('admins:booking_list')
 
 # Reservation Views
+
+
+
+class MembershipPlanListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
+    model = MembershipPlan
+    template_name = 'admins/membership_plan_list.html'
+    context_object_name = 'plans'
+
+    def get_queryset(self):
+        return MembershipPlan.objects.order_by('id')
+
+
+class MembershipPlanDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
+    model = MembershipPlan
+    template_name = 'admins/membership_plan_detail.html'
+
+
+class MembershipPlanCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
+    model = MembershipPlan
+    template_name = 'admins/membership_plan_form.html'
+    form_class = MembershipPlanForm
+    success_url = reverse_lazy('admins:membership_plan_list')
+
+
+class MembershipPlanUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+    model = MembershipPlan
+    template_name = 'admins/membership_plan_form.html'
+    form_class = MembershipPlanForm
+    success_url = reverse_lazy('admins:membership_plan_list')
+
+
+class MembershipPlanDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
+    model = MembershipPlan
+    template_name = 'admins/membership_plan_confirm_delete.html'
+    success_url = reverse_lazy('admins:membership_plan_list')
+
+
+
+
+
+
+
+
+
 class ReservationListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
     model = Reservation
     template_name = 'admins/reservation_list.html'
