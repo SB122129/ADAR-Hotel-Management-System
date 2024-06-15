@@ -18,6 +18,7 @@ urlpatterns = [
     path('social/', include('social_django.urls', namespace='social')),
     path('gym', include('gym.urls')),
     path('', include('paypal.standard.ipn.urls')),
+    path('telegram/', include('telegram_bot.urls')),
     
     
 ]

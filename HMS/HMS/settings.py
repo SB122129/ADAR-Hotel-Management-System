@@ -27,26 +27,26 @@ SECRET_KEY = 'django-insecure-kvg73ir99on-u4xg=d#))cu8bfm*ig8(hvrb8xj$n$h=@5=(bj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-    },
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level': 'DEBUG',
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG',
+#             'propagate': True,
+#         },
+#     },
+# }
 
 # settings.py
 
@@ -63,28 +63,18 @@ MESSAGE_TAGS = {
 
 ALLOWED_HOSTS = [ '*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://12b9-102-218-51-161.ngrok-free.app',
+    'https://4302-102-218-50-52.ngrok-free.app',
     'http://127.0.0.1:8000/',
 ]
 import paypalrestsdk
 from django.conf import settings
 
 
-# PAYPAL_CLIENT_ID='AYNPJUQasP8KSVVXj-LE0yJ5XVoI53hoXTf2NJm5R4bNHUsvaA9eV-EexHSoUtqDbO4qfdNDC8KPcCwY'
-# PAYPAL_CLIENT_SECRET='EE2-V7XWYHZ-xGMsR1FrLrhPOPIBdZ4t-idAnNt6DI8_xvFzmAu0PatzLJk5PbFp1dTT99OBuKb6Zz1V'
-# PAYPAL_TEST = True
-# paypalrestsdk.configure({
-#     "mode": "sandbox",  # or "live"
-#     "client_id": settings.PAYPAL_CLIENT_ID,
-#     "client_secret": settings.PAYPAL_CLIENT_SECRET,
-# })
-
-# PAYPAL_RECEIVER_EMAIL = 'merchant33@gmail.com'
-
+TELEGRAM_BOT_TOKEN='7334373491:AAGp_FxEOXa18iOMTCdNYsNOYkcFBvob3ls'
 
 CSRF_COOKIE_SECURE = False
 CSRF_USE_SESSIONS = False
-
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 # Application definition
 
 INSTALLED_APPS = [
@@ -111,7 +101,7 @@ INSTALLED_APPS = [
     'gym',
     'django_countries',
     'paypal.standard.ipn',
-    
+    'telegram_bot'
     
 ]
 

@@ -3,7 +3,6 @@
 {% block content %}
 <script src="https://code.highcharts.com/highcharts.js"></script>
 
-    
 <style>
     #container {
         width: 100%;
@@ -11,35 +10,15 @@
         margin: 0 auto;
     }
 </style>
-</head>
-<body>
+
 <div id="roomTypePopularityChart"></div>
 <div id="revenueByRoomTypeChart"></div>
-    
-<div id="roomAvailabilityChart"></div>
 <div id="bookingTrendsChart"></div>
 <div id="revenueTrendsChart"></div>
-<div id="bookingStatusChart"></div>
-<div id="paymentStatusChart"></div>
 
 <script>
     Highcharts.setOptions({
         colors: ['#FFD700', '#000000']
-    });
-
-    // Room Availability Chart
-    Highcharts.chart('roomAvailabilityChart', {
-        chart: {
-            type: 'pie'
-        },
-        title: {
-            text: 'Room Availability'
-        },
-        series: [{
-            name: 'Rooms',
-            colorByPoint: true,
-            data: {{ room_status_data|safe }}
-        }]
     });
 
     // Booking Trends Chart
@@ -73,36 +52,6 @@
         series: [{
             name: 'Revenue',
             data: {{ revenue_trends_data|safe }}
-        }]
-    });
-
-    // Booking Status Chart
-    Highcharts.chart('bookingStatusChart', {
-        chart: {
-            type: 'pie'
-        },
-        title: {
-            text: 'Booking Status'
-        },
-        series: [{
-            name: 'Bookings',
-            colorByPoint: true,
-            data: {{ booking_status_data|safe }}
-        }]
-    });
-
-    // Payment Status Chart
-    Highcharts.chart('paymentStatusChart', {
-        chart: {
-            type: 'pie'
-        },
-        title: {
-            text: 'Payment Status'
-        },
-        series: [{
-            name: 'Payments',
-            colorByPoint: true,
-            data: {{ payment_status_data|safe }}
         }]
     });
 

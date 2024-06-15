@@ -9,7 +9,7 @@
         <div class="row h-100 align-items-center">
             <div class="col-12 text-center">
                 <h2 class="font-weight-light text-light">Rooms</h2>
-                <p class=" text-light">We hope you’ll enjoy your stay</p>
+                <p class="text-light">We hope you’ll enjoy your stay</p>
             </div>
         </div>
     </div>
@@ -17,50 +17,67 @@
 
 <!-- End of Header -->
 
-<!-- Subtitle -->
-
-
-
-<!-- End of Subtitle -->
+<!-- Filter Form -->
+<div class="container mb-5">
+    <form method="get" class="form-inline justify-content-center" id="filter-form">
+        <div class="form-group mx-2">
+            <label for="price" class="sr-only">Max Price</label>
+            <select name="price" id="price" class="form-control form-control-sm rounded ">
+                <option value="">Select Max Price</option>
+                {% for price in price_range %}
+                    <option value="{{ price }}" {% if request.GET.price == price|stringformat:"s" %}selected{% endif %}>ETB {{ price }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group mx-2">
+            <label for="room_type" class="sr-only">Room Type</label>
+            <select name="room_type" id="room_type" class="form-control form-control-sm rounded">
+                <option value="">All Room Types</option>
+                {% for type in room_types %}
+                    <option value="{{ type.id }}" {% if request.GET.room_type == type.id|stringformat:"s" %}selected{% endif %}>{{ type.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
+<!-- End of Filter Form -->
 
 {% if rooms %}
 <div class="container">
   <div class="row">
       {% for room in rooms %}
-      <div class="col-md-6 d-block-sm p-5   mb-4">
+      <div class="col-md-6 d-block-sm p-5 mb-4">
         <img src="{{ room.room_image.url }}" alt="{{ room.room_type.name }}" class="img-fluid rounded">
-        <h3><strong>{{ room.room_type.name}} Suite</strong></h3>
-        <p class="">{{ room.description|truncatewords:20 }}</p>
-        <p><strong> Room Number</strong>&ensp; {{ room.room_number }}</p>
-          <p><strong>Price per night</strong>&ensp; ETB {{ room.price_per_night }}</p>
-          <p><strong>Capacity</strong>&ensp; {{ room.capacity }} guests</p>
+        <h3><strong>{{ room.room_type.name }} Suite</strong></h3>
+        <p>{{ room.description|truncatewords:20 }}</p>
+        <p><strong>Room Number</strong> {{ room.room_number }}</p>
+        <p><strong>Price per night</strong> ETB {{ room.price_per_night }}</p>
+        <p><strong>Capacity</strong> {{ room.capacity }} guests</p>
 
-
-          <div class="mt-auto d-flex justify-content-center">
+        <div class="mt-auto d-flex justify-content-center">
             <a href="{% url 'room_detail' room.id %}" class="btn btn-sm btn-warning pb-1 w-50 my-4 text-uppercase rounded">Details</a>&ensp;
             <a href="{% url 'booking_create' room.id %}" class="btn btn-sm btn-success pb-1 w-50 my-4 text-uppercase rounded">Book now</a>
         </div>
-
-          
       </div>
       {% endfor %}
   </div>
 </div>
-
-  <!-- Rooms Listing code here -->
 {% else %}
-
-<div class="alert-danger text-center d-flex justify-content-center m-3">
+<div class="alert alert-danger text-center d-flex justify-content-center m-3">
   <h5 class="m-3">No rooms available.</h5>
 </div>
-  {% endif %}
+{% endif %}
 <!-- Rooms Listing -->
-<script>
-    document.getElementById('check_in_date{{ room.id }}').addEventListener('change', function() {
-        document.getElementById('check_out_date{{ room.id }}').min = this.value;
-    });
-    </script>
 
-<!-- End of Rooms Listing -->
+<script>
+    document.getElementById('price').addEventListener('change', function() {
+        document.getElementById('room_type').selectedIndex = 0;  // Reset room type to "All Room Types"
+        document.getElementById('filter-form').submit();
+    });
+
+    document.getElementById('room_type').addEventListener('change', function() {
+        document.getElementById('filter-form').submit();
+    });
+</script>
 
 {% endblock content %}

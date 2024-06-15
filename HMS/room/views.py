@@ -6,6 +6,7 @@ from .models import Room, Booking, Reservation, Payment, RoomRating,Receipt
 from .forms import BookingForm, ReservationForm, RoomRatingForm
 import requests
 import random
+from django.db.models import Min, Max
 from django.http import JsonResponse
 from django.http import HttpResponseRedirect
 import string
@@ -16,7 +17,7 @@ from django.dispatch import receiver
 import requests
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.generic.edit import FormView
-from .models import Payment, Booking
+from .models import *
 from django.contrib.sites.models import Site
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -56,11 +57,30 @@ class RoomListView(ListView):
     context_object_name = 'rooms'
 
     def get_queryset(self):
-        return Room.objects.available().filter(room_status='vacant')
+        queryset = Room.objects.available().filter(room_status='vacant')
+        price = self.request.GET.get('price')
+        room_type = self.request.GET.get('room_type')
+        
+        if price:
+            queryset = queryset.filter(price_per_night__lte=price)
+        if room_type:
+            queryset = queryset.filter(room_type__id=room_type)
+        
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['today'] = timezone.now().date()
+        context['room_types'] = Category.objects.all()  # Assuming Category is your room type model
+
+        min_price = Room.objects.aggregate(Min('price_per_night'))['price_per_night__min']
+        max_price = Room.objects.aggregate(Max('price_per_night'))['price_per_night__max']
+
+        if min_price is not None and max_price is not None:
+            context['price_range'] = range(int(min_price), int(max_price) + 1, 100)  # Adjust the step as needed
+        else:
+            context['price_range'] = []
+
         return context
 
 def about(request):
@@ -234,7 +254,7 @@ class PaymentExtendView(View):
         current_site = Site.objects.get_current()
         relative_url = reverse('bookings')
         redirect_url = f'https://{current_site.domain}{relative_url}'
-        webhook_url = 'https://b3aa-102-218-51-28.ngrok-free.app/room/chapa-webhook/'
+        webhook_url = 'https://4302-102-218-50-52.ngrok-free.app/room/chapa-webhook/'
 
         payload = {
             "amount": amount,
@@ -261,9 +281,9 @@ class PaymentExtendView(View):
             return HttpResponse(response)
 
     def process_paypal_payment(self, booking, amount):
-        # if booking.is_paid or booking.status != 'pending':
-        #     messages.warning(self.request, 'Payment already completed')
-        #     return render(self.request, self.template_name, self.get_context_data(booking=booking))
+        if booking.is_paid or booking.status != 'pending':
+            messages.warning(self.request, 'Payment already completed')
+            return render(self.request, self.template_name, self.get_context_data(booking=booking))
         
         paypalrestsdk.configure({
             "mode": "sandbox",  # sandbox or live
@@ -276,8 +296,8 @@ class PaymentExtendView(View):
             "payer": {
                 "payment_method": "paypal"},
             "redirect_urls": {
-                "return_url": f"https://12b9-102-218-51-161.ngrok-free.app/room/paypal-return/?booking_id={booking.id}",
-                "cancel_url": f"https://12b9-102-218-51-161.ngrok-free.app/room/paypal-cancel/?booking_id={booking.id}"},
+                "return_url": f"https://4302-102-218-50-52.ngrok-free.app/room/paypal-return/?booking_id={booking.id}",
+                "cancel_url": f"https://4302-102-218-50-52.ngrok-free.app/room/paypal-cancel/?booking_id={booking.id}"},
             "transactions": [{
                 "item_list": {
                     "items": [{
@@ -357,10 +377,8 @@ class PaymentView(View):
         self.booking.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
-        current_site = Site.objects.get_current()
-        relative_url = reverse('bookings')
-        redirect_url = f'https://12b9-102-218-51-161.ngrok-free.app/room/bookings'
-        webhook_url = f'https://12b9-102-218-51-161.ngrok-free.app/room/chapa-webhook/'
+        redirect_url = f'https://4302-102-218-50-52.ngrok-free.app/room/bookings'
+        webhook_url = f'https://4302-102-218-50-52.ngrok-free.app/room/chapa-webhook/'
         payload = {
             "amount": amount,
             "currency": "ETB",
@@ -401,8 +419,8 @@ class PaymentView(View):
             "payer": {
                 "payment_method": "paypal"},
             "redirect_urls": {
-                "return_url": f"https://12b9-102-218-51-161.ngrok-free.app/room/paypal-return/?booking_id={self.booking.id}",
-                "cancel_url": f"https://12b9-102-218-51-161.ngrok-free.app/room/paypal-cancel/?booking_id={self.booking.id}"},
+                "return_url": f"http://4302-102-218-50-52.ngrok-free.app/room/paypal-return/?booking_id={self.booking.id}",
+                "cancel_url": f"http://4302-102-218-50-52.ngrok-free.app/room/paypal-cancel/?booking_id={self.booking.id}"},
             "transactions": [{
                 "item_list": {
                     "items": [{
@@ -446,6 +464,7 @@ class PayPalReturnView(View):
             if payment.state == "approved":
                 booking.is_paid = True
                 booking.status = 'confirmed'
+                # booking.room.status='occupied'
                 booking.save()
                 payment, created = Payment.objects.get_or_create(
                             booking=booking,
@@ -459,10 +478,10 @@ class PayPalReturnView(View):
                 return redirect('bookings')
             else:
                 messages.error(request, 'Payment was not successful.')
-                return redirect('payment_page', booking_id=booking.id)
+                return redirect('payment_create', booking_id=booking.id)
         else:
             messages.error(request, 'There was an issue with your PayPal payment.')
-            return redirect('payment_page', booking_id=booking.id)
+            return redirect('payment_create', booking_id=booking.id)
 
 class PayPalCancelView(View):
     def get(self, request, *args, **kwargs):
@@ -522,8 +541,6 @@ class ChapaWebhookView(View):
         if booking.extended_check_out_date:
             print(booking.check_out_date)
             print(booking.extended_check_out_date)
-
-            # booking.check_out_date = booking.extended_check_out_date
             print(booking.check_out_date)
         booking.room.room_status = 'occupied'
         booking.room.save()
