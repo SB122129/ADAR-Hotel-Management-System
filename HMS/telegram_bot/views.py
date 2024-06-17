@@ -29,7 +29,8 @@ from accountss.models import Custom_user
 logger = logging.getLogger(__name__)
 
 # Define states
-EMAIL, MENU, ROOM_SELECTION, CHECK_IN_DATE, CHECK_OUT_DATE, GUESTS, PAYMENT_METHOD, MY_BOOKINGS,PENDING_PAYMENT_PROCESS,PENDING_PAYMENTS = range(10)
+EMAIL, MENU, ROOM_SELECTION, CHECK_IN_DATE, CHECK_OUT_DATE, GUESTS, PAYMENT_METHOD, MY_BOOKINGS, PENDING_PAYMENT_PROCESS, PENDING_PAYMENTS, CANCEL_BOOKING = range(11)
+
 
 # Helper function to generate the main menu buttons
 # Helper function to generate the main menu buttons
@@ -38,9 +39,11 @@ def get_main_menu_buttons():
         [InlineKeyboardButton("Start Booking", callback_data='start_booking')],
         [InlineKeyboardButton("My Bookings", callback_data='my_bookings')],
         [InlineKeyboardButton("Pending Payments", callback_data='pending_payments')],
+        [InlineKeyboardButton("Cancel Booking", callback_data='cancel_booking')],
         [InlineKeyboardButton("Restart", callback_data='restart')]
     ]
     return InlineKeyboardMarkup(buttons)
+
 
 
 # Command to start the conversation and ask for email
@@ -70,6 +73,7 @@ async def email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 # Handle menu selection
+# Handle menu selection
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
@@ -81,8 +85,11 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         return await my_bookings(update, context)
     elif action == 'pending_payments':
         return await pending_payments(update, context)
+    elif action == 'cancel_booking':
+        return await cancel_booking(update, context)
     elif action == 'restart':
         return await restart_bot(update, context)
+
 
 
 # Start the booking process
@@ -334,7 +341,12 @@ async def pending_payments(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
         if not bookings:
             await query.message.reply_text('You have no pending payments.')
+            await query.message.reply_text(
+            'What would you like to do next?',
+            reply_markup=get_main_menu_buttons()
+                )
             return MENU
+            
 
         for booking in bookings:
             room = booking.room
@@ -442,7 +454,81 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
     return ConversationHandler.END
 
-# Handle bot restart
+
+# Display user's bookings and ask which one to cancel
+async def cancel_booking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+
+    user = context.user_data.get('user')
+
+    if not user:
+        await query.message.reply_text('User not found. Please restart the bot and enter your email.')
+        return ConversationHandler.END
+
+    try:
+        bookings = await sync_to_async(list)(Booking.objects.filter(user=user, status='confirmed'))
+
+        if not bookings:
+            await query.message.reply_text('You have no confirmed bookings to cancel.')
+            return MENU
+
+        for booking in bookings:
+            room = booking.room
+            message = (
+                f"Booking ID: {booking.id}\n"
+                f"Room Number: {room.room_number}\n"
+                f"Room Type: {room.room_type.name}\n"
+                f"Check-in Date: {booking.check_in_date}\n"
+                f"Check-out Date: {booking.check_out_date}\n"
+                f"Total Amount: ${booking.total_amount}\n"
+                f"Payment Status: {booking.status}\n\n"
+            )
+            await query.message.reply_text(
+                message,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("Cancel Booking", callback_data=f'cancel_{booking.id}')]
+                ])
+            )
+
+        return CANCEL_BOOKING
+
+    except Exception as e:
+        logger.error(f"Error fetching bookings: {e}")
+        await query.message.reply_text('An error occurred while fetching your bookings. Please try again later.', reply_markup=get_main_menu_buttons())
+        return MENU
+
+# Handle the actual cancellation
+async def confirm_cancellation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    
+    # Extract booking ID from callback data
+    callback_data = query.data
+    booking_id = int(callback_data.split('_')[-1])
+    
+    # Find the booking with the given ID
+    booking = await sync_to_async(Booking.objects.get)(id=booking_id)
+    
+    # Change the status to 'cancelled'
+    
+    booking.status = 'cancelled'
+    await sync_to_async(booking.save)(bypass_validation=True)
+    
+    await query.message.reply_text(f'Booking ID {booking.id} has been cancelled successfully.')
+    
+    await query.message.reply_text(
+        'What would you like to do next?',
+        reply_markup=get_main_menu_buttons()
+    )
+    
+    return MENU
+
+
+
+
+
+
 async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.callback_query.message.reply_text('Bot restarted. Please enter your email to start booking:')
     return EMAIL
@@ -459,7 +545,7 @@ async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 def set_webhook():
     application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
     application.bot.set_webhook(url='https://4302-102-218-50-52.ngrok-free.app/telegram/webhook/')
-# View to start the bot
+
 @csrf_exempt
 def start_bot(request):
     def run_bot():
@@ -480,7 +566,8 @@ def start_bot(request):
                 PAYMENT_METHOD: [CallbackQueryHandler(payment_method)],
                 MY_BOOKINGS: [CallbackQueryHandler(my_bookings)],
                 PENDING_PAYMENTS: [CallbackQueryHandler(pending_payments)],
-                PENDING_PAYMENT_PROCESS: [CallbackQueryHandler(pay_pending)]
+                PENDING_PAYMENT_PROCESS: [CallbackQueryHandler(pay_pending)],
+                CANCEL_BOOKING: [CallbackQueryHandler(confirm_cancellation)]
             },
             fallbacks=[
                 CommandHandler('cancel', cancel),
@@ -496,3 +583,4 @@ def start_bot(request):
     bot_thread.start()
 
     return HttpResponse('Bot started')
+

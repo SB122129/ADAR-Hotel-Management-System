@@ -126,7 +126,18 @@ class Booking(models.Model):
             # Calculate amount based on price per night and duration
             self.total_amount = self.room.price_per_night * duration
 
-        super().save(*args, **kwargs)
+        bypass_validation = kwargs.pop('bypass_validation', False)
+        if bypass_validation:
+            # Disconnect the signal
+            was_disconnected = models.signals.pre_save.disconnect(sender=Booking)
+            try:
+                super().save(*args, **kwargs)
+            finally:
+            # Reconnect the signal if it was disconnected
+                if was_disconnected:
+                    models.signals.pre_save.connect(sender=Booking)
+        else:
+            super().save(*args, **kwargs)
         # self.room.update_room_status()
 
     def delete(self, *args, **kwargs):
