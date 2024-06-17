@@ -6,7 +6,7 @@
 
   <div class="container  mt-5 mb-5">
     <div class="row">
-        <div class="col-6 mt-4">
+        <div class="col-md-6 mt-4">
             <div class="alert alert-light rounded" role="alert">
                 <img alt="" style="width: 400px;height: 400px;object-fit: cover;" title="" class="rounded img-thumbnail isTooltip mt-5 mb-3" src="{% if room_image %}{{ room_image.url }}{% else %}https://bootdey.com/img/Content/avatar/avatar7.png{% endif %}" data-original-title="Usuario">
                 
@@ -14,7 +14,7 @@
                 <h4 class=""><strong>Room Type     &emsp;&emsp;     {{ room_type }} Suite</strong></h4>
                  </div>
         </div>
-        <div class="col-6 mt-5">
+        <div class="col-md-6 mt-5">
             <form method="post" enctype="multipart/form-data" class="mt-5">
                 {% csrf_token %}
                 {% if form.non_field_errors %}

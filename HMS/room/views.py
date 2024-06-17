@@ -37,6 +37,7 @@ from datetime import timedelta, date
 from django.db import transaction
 from django.db.models import Q
 import json
+from gym.models import *
 import logging
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
@@ -145,7 +146,8 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         form.instance.user = self.request.user
         form.instance.room = room
         form.instance.status = 'pending'
-        form.instance.tx_ref = f"{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+        form.instance.tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+
         self.object = form.save()
         return redirect('payment_create', booking_id=self.object.id)
 
@@ -223,7 +225,7 @@ class PaymentExtendView(View):
             booking.status = 'pending'
             booking.save()
             amount = str(booking.calculate_additional_amount())
-            tx_ref = f"{booking.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+            tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
             booking.tx_ref = tx_ref
             booking.save()
 
@@ -372,7 +374,7 @@ class PaymentView(View):
             messages.warning(self.request, 'Payment already completed')
             return render(self.request, self.template_name, self.get_context_data())
         amount = str(self.booking.total_amount)
-        tx_ref = f"{self.booking.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+        tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
         self.booking.tx_ref = tx_ref  # Store the new tx_ref in booking
         self.booking.save()
 
@@ -505,6 +507,16 @@ class ChapaWebhookView(View):
             print("Invalid tx_ref")
             return HttpResponseBadRequest("Invalid tx_ref")
 
+        # Determine payment type by tx_ref prefix
+        if tx_ref.startswith('booking'):
+            return self.process_booking_payment(tx_ref, payload)
+        elif tx_ref.startswith('membership'):
+            return self.process_membership_payment(tx_ref, payload)
+        else:
+            print("Invalid tx_ref prefix")
+            return HttpResponseBadRequest("Invalid tx_ref prefix")
+
+    def process_booking_payment(self, tx_ref, payload):
         try:
             booking = Booking.objects.get(tx_ref=tx_ref)
         except Booking.DoesNotExist:
@@ -538,16 +550,50 @@ class ChapaWebhookView(View):
         # Update booking and room status
         booking.is_paid = True
         booking.status = 'confirmed'
-        if booking.extended_check_out_date:
-            print(booking.check_out_date)
-            print(booking.extended_check_out_date)
-            print(booking.check_out_date)
         booking.room.room_status = 'occupied'
         booking.room.save()
         booking.save()
         print("Booking and room updated")
 
-        return HttpResponse("Webhook processed successfully")
+        return HttpResponse("Booking webhook processed successfully")
+
+    def process_membership_payment(self, tx_ref, payload):
+        try:
+            membership = Membership.objects.get(tx_ref=tx_ref)
+        except Membership.DoesNotExist:
+            print("Membership not found")
+            return HttpResponseNotFound("Membership not found")
+        except Membership.MultipleObjectsReturned:
+            print("Multiple memberships found")
+            return HttpResponseServerError("Multiple memberships found")
+
+        print("Membership found:", membership)
+
+        # Check if a payment already exists for this membership
+        membership_payment, created = MembershipPayment.objects.get_or_create(
+            membership=membership,
+            defaults={
+                'status': 'completed',
+                'transaction_id': tx_ref,
+                'amount': payload.get('amount')
+            }
+        )
+
+        if not created:
+            print("Payment already exists for this membership.")
+            # Update payment status if necessary
+            membership_payment.status = 'completed'
+            membership_payment.transaction_id = tx_ref
+            membership_payment.save()
+
+        print("Payment record created or updated:", membership_payment)
+
+        # Update membership status
+        membership.is_active = True
+        membership.save()
+        print("Membership updated")
+
+        return HttpResponse("Membership webhook processed successfully")
 
 
         

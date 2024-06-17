@@ -1,17 +1,60 @@
-<!-- membership_signup.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Membership Signup</title>
-</head>
-<body>
-    <h1>Sign Up for {{ plan.name }}</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Pay {{ plan.price }} ETB with Chapa</button>
-    </form>
-</body>
-</html>
+<!-- templates/gym/membership_signup.html -->
+{% extends 'accountss/base.html' %}
+{% load widget_tweaks %}
+
+{% block content %}
+
+<div class="container" style="margin-top: 7rem;">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }}">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 d-flex">
+            <div class="card flex-fill rounded">
+                <div class="card-body">
+                    <h3 class="card-title">{{ plan.name }}</h3>
+                    <p class="card-text">{{ plan.description }}</p>
+                    <p class="card-text">Price: {{ plan.price }} ETB</p>
+                    <p class="card-text">Duration: {{ plan.duration_months }} months</p>
+                    <p class="card-text">Start Date: {{ start_date }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 d-flex">
+            <div class="card flex-fill rounded">
+                <div class="card-body">
+                    <h3 class="card-title">Sign Up for Membership</h3>
+                    <form method="post" enctype="multipart/form-data" target="_blank">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            {% if field.name != 'start_date' and field.name != 'plan_id' %}
+                                <div class="mb-3">
+                                    <label class="mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    {{ field|add_class:"form-control" }}
+                                    {% if field.errors %}
+                                        <div class="alert alert-danger mt-2">
+                                            {{ field.errors|first }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        <div class="d-flex justify-content-center">
+                            <button type="submit" class="btn btn-success w-50 rounded mt-5">Sign up</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

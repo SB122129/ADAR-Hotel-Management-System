@@ -1,0 +1,50 @@
+{% extends 'accountss/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container" style="margin-top: 7rem;">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }}">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+<div class="container">
+    <h3 class="mb-3">My Memberships</h3>
+    {% if memberships %}
+        <div class="row">
+            {% for membership in memberships %}
+            {% if not membership.is_cancelled %}
+                <div class="col-md-4 d-flex">
+                    <div class="card mb-4 rounded flex-fill d-flex flex-column">
+                        <div class="card-body rounded d-flex flex-column">
+                            <h4 class="card-title">{{ membership.plan.name }}</h4>
+                            <p class="card-text small">{{ membership.plan.description }}</p>
+                            <p class="card-text">Start Date: {{ membership.start_date }}</p>
+                            <p class="card-text">End Date: {{ membership.end_date }}</p>
+                            <p class="card-text">Status: {% if membership.is_active %}Active{% else %}Inactive{% endif %}</p>
+                            <div class="mt-auto">
+                                {% if not membership.is_active %}
+                                <a href="{% url 'membership_signup' membership.plan.id %}?membership_id={{ membership.id }}&start_date={{ membership.start_date|date:'Y-m-d' }}" class="btn btn-sm btn-success rounded btn-primary">Pay</a>
+                                {% endif %}
+                                <form method="post" action="{% url 'cancel_membership' membership.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger rounded">Cancel</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>You do not have any memberships.</p>
+    {% endif %}
+</div>
+{% endblock content %}

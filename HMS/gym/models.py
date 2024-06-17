@@ -20,6 +20,8 @@ class Membership(models.Model):
     start_date = models.DateField(auto_now_add=True)
     end_date = models.DateField()
     is_active = models.BooleanField(default=False)
+    is_cancelled = models.BooleanField(default=False)
+    tx_ref = models.CharField(max_length=100, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)  # Additional field to track when the membership was created
 
     def save(self, *args, **kwargs):
