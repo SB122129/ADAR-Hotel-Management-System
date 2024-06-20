@@ -118,27 +118,33 @@ class Booking(models.Model):
             raise ValidationError('Extended check-out date must be after the current check-out date.')
 
     def save(self, *args, **kwargs):
-        self.full_clean()  # Call clean method to perform validations
-
-        if self.pk is None:  # Only calculate amount if it's a new instance
-            # Calculate duration of stay
-            duration = (self.check_out_date - self.check_in_date).days
-            # Calculate amount based on price per night and duration
-            self.total_amount = self.room.price_per_night * duration
+        
 
         bypass_validation = kwargs.pop('bypass_validation', False)
         if bypass_validation:
-            # Disconnect the signal
-            was_disconnected = models.signals.pre_save.disconnect(sender=Booking)
-            try:
-                super().save(*args, **kwargs)
-            finally:
-            # Reconnect the signal if it was disconnected
-                if was_disconnected:
-                    models.signals.pre_save.connect(sender=Booking)
-        else:
+            # Temporarily disable the clean method to bypass validation
+            self._disable_validation()
             super().save(*args, **kwargs)
-        # self.room.update_room_status()
+            # Restore the clean method after saving
+            self._restore_validation()
+        else:
+            self.full_clean()  # Call clean method to perform validations
+
+            if self.pk is None:  # Only calculate amount if it's a new instance
+            # Calculate duration of stay
+                duration = (self.check_out_date - self.check_in_date).days
+            # Calculate amount based on price per night and duration
+                self.total_amount = self.room.price_per_night * duration
+            # Perform regular save with validation
+            super().save(*args, **kwargs)
+    
+    def _disable_validation(self):
+        self._clean = self.clean
+        self.clean = lambda: None
+
+    def _restore_validation(self):
+        self.clean = self._clean
+        del self._clean   # self.room.update_room_status()
 
     def delete(self, *args, **kwargs):
         room = self.room

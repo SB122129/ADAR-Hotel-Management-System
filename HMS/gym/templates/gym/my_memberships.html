@@ -16,7 +16,6 @@
 </div>
 <div class="container">
     <h3 class="mb-3">My Memberships</h3>
-    {% if memberships %}
         <div class="row">
             {% for membership in memberships %}
             {% if not membership.is_cancelled %}
@@ -41,10 +40,13 @@
                     </div>
                 </div>
             {% endif %}
+            {% empty %}
+            <div class="container d-flex justify-content-center">
+                <div class="alert alert-warning rounded mt-5" role="alert">
+                    <h6 class="text-center"><i class="bi bi-info-circle"></i>&ensp;No Memberships Subscribed</h6>
+                </div>
+            </div>
             {% endfor %}
-        </div>
-        {% else %}
-        <p>You do not have any memberships.</p>
-    {% endif %}
+        </div> 
 </div>
 {% endblock content %}

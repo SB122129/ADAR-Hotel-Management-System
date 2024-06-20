@@ -34,15 +34,29 @@ EMAIL, MENU, ROOM_SELECTION, CHECK_IN_DATE, CHECK_OUT_DATE, GUESTS, PAYMENT_METH
 
 # Helper function to generate the main menu buttons
 # Helper function to generate the main menu buttons
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
 def get_main_menu_buttons():
+
+
+    # Define the buttons in the desired structure with colors and effects
     buttons = [
-        [InlineKeyboardButton("Start Booking", callback_data='start_booking')],
-        [InlineKeyboardButton("My Bookings", callback_data='my_bookings')],
-        [InlineKeyboardButton("Pending Payments", callback_data='pending_payments')],
-        [InlineKeyboardButton("Cancel Booking", callback_data='cancel_booking')],
-        [InlineKeyboardButton("Restart", callback_data='restart')]
+        [
+            InlineKeyboardButton("Start Booking", callback_data='start_booking'),
+            InlineKeyboardButton("My Bookings", callback_data='my_bookings')
+        ],
+        [
+            InlineKeyboardButton("Pending Payments", callback_data='pending_payments'),
+            InlineKeyboardButton("Cancel Booking", callback_data='cancel_booking')
+        ],
+        [
+            InlineKeyboardButton("Restart", callback_data='restart')
+        ]
     ]
+
+    # Create InlineKeyboardMarkup with the styled buttons
     return InlineKeyboardMarkup(buttons)
+
 
 
 
@@ -229,18 +243,18 @@ async def payment_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             check_in_date=user_data['check_in_date'],
             check_out_date=user_data['check_out_date'],
             guests=user_data['guests'],
-            tx_ref=f"{user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}",
+            tx_ref=f"booking-{user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}",
             total_amount=user_data['room'].price_per_night * (user_data['check_out_date'] - user_data['check_in_date']).days
         )
     user_data['booking'] = booking
 
     if payment_method == 'chapa':
-        new_tx_ref = f"{user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+        new_tx_ref = f"booking-{user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
         await query.message.reply_text('Please proceed with Chapa payment.')
         booking = context.user_data['booking']
         amount = str(booking.total_amount)
-        redirect_url = f'https://4302-102-218-50-52.ngrok-free.app/room/bookings'
-        webhook_url = f'https://4302-102-218-50-52.ngrok-free.app/room/chapa-webhook/'
+        redirect_url = f'https://broadly-lenient-adder.ngrok-free.app/room/bookings'
+        webhook_url = f'https://broadly-lenient-adder.ngrok-free.app/room/chapa-webhook/'
 
         payload = {
             "amount": amount,
@@ -288,8 +302,8 @@ async def payment_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 "payment_method": "paypal"
             },
             "redirect_urls": {
-                "return_url": f"https://4302-102-218-50-52.ngrok-free.app/room/paypal-return/?booking_id={booking.id}",
-                "cancel_url": f"https://4302-102-218-50-52.ngrok-free.app/room/paypal-cancel/?booking_id={booking.id}"
+                "return_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-return/?booking_id={booking.id}",
+                "cancel_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-cancel/?booking_id={booking.id}"
             },
             "transactions": [{
                 "item_list": {
@@ -464,7 +478,7 @@ async def cancel_booking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if not user:
         await query.message.reply_text('User not found. Please restart the bot and enter your email.')
-        return ConversationHandler.END
+        return MENU
 
     try:
         bookings = await sync_to_async(list)(Booking.objects.filter(user=user, status='confirmed'))
@@ -528,7 +542,6 @@ async def confirm_cancellation(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 
-
 async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.callback_query.message.reply_text('Bot restarted. Please enter your email to start booking:')
     return EMAIL
@@ -544,7 +557,7 @@ async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 def set_webhook():
     application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
-    application.bot.set_webhook(url='https://4302-102-218-50-52.ngrok-free.app/telegram/webhook/')
+    application.bot.set_webhook(url='https://broadly-lenient-adder.ngrok-free.app/telegram/webhook/')
 
 @csrf_exempt
 def start_bot(request):

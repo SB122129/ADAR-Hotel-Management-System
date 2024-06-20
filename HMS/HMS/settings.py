@@ -63,7 +63,7 @@ MESSAGE_TAGS = {
 
 ALLOWED_HOSTS = [ '*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://4302-102-218-50-52.ngrok-free.app',
+    'https://broadly-lenient-adder.ngrok-free.app',
     'http://127.0.0.1:8000/',
 ]
 import paypalrestsdk
@@ -287,3 +287,5 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
     'social_core.backends.google.GoogleOAuth2',
 )
+
+RUN_TELEGRAM_BOT = True

@@ -31,6 +31,8 @@ class MembershipPlanListView(LoginRequiredMixin, ListView):
     template_name = 'gym/membership_plans.html'
     context_object_name = 'plans'
 
+# views.py
+
 class MembershipSignupView(LoginRequiredMixin, FormView):
     form_class = MembershipSignupForm
     template_name = 'gym/membership_signup.html'
@@ -95,8 +97,8 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
         membership.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
-        redirect_url = f'https://yourdomain.com/gym/bookings'
-        webhook_url = f'https://4302-102-218-50-52.ngrok-free.app/room/chapa-webhook/'
+        redirect_url = f'https://broadly-lenient-adder.ngrok-free.app/gym/bookings'
+        webhook_url = f'https://broadly-lenient-adder.ngrok-free.app/room/chapa-webhook/'
 
         payload = {
             "amount": amount,
@@ -135,8 +137,8 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
                 "payment_method": "paypal"
             },
             "redirect_urls": {
-                "return_url": f"https://4302-102-218-50-52.ngrok-free.app/gym/paypal-return/?membership_id={membership.id}",
-                "cancel_url": f"https://4302-102-218-50-52.ngrok-free.app/gym/paypal-cancel/?membership_id={membership.id}"
+                "return_url": f"https://broadly-lenient-adder.ngrok-free.app/gym/paypal-return/?membership_id={membership.id}",
+                "cancel_url": f"https://broadly-lenient-adder.ngrok-free.app/gym/paypal-cancel/?membership_id={membership.id}"
             },
             "transactions": [{
                 "item_list": {
@@ -174,7 +176,7 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
         context['start_date'] = start_date  # Pass the start date to the template
         return context
 
-from django.contrib.auth.decorators import login_required
+
 
 class CancelMembershipView(LoginRequiredMixin, View):
     def post(self, request, membership_id):

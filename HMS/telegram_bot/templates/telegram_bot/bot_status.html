@@ -1,0 +1,16 @@
+<!-- telegram_bot/templates/telegram_bot/bot_status.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Telegram Bot Status</title>
+</head>
+<body>
+    <h1>Telegram Bot Status</h1>
+    <p>The bot is currently running.</p>
+    <form action="{% url 'start_bot' %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Restart Bot</button>
+    </form>
+</body>
+</html>

@@ -256,7 +256,7 @@ class PaymentExtendView(View):
         current_site = Site.objects.get_current()
         relative_url = reverse('bookings')
         redirect_url = f'https://{current_site.domain}{relative_url}'
-        webhook_url = 'https://4302-102-218-50-52.ngrok-free.app/room/chapa-webhook/'
+        webhook_url = 'https://broadly-lenient-adder.ngrok-free.app/room/chapa-webhook/'
 
         payload = {
             "amount": amount,
@@ -283,10 +283,6 @@ class PaymentExtendView(View):
             return HttpResponse(response)
 
     def process_paypal_payment(self, booking, amount):
-        if booking.is_paid or booking.status != 'pending':
-            messages.warning(self.request, 'Payment already completed')
-            return render(self.request, self.template_name, self.get_context_data(booking=booking))
-        
         paypalrestsdk.configure({
             "mode": "sandbox",  # sandbox or live
             "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
@@ -298,8 +294,8 @@ class PaymentExtendView(View):
             "payer": {
                 "payment_method": "paypal"},
             "redirect_urls": {
-                "return_url": f"https://4302-102-218-50-52.ngrok-free.app/room/paypal-return/?booking_id={booking.id}",
-                "cancel_url": f"https://4302-102-218-50-52.ngrok-free.app/room/paypal-cancel/?booking_id={booking.id}"},
+                "return_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-return/?booking_id={booking.id}",
+                "cancel_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-cancel/?booking_id={booking.id}"},
             "transactions": [{
                 "item_list": {
                     "items": [{
@@ -379,8 +375,8 @@ class PaymentView(View):
         self.booking.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
-        redirect_url = f'https://4302-102-218-50-52.ngrok-free.app/room/bookings'
-        webhook_url = f'https://4302-102-218-50-52.ngrok-free.app/room/chapa-webhook/'
+        redirect_url = f'https://broadly-lenient-adder.ngrok-free.app/room/bookings'
+        webhook_url = f'https://broadly-lenient-adder.ngrok-free.app/room/chapa-webhook/'
         payload = {
             "amount": amount,
             "currency": "ETB",
@@ -421,8 +417,8 @@ class PaymentView(View):
             "payer": {
                 "payment_method": "paypal"},
             "redirect_urls": {
-                "return_url": f"http://4302-102-218-50-52.ngrok-free.app/room/paypal-return/?booking_id={self.booking.id}",
-                "cancel_url": f"http://4302-102-218-50-52.ngrok-free.app/room/paypal-cancel/?booking_id={self.booking.id}"},
+                "return_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-return/?booking_id={self.booking.id}",
+                "cancel_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-cancel/?booking_id={self.booking.id}"},
             "transactions": [{
                 "item_list": {
                     "items": [{
@@ -605,7 +601,6 @@ class ChapaWebhookView(View):
 class BookingCancelView(LoginRequiredMixin, UpdateView):
     model = Booking
     fields = []  # No fields to update through the form
-    template_name = 'room/booking_confirm_cancel.html'
     success_url = reverse_lazy('bookings')
 
     def get_queryset(self):
@@ -617,7 +612,7 @@ class BookingCancelView(LoginRequiredMixin, UpdateView):
         try:
             booking = self.get_object()
             booking.status = 'cancelled'
-            booking.save()
+            booking.save(bypass_validation=True)
             booking.room.update_room_status()  # Update the room status after cancellation
             return super().post(request, *args, **kwargs)
         except Exception as e:
