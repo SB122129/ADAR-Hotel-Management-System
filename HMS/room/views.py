@@ -368,7 +368,7 @@ class PaymentView(View):
     def process_chapa_payment(self):
         if self.booking.is_paid or self.booking.status != 'pending':
             messages.warning(self.request, 'Payment already completed')
-            return render(self.request, self.template_name, self.get_context_data())
+            return redirect('bookings')
         amount = str(self.booking.total_amount)
         tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
         self.booking.tx_ref = tx_ref  # Store the new tx_ref in booking
@@ -614,7 +614,7 @@ class BookingCancelView(LoginRequiredMixin, UpdateView):
             booking.status = 'cancelled'
             booking.save(bypass_validation=True)
             booking.room.update_room_status()  # Update the room status after cancellation
-            return super().post(request, *args, **kwargs)
+            return HttpResponseRedirect(self.success_url)
         except Exception as e:
             print(f"Exception when canceling booking: {e}")
             return HttpResponseBadRequest("Error occurred while canceling the booking.")
@@ -631,6 +631,9 @@ class BookingCancelView(LoginRequiredMixin, UpdateView):
         except Exception as e:
             print(f"Exception when deleting booking: {e}")
             return HttpResponseBadRequest("Error occurred while deleting the booking.")
+
+    def form_invalid(self, form):
+        return HttpResponseRedirect(self.success_url)
 
 
 

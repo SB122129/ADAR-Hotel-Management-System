@@ -18,34 +18,61 @@
 
 <div class="container mb-5">
     <h3 class="text-center mb-3" style="margin-top: 1rem;">Payment</h3>
-    <div class="row justify-content-center flex-container">
-    <!-- User Details Column -->
-    <div class="col-md-6 mt-3 flex-child">
-        <div class="rounded border p-3">
-            <h5 class="mb-4"><i class="bi bi-file-earmark-person-fill"></i>&ensp;User Details</h5>
-            <p><i class="bi bi-person"></i>&ensp;First Name - {{ booking.user.first_name }}</p>
-            <p><i class="bi bi-person"></i>&ensp;Last Name - {{ booking.user.last_name }}</p>
-            <p><i class="bi bi-envelope-fill"></i>&ensp;Email - {{ booking.user.email }}</p>
+    <div class="row justify-content-center">
+        <!-- User Details Column -->
+        <div class="col-md-6 mt-3">
+            <div class="card h-100 shadow-sm rounded">
+                <div class="card-body">
+                    <h5 class="card-title mb-4"><i class="bi bi-file-earmark-person-fill"></i>&ensp;User Details</h5>
+                    <div class="row mb-2">
+                        <div class="col-5"><i class="bi bi-person"></i>&ensp;<strong>First Name</strong></div>
+                        <div class="col-7">{{ booking.user.first_name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-5"><i class="bi bi-person"></i>&ensp;<strong>Last Name</strong></div>
+                        <div class="col-7">{{ booking.user.last_name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-5"><i class="bi bi-envelope-fill"></i>&ensp;<strong>Email</strong></div>
+                        <div class="col-7">{{ booking.user.email }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    <!-- Booking Details Column -->
-    <div class="col-md-6 mt-3 flex-child">
-        <div class="rounded border p-3">
-            <h5 class="mb-4"><i class="bi bi-box-arrow-down"></i>&ensp;Booking Details</h5>
-            <p class="mb-2"><i class="bi bi-list-ol"></i>&ensp;Room Number - {{ booking.room }}</p>
-            <p class="mb-2"><i class="bi bi-calendar-plus-fill"></i>&ensp;Check-in Date - {{ booking.check_in_date }}</p>
-            <p class="mb-2"><i class="bi bi-calendar-minus-fill"></i>&ensp;Check-out Date -  {% if booking.extended_check_out_date %} {{booking.extended_check_out_date}} {% else %} {{ booking.check_out_date }} {% endif %}</p>
-            <p class="mb-2"><i class="bi bi-cash"></i>&ensp;Amount Due -  {{ amount }}</p>
+        <!-- Booking Details Column -->
+        <div class="col-md-6 mt-3">
+            <div class="card h-100 shadow-sm rounded">
+                <div class="card-body">
+                    <h5 class="card-title mb-4"><i class="bi bi-box-arrow-down"></i>&ensp;Booking Details</h5>
+                    <div class="row mb-2">
+                        <div class="col-6"><i class="bi bi-list-ol"></i>&ensp;<strong>Room Number</strong></div>
+                        <div class="col-6">{{ booking.room }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6"><i class="bi bi-calendar-plus-fill"></i>&ensp;<strong>Check-in Date</strong></div>
+                        <div class="col-6">{{ booking.check_in_date }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6"><i class="bi bi-calendar-minus-fill"></i>&ensp;<strong>Check-out Date</strong></div>
+                        <div class="col-6">{% if booking.extended_check_out_date %} {{ booking.extended_check_out_date }} {% else %} {{ booking.check_out_date }} {% endif %}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6"><i class="bi bi-cash"></i>&ensp;<strong>Amount Due</strong></div>
+                        <div class="col-6">{{ amount }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
     <!-- Payment Form -->
     <form id="paymentForm" method="post" enctype="multipart/form-data" class="mt-5">
         {% csrf_token %}
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="card p-4 rounded">
-                    <h5 class="mb-4 text-center">Payment Method</h5>
+                <div class="card p-4 rounded shadow-sm">
+                    <h5 class="mb-4 text-center font-weight-bold">Payment Method</h5>
                     <div class="d-flex flex-column align-items-center gap-3">
                         <label class="payment-option d-flex align-items-center w-75 justify-content-center rounded">
                             <input id="chapaRadio" type="radio" name="payment_method" value="chapa" hidden>

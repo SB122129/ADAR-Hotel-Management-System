@@ -22,7 +22,7 @@
     <form method="get" class="form-inline justify-content-center" id="filter-form">
         <div class="form-group mx-2">
             <label for="price" class="sr-only">Max Price</label>
-            <select name="price" id="price" class="form-control form-control-sm rounded ">
+            <select name="price" id="price" class="form-control form-control-sm rounded">
                 <option value="">Select Max Price</option>
                 {% for price in price_range %}
                     <option value="{{ price }}" {% if request.GET.price == price|stringformat:"s" %}selected{% endif %}>ETB {{ price }}</option>
@@ -44,27 +44,43 @@
 
 {% if rooms %}
 <div class="container">
-  <div class="row">
-      {% for room in rooms %}
-      <div class="col-md-6 d-block-sm p-5 mb-4">
-        <img src="{{ room.room_image.url }}" alt="{{ room.room_type.name }}" class="img-fluid rounded">
-        <h3><strong>{{ room.room_type.name }} Suite</strong></h3>
-        <p>{{ room.description|truncatewords:20 }}</p>
-        <p><strong>Room Number</strong> {{ room.room_number }}</p>
-        <p><strong>Price per night</strong> ETB {{ room.price_per_night }}</p>
-        <p><strong>Capacity</strong> {{ room.capacity }} guests</p>
-
-        <div class="mt-auto d-flex justify-content-center">
-            <a href="{% url 'room_detail' room.id %}" class="btn btn-sm btn-warning pb-1 w-50 my-4 text-uppercase rounded">Details</a>&ensp;
-            <a href="{% url 'booking_create' room.id %}" class="btn btn-sm btn-success pb-1 w-50 my-4 text-uppercase rounded">Book now</a>
+    <div class="row">
+        {% for room in rooms %}
+        <div class="col-md-6 mb-4">
+            <div class="card  h-100 shadow-sm rounded">
+                <img src="{{ room.room_image.url }}" alt="{{ room.room_type.name }}" class="card-img-top rounded lazyload">
+                <div class="card-body">
+                    <h3 class="card-title"><strong>{{ room.room_type.name }} Suite</strong></h3>
+                    <p class="card-text">{{ room.description|truncatewords:20 }}</p>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Room Number</strong>
+                            <span>{{ room.room_number }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Price per night</strong>
+                            <span>ETB {{ room.price_per_night }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Capacity</strong>
+                            <span>{{ room.capacity }} guests</span>
+                        </li>
+                    </ul>
+                    <div class="mt-3 d-flex justify-content-center">
+                        <a href="{% url 'room_detail' room.id %}" class="btn btn-sm btn-warning   rounded">Details</a>&ensp;
+                        <a href="{% url 'booking_create' room.id %}" class="btn btn-sm btn-success   rounded">Book now</a>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      {% endfor %}
-  </div>
+        {% endfor %}
+    </div>
 </div>
 {% else %}
-<div class="alert alert-danger text-center d-flex justify-content-center m-3">
-  <h5 class="m-3">No rooms available.</h5>
+<div class="container d-flex justify-content-center">
+    <div class="alert alert-warning rounded  w-50" role="alert">
+        <h6 class="text-center"><i class="bi bi-info-circle"></i>&ensp;No Rooms available</h6>
+    </div>
 </div>
 {% endif %}
 <!-- Rooms Listing -->

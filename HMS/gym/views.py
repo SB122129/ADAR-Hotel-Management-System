@@ -31,6 +31,8 @@ class MembershipPlanListView(LoginRequiredMixin, ListView):
     template_name = 'gym/membership_plans.html'
     context_object_name = 'plans'
 
+    def get_queryset(self):
+        return MembershipPlan.objects.all().order_by('price')
 # views.py
 
 class MembershipSignupView(LoginRequiredMixin, FormView):

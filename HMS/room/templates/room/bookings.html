@@ -3,7 +3,7 @@
 {% load widget_tweaks %}
 <br>
 <div class="container mt-5">
-    <h3 class="text-center mb-3">My Bookings</h3>
+    <h3 class="text-center mb-3 font-weight-bold">My Bookings</h3>
     <div class="container" style="margin-top: 1rem;">
         {% if messages %}
               {% for message in messages %}
@@ -19,7 +19,7 @@
     <div class="row">
         {% for booking in bookings %}
             <div class="col-md-6">
-                <div class="card mb-5 rounded">
+                <div class="card mb-5 rounded shadow">
                     <div class="card-body">
                         <h5 class="card-title"><strong><i class="bi bi-list-ol"></i>&ensp;Room number</strong>  {{ booking.room.room_number }}</h5>
                         <img src="{{booking.room.room_image.url}}" style="width: 400;height: 270px;" class="card-img-top rounded">
@@ -94,7 +94,7 @@
             </div>
         {% empty %}
         <div class="container d-flex justify-content-center">
-            <div class="alert alert-warning rounded mt-5" role="alert">
+            <div class="alert alert-warning rounded mt-3" role="alert">
                 <h6 class="text-center"><i class="bi bi-info-circle"></i>&ensp;No bookings have been made</h6>
             </div>
         </div>

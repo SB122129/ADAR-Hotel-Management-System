@@ -6,6 +6,8 @@
     transition: border-color 0.3s, background-color 0.3s;
 }
 
+
+
 .payment-option.selected {
     border-color: #0309ab;
     background-color: #f0f8ff;
