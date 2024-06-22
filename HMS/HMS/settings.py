@@ -66,16 +66,18 @@ CSRF_TRUSTED_ORIGINS = [
     'https://broadly-lenient-adder.ngrok-free.app',
     'http://127.0.0.1:8000/',
 ]
+
+CSRF_COOKIE_SECURE = False
+CSRF_USE_SESSIONS = False
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+# Application definition
+
 import paypalrestsdk
 from django.conf import settings
 
 
 TELEGRAM_BOT_TOKEN='7334373491:AAGp_FxEOXa18iOMTCdNYsNOYkcFBvob3ls'
 
-CSRF_COOKIE_SECURE = False
-CSRF_USE_SESSIONS = False
-os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',

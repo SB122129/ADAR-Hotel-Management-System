@@ -23,7 +23,7 @@
     <h3 class="mb-3 text-center font-weight-bold">My Memberships</h3>
     <div class="row mt-5">
         {% for membership in memberships %}
-            {% if not membership.is_cancelled %}
+            {% if not membership.status == 'cancelled' %}
                 <div class="col-md-6 mb-4">
                     <div class="card shadow rounded">
                         <div class="card-body">
@@ -39,10 +39,10 @@
                             </div>
                             <div class="row mb-2">
                                 <div class="col-sm-5 text-left"><strong>Status</strong></div>
-                                <div class="col-sm-7 text-center">{% if membership.is_active %}Active{% else %}Inactive{% endif %}</div>
+                                <div class="col-sm-7 text-center">{{ membership.status }}</div>
                             </div>
                             <div class="d-flex justify-content-center mt-3">
-                                {% if not membership.is_active %}
+                                {% if membership.status == 'pending' %}
                                     <a href="{% url 'membership_signup' membership.plan.id %}?membership_id={{ membership.id }}&start_date={{ membership.start_date|date:'Y-m-d' }}" class="btn btn-sm btn-success rounded btn-primary">Pay</a>
                                 {% endif %}
                                 <button type="button" class="btn btn-sm btn-danger rounded ml-2" data-toggle="modal" data-target="#cancelModal{{ membership.id }}">

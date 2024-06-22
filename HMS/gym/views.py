@@ -1,4 +1,12 @@
-# views.py
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib import messages
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
+from django.views.generic.edit import FormView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from paypalrestsdk import Payment, configure
 from django.views.generic import ListView, FormView, View
 from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404, redirect
@@ -7,8 +15,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from .models import MembershipPlan, Membership, MembershipPayment
 from .forms import MembershipSignupForm
-from dateutil.relativedelta import relativedelta
-from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import random
 import string
@@ -33,7 +39,7 @@ class MembershipPlanListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return MembershipPlan.objects.all().order_by('price')
-# views.py
+
 
 class MembershipSignupView(LoginRequiredMixin, FormView):
     form_class = MembershipSignupForm
@@ -52,10 +58,12 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
         plan = get_object_or_404(MembershipPlan, id=plan_id)
         user = self.request.user
         start_date_str = self.request.GET.get('start_date')
-        membership_id = self.request.GET.get('membership_id')
-        
-        
-        
+        existing_membership_id = self.request.GET.get('membership_id', None)
+        subscription_for = self.request.GET.get('subscription_for', 'self')
+        first_name = self.request.GET.get('first_name')
+        last_name = self.request.GET.get('last_name')
+        phone_number = self.request.GET.get('phone_number')
+        email = self.request.GET.get('email')
 
         # Parse start_date from string to date
         try:
@@ -63,21 +71,52 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
         except ValueError:
             messages.error(self.request, 'Invalid start date format.')
             return redirect('my_memberships')
-        # Parse start_date from string to date
-        
-        payment_method = form.cleaned_data['payment_method']
 
-        # Check if a membership already exists for this user and plan
-        membership = Membership.objects.filter(id=membership_id, user=user, plan=plan).first()
-        if not membership:
-            # Create the membership entry with pending status
+        if existing_membership_id:
+            try:
+                membership = Membership.objects.get(
+                    id=existing_membership_id, 
+                    user=user, 
+                    plan=plan, 
+                    start_date=start_date, 
+                    status='pending'
+                )
+            except Membership.DoesNotExist:
+                return self.handle_no_membership_found(self.request)
+        else:
+            # Check for existing similar membership with status 'active' or 'pending'
+            existing_membership = Membership.objects.filter(
+                user=user,
+                plan=plan,
+                start_date=start_date,
+                status__in=['active', 'pending']
+            ).exists()
+
+            if existing_membership:
+                messages.error(self.request, 'A similar membership already exists.')
+                return redirect('my_memberships')
+
+            # Generate a tx_ref and check if it already exists
+            tx_ref = f"membership-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+            if Membership.objects.filter(tx_ref=tx_ref, status='pending').exists():
+                messages.error(self.request, 'A similar membership transaction is already in progress.')
+                return redirect('my_memberships')
+
+            # Create a new membership entry with pending status
             membership = Membership.objects.create(
                 user=user,
                 plan=plan,
                 start_date=start_date,
                 end_date=start_date + relativedelta(months=plan.duration_months),
-                is_active=False,
+                status='pending',
+                tx_ref=tx_ref,
+                for_first_name=first_name if subscription_for == 'others' else user.first_name,
+                for_last_name=last_name if subscription_for == 'others' else user.last_name,
+                for_phone_number=phone_number if subscription_for == 'others' else user.phone_number
+                for_email=email if subscription_for == 'others' else user.email                   
             )
+
+        payment_method = form.cleaned_data['payment_method']
 
         # Initiate payment based on the selected payment method
         if payment_method == 'chapa':
@@ -89,13 +128,8 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
             return redirect('membership_plans')
 
     def initiate_chapa_payment(self, membership):
-        if membership.is_active:
-            messages.warning(self.request, 'Membership is already active.')
-            return redirect('my_memberships')
-
         amount = str(membership.plan.price)
-        tx_ref = f"membership-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
-        membership.tx_ref = tx_ref
+        tx_ref = membership.tx_ref
         membership.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
@@ -127,13 +161,13 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
             return redirect('membership_plans')
 
     def initiate_paypal_payment(self, membership, plan_id):
-        paypalrestsdk.configure({
+        configure({
             "mode": "sandbox",  # sandbox or live
             "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
             "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
         })
 
-        payment = paypalrestsdk.Payment({
+        payment = Payment({
             "intent": "sale",
             "payer": {
                 "payment_method": "paypal"
@@ -178,13 +212,22 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
         context['start_date'] = start_date  # Pass the start date to the template
         return context
 
+    def handle_no_membership_found(self, request):
+        messages.error(request, 'No membership found.')
+        return redirect('my_memberships')
+
+
+
+
+
+
 
 
 class CancelMembershipView(LoginRequiredMixin, View):
     def post(self, request, membership_id):
         membership = get_object_or_404(Membership, id=membership_id, user=request.user)
         membership.is_cancelled = True
-        membership.is_active = False
+        membership.status = 'cancelled'
         membership.save()
         messages.success(request, 'Membership has been cancelled successfully.')
         return redirect('my_memberships')
@@ -218,7 +261,7 @@ class PayPalReturnView(View):
                 amount=membership.plan.price,
                 status='completed',
             )
-            membership.is_active = True
+            membership.status = 'active'
             membership.save()
             messages.success(request, 'Payment successful and membership activated.')
         else:

@@ -15,15 +15,23 @@ class MembershipPlan(models.Model):
         return self.name
 
 class Membership(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('active', 'Active'),
+        ('cancelled', 'Cancelled'),
+    ]
     user = models.ForeignKey(Custom_user, on_delete=models.CASCADE)
     plan = models.ForeignKey(MembershipPlan, on_delete=models.CASCADE)
     start_date = models.DateField(auto_now_add=True)
     end_date = models.DateField()
-    is_active = models.BooleanField(default=False)
-    is_cancelled = models.BooleanField(default=False)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     tx_ref = models.CharField(max_length=100, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)  # Additional field to track when the membership was created
-
+    for_first_name = models.CharField(max_length=100, null=True, blank=True)
+    for_last_name = models.CharField(max_length=100, null=True, blank=True)
+    for_phone_number = models.CharField(max_length=20, null=True, blank=True)
+    for_email = models.EmailField(null=True, blank=True)
+    
     def save(self, *args, **kwargs):
         if not self.end_date:
             self.end_date = self.start_date + relativedelta(months=self.plan.duration_months)

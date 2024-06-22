@@ -585,7 +585,7 @@ class ChapaWebhookView(View):
         print("Payment record created or updated:", membership_payment)
 
         # Update membership status
-        membership.is_active = True
+        membership.status = 'active'
         membership.save()
         print("Membership updated")
 
