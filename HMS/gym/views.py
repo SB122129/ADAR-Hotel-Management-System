@@ -1,3 +1,5 @@
+from django.shortcuts import render, redirect, get_object_or_404
+
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from datetime import datetime
@@ -14,7 +16,7 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from .models import MembershipPlan, Membership, MembershipPayment
-from .forms import MembershipSignupForm
+from .forms import *
 from dateutil.relativedelta import relativedelta
 import random
 import string
@@ -36,41 +38,59 @@ class MembershipPlanListView(LoginRequiredMixin, ListView):
     model = MembershipPlan
     template_name = 'gym/membership_plans.html'
     context_object_name = 'plans'
-
+    
     def get_queryset(self):
         return MembershipPlan.objects.all().order_by('price')
-
+    
 
 class MembershipSignupView(LoginRequiredMixin, FormView):
     form_class = MembershipSignupForm
     template_name = 'gym/membership_signup.html'
 
-    def get_initial(self):
-        initial = super().get_initial()
-        plan_id = self.kwargs['plan_id']
-        start_date = self.request.GET.get('start_date')
-        initial['plan_id'] = plan_id
-        initial['start_date'] = start_date
-        return initial
+    def get(self, request, *args, **kwargs):
+        membership_id = request.GET.get('membership_id')
+        form = self.form_class()
+        
+        if membership_id:
+            try:
+                membership = Membership.objects.get(id=membership_id, user=request.user, status='pending')
+                form = self.form_class(initial={
+                    'start_date': membership.start_date,
+                    'subscription_for': 'others' if membership.for_first_name != request.user.first_name and membership.for_last_name != request.user.last_name else 'self',
+                    'first_name': membership.for_first_name,
+                    'last_name': membership.for_last_name,
+                    'phone_number': membership.for_phone_number,
+                    'email': membership.for_email,
+                })
+            except Membership.DoesNotExist:
+                messages.error(request, 'No pending membership found.')
+                return redirect('my_memberships')
+        
+        plan_id = self.kwargs.get('plan_id')
+        selected_plan = get_object_or_404(MembershipPlan, id=plan_id)
+        return render(request, self.template_name, {'form': form, 'plan': selected_plan})
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        plan_id = self.kwargs.get('plan_id')
+        selected_plan = get_object_or_404(MembershipPlan, id=plan_id)
+        
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return render(request, self.template_name, {'form': form, 'plan': selected_plan})
 
     def form_valid(self, form):
         plan_id = self.kwargs['plan_id']
         plan = get_object_or_404(MembershipPlan, id=plan_id)
         user = self.request.user
-        start_date_str = self.request.GET.get('start_date')
         existing_membership_id = self.request.GET.get('membership_id', None)
-        subscription_for = self.request.GET.get('subscription_for', 'self')
-        first_name = self.request.GET.get('first_name')
-        last_name = self.request.GET.get('last_name')
-        phone_number = self.request.GET.get('phone_number')
-        email = self.request.GET.get('email')
-
-        # Parse start_date from string to date
-        try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        except ValueError:
-            messages.error(self.request, 'Invalid start date format.')
-            return redirect('my_memberships')
+        start_date = form.cleaned_data['start_date']
+        subscription_for = form.cleaned_data['subscription_for']
+        first_name = form.cleaned_data['first_name']
+        last_name = form.cleaned_data['last_name']
+        phone_number = form.cleaned_data['phone_number']
+        email = form.cleaned_data['email']
 
         if existing_membership_id:
             try:
@@ -84,7 +104,6 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
             except Membership.DoesNotExist:
                 return self.handle_no_membership_found(self.request)
         else:
-            # Check for existing similar membership with status 'active' or 'pending'
             existing_membership = Membership.objects.filter(
                 user=user,
                 plan=plan,
@@ -96,13 +115,11 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
                 messages.error(self.request, 'A similar membership already exists.')
                 return redirect('my_memberships')
 
-            # Generate a tx_ref and check if it already exists
-            tx_ref = f"membership-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+            tx_ref = self.generate_tx_ref()
             if Membership.objects.filter(tx_ref=tx_ref, status='pending').exists():
                 messages.error(self.request, 'A similar membership transaction is already in progress.')
                 return redirect('my_memberships')
 
-            # Create a new membership entry with pending status
             membership = Membership.objects.create(
                 user=user,
                 plan=plan,
@@ -112,13 +129,14 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
                 tx_ref=tx_ref,
                 for_first_name=first_name if subscription_for == 'others' else user.first_name,
                 for_last_name=last_name if subscription_for == 'others' else user.last_name,
-                for_phone_number=phone_number if subscription_for == 'others' else user.phone_number
-                for_email=email if subscription_for == 'others' else user.email                   
+                for_phone_number=phone_number if subscription_for == 'others' else user.phone_number,
+                for_email= email if subscription_for == 'others' else user.email                   
             )
 
         payment_method = form.cleaned_data['payment_method']
+        membership.tx_ref = self.generate_tx_ref()
+        membership.save()
 
-        # Initiate payment based on the selected payment method
         if payment_method == 'chapa':
             return self.initiate_chapa_payment(membership)
         elif payment_method == 'paypal':
@@ -127,10 +145,12 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
             messages.error(self.request, 'Invalid payment method selected.')
             return redirect('membership_plans')
 
+    def generate_tx_ref(self):
+        return f"membership-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+
     def initiate_chapa_payment(self, membership):
         amount = str(membership.plan.price)
         tx_ref = membership.tx_ref
-        membership.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
         redirect_url = f'https://broadly-lenient-adder.ngrok-free.app/gym/bookings'
@@ -154,6 +174,7 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
 
         response = requests.post(url, json=payload, headers=headers)
         data = response.json()
+        print(data)
         if response.status_code == 200 and data['status'] == 'success':
             return redirect(data['data']['checkout_url'])
         else:
@@ -162,7 +183,7 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
 
     def initiate_paypal_payment(self, membership, plan_id):
         configure({
-            "mode": "sandbox",  # sandbox or live
+            "mode": "sandbox",
             "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
             "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
         })
@@ -207,14 +228,14 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         plan_id = self.kwargs.get('plan_id')
         selected_plan = get_object_or_404(MembershipPlan, id=plan_id)
-        start_date = self.request.GET.get('start_date')
-        context['plan'] = selected_plan  # Pass the selected plan to the template
-        context['start_date'] = start_date  # Pass the start date to the template
+        context['plan'] = selected_plan
         return context
 
     def handle_no_membership_found(self, request):
         messages.error(request, 'No membership found.')
         return redirect('my_memberships')
+
+
 
 
 
