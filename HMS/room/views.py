@@ -6,6 +6,9 @@ from .models import Room, Booking, Reservation, Payment, RoomRating,Receipt
 from .forms import BookingForm, ReservationForm, RoomRatingForm
 import requests
 import random
+from .tasks import send_confirmation_email
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
 from django.db.models import Min, Max
 from django.http import JsonResponse
 from django.http import HttpResponseRedirect
@@ -25,6 +28,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404, redirect
 from django.http import HttpResponseBadRequest
 from django.utils import timezone
+from django.core.mail import send_mail
 from django.contrib import messages
 from django.views.generic.base import View
 from django.db.models.signals import post_save
@@ -39,11 +43,14 @@ from django.db.models import Q
 import json
 from gym.models import *
 import logging
+from config import BASE_URL
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.conf import settings
 from django.http import HttpResponseNotFound
 from django.http import HttpResponseServerError
+from django.core.mail import EmailMultiAlternatives
+from premailer import transform
 
 
 
@@ -122,6 +129,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import CreateView
 from .models import Room, Booking
 from .forms import BookingForm
+from django.core.mail import send_mail
+
+
 
 class BookingCreateView(LoginRequiredMixin, CreateView):
     model = Booking
@@ -138,7 +148,8 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         room = get_object_or_404(Room, id=self.kwargs['room_id'])
         context['room_image'] = room.room_image
         context['room_number'] = room.room_number  # Assuming 'number' is the field for room number
-        context['room_type'] = room.room_type  # Assuming 'type' is the field for room type
+        context['room_type'] = room.room_type
+        context['price_per_night'] = room.price_per_night  
         return context
 
     def form_valid(self, form):
@@ -223,13 +234,15 @@ class PaymentExtendView(View):
         
         if booking.is_paid or booking.status != 'confirmed':
             booking.status = 'pending'
+            booking.booking_extend_amount = booking.calculate_additional_amount()
             booking.save()
-            amount = str(booking.calculate_additional_amount())
+            amount = booking.booking_extend_amount
             tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
             booking.tx_ref = tx_ref
             booking.save()
 
             if payment_method == 'chapa':
+                amount=str(amount)
                 return self.process_chapa_payment(booking, amount, tx_ref)
             elif payment_method == 'paypal':
                 return self.process_paypal_payment(booking, amount)
@@ -253,13 +266,12 @@ class PaymentExtendView(View):
 
     def process_chapa_payment(self, booking, amount, tx_ref):
         url = "https://api.chapa.co/v1/transaction/initialize"
-        current_site = Site.objects.get_current()
-        relative_url = reverse('bookings')
-        redirect_url = f'https://{current_site.domain}{relative_url}'
-        webhook_url = 'https://broadly-lenient-adder.ngrok-free.app/room/chapa-webhook/'
+        redirect_url = f"{BASE_URL}"
+        webhook_url = f"{BASE_URL}/room/chapa-webhook/"
+        print(webhook_url)
 
         payload = {
-            "amount": amount,
+            "amount": str(amount),
             "currency": "ETB",
             "email": booking.user.email,
             "first_name": booking.user.first_name,
@@ -288,24 +300,24 @@ class PaymentExtendView(View):
             "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
             "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
         })
-
+        amount_in_dollars = amount/50
         payment = paypalrestsdk.Payment({
             "intent": "sale",
             "payer": {
                 "payment_method": "paypal"},
             "redirect_urls": {
-                "return_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-return/?booking_id={booking.id}",
-                "cancel_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-cancel/?booking_id={booking.id}"},
+                "return_url": f"{BASE_URL}/room/paypal-return/?booking_id={booking.id}",
+                "cancel_url": f"{BASE_URL}/room/paypal-cancel/?booking_id={booking.id}"},
             "transactions": [{
                 "item_list": {
                     "items": [{
                         "name": "room booking",
                         "sku": "item",
-                        "price": amount,
+                        "price": str(amount_in_dollars),
                         "currency": "USD",
                         "quantity": 1}]},
                 "amount": {
-                    "total": amount,
+                    "total": str(amount_in_dollars),
                     "currency": "USD"},
                 "description": "This is the payment transaction description."}]})
 
@@ -339,7 +351,7 @@ class PaymentView(View):
         context = {}
         context['booking'] = self.booking
         context['user'] = self.booking.user
-        context['amount'] = self.booking.total_amount
+        context['amount'] = self.booking.original_booking_amount
         context['data'] = {
             "customization": {
                 "title": "Payment for my booking",
@@ -369,14 +381,14 @@ class PaymentView(View):
         if self.booking.is_paid or self.booking.status != 'pending':
             messages.warning(self.request, 'Payment already completed')
             return redirect('bookings')
-        amount = str(self.booking.total_amount)
+        amount = str(self.booking.original_booking_amount)
         tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
         self.booking.tx_ref = tx_ref  # Store the new tx_ref in booking
         self.booking.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
-        redirect_url = f'https://broadly-lenient-adder.ngrok-free.app/room/bookings'
-        webhook_url = f'https://broadly-lenient-adder.ngrok-free.app/room/chapa-webhook/'
+        redirect_url = f"{BASE_URL}"
+        webhook_url = f"{BASE_URL}/room/chapa-webhook/"
         payload = {
             "amount": amount,
             "currency": "ETB",
@@ -411,24 +423,24 @@ class PaymentView(View):
             "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
             "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
         })
-
+        amount_in_dollars= self.booking.original_booking_amount/50
         payment = paypalrestsdk.Payment({
             "intent": "sale",
             "payer": {
                 "payment_method": "paypal"},
             "redirect_urls": {
-                "return_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-return/?booking_id={self.booking.id}",
-                "cancel_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-cancel/?booking_id={self.booking.id}"},
+                "return_url": f"{BASE_URL}/room/paypal-return/?booking_id={self.booking.id}",
+                "cancel_url": f"{BASE_URL}/room/paypal-cancel/?booking_id={self.booking.id}"},
             "transactions": [{
                 "item_list": {
                     "items": [{
                         "name": "room booking",
                         "sku": "item",
-                        "price": str(self.booking.total_amount),
+                        "price": str(amount_in_dollars),
                         "currency": "USD",
                         "quantity": 1}]},
                 "amount": {
-                    "total": str(self.booking.total_amount),
+                    "total": str(amount_in_dollars),
                     "currency": "USD"},
                 "description": "This is the payment transaction description."}]})
 
@@ -463,7 +475,15 @@ class PayPalReturnView(View):
                 booking.is_paid = True
                 booking.status = 'confirmed'
                 # booking.room.status='occupied'
+                # Check if booking.total_amount is None and use 0 if it is, otherwise use its value
+                if booking.booking_extend_amount is None:
+                    booking.total_amount = booking.original_booking_amount
                 booking.save()
+                if booking.extended_check_out_date:
+                    booking.check_out_date=booking.extended_check_out_date
+                    if booking.booking_extend_amount is not None:
+                        booking.total_amount += booking.booking_extend_amount 
+                    booking.save(bypass_validation=True)
                 payment, created = Payment.objects.get_or_create(
                             booking=booking,
                             defaults={
@@ -473,6 +493,26 @@ class PayPalReturnView(View):
                                 }
                                 )
                 messages.success(request, 'Payment completed successfully.')
+                booking_url = f"{BASE_URL}/room/my-bookings/"
+                if booking.extended_check_out_date:
+                    html_content = render_to_string('room/checkout_date_extenstion_email_template.html', {'booking': booking, 'booking_url': booking_url})
+                else:
+                    html_content = render_to_string('room/email_template.html', {'booking': booking, 'booking_url': booking_url})
+                # Inline CSS
+                html_content = transform(html_content)
+                
+                
+                # Create the email message
+                email = EmailMultiAlternatives(
+                    subject='Room Booking Confirmation',
+                    from_email='adarhotel33@gmail.com',
+                    to=[booking.user.email]
+                )
+                # Attach the HTML content
+                email.attach_alternative(html_content, "text/html")
+                
+                # Send the email
+                email.send()
                 return redirect('bookings')
             else:
                 messages.error(request, 'Payment was not successful.')
@@ -549,6 +589,23 @@ class ChapaWebhookView(View):
         booking.room.room_status = 'occupied'
         booking.room.save()
         booking.save()
+        print('hh',booking.booking_extend_amount)
+        if booking.booking_extend_amount is None:
+            booking.total_amount = booking.original_booking_amount
+            print("", booking.total_amount)
+            booking.save()
+        if booking.extended_check_out_date:
+            booking.check_out_date=booking.extended_check_out_date
+            if booking.booking_extend_amount is not None:
+                print("", booking.total_amount)
+                print("", booking.booking_extend_amount)
+                booking.total_amount += booking.booking_extend_amount
+            booking.save(bypass_validation=True)
+
+
+
+        send_confirmation_email.delay(booking.id, BASE_URL)
+            
         print("Booking and room updated")
 
         return HttpResponse("Booking webhook processed successfully")
@@ -613,7 +670,25 @@ class BookingCancelView(LoginRequiredMixin, UpdateView):
             booking = self.get_object()
             booking.status = 'cancelled'
             booking.save(bypass_validation=True)
-            booking.room.update_room_status()  # Update the room status after cancellation
+            booking.room.update_room_status()
+            # Update the room status after cancellation
+            # booking_url = f"{BASE_URL}/room/my-bookings/"
+            # html_content = render_to_string('room/cancellation_email_template.html', {'booking': booking, 'booking_url': booking_url})
+            
+            # # Inline CSS
+            # html_content = transform(html_content)
+            
+            # # Create the email message with only HTML content
+            # email = EmailMultiAlternatives(
+            #     subject='Booking Cancellation Confirmation',
+            #     from_email='adarhotel33@gmail.com',
+            #     to=[booking.user.email]
+            # )
+            # # Attach the HTML content
+            # email.attach_alternative(html_content, "text/html")
+            
+            # # Send the email
+            # email.send()
             return HttpResponseRedirect(self.success_url)
         except Exception as e:
             print(f"Exception when canceling booking: {e}")

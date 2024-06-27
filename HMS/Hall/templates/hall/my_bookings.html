@@ -1,0 +1,30 @@
+{% extends "base_generic.html" %}
+
+{% block title %}My Bookings{% endblock %}
+
+{% block content %}
+<h1>My Bookings</h1>
+{% if object_list %}
+    <ul>
+        {% for booking in object_list %}
+        <li>
+            <h2>Hall: {{ booking.hall.name }}</h2>
+            <p>Start Date: {{ booking.start_date }}</p>
+            <p>End Date: {{ booking.end_date }}</p>
+            <p>Start Time: {{ booking.start_time }}</p>
+            <p>End Time: {{ booking.end_time }}</p>
+            <p>Amount Due: ${{ booking.amount_due }}</p>
+            <p>Status: {% if booking.is_paid %}Paid{% else %}Pending{% endif %}</p>
+            {% if not booking.is_paid %}
+                <form method="post" action="{% url 'retry_payment' booking.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">Pay Now</button>
+                </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>You have no bookings.</p>
+{% endif %}
+{% endblock %}

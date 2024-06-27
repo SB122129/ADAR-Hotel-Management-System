@@ -19,6 +19,7 @@ urlpatterns = [
     path('gym/', include('gym.urls')),
     path('', include('paypal.standard.ipn.urls')),
     path('telegram/', include('telegram_bot.urls')),
+    path('hall/', include('Hall.urls')),
     
     
 ]

@@ -18,7 +18,7 @@
        
     <div class="row mt-6">
         <div class="col-xl-4">
-            <div class="card mb-4 mb-xl-0 mt-5">
+            <div class="card mb-4 mb-xl-0 mt-5 rounded">
                 <div class="card-header">Profile Picture</div>
                 <div class="card-body text-center">
                     {% if user.profile_picture %}
@@ -31,7 +31,7 @@
             </div>
         </div>
         <div class="col-xl-8">
-            <div class="card mb-4 mt-5">
+            <div class="card mb-4 mt-5 rounded">
                 <div class="card-header">Account Details</div>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
@@ -39,7 +39,7 @@
                         {% for field in form %}
                             <div class="mb-3">
                                 <label class="mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                {{ field|add_class:"form-control" }}
+                                {{ field|add_class:"form-control rounded" }}
                                 {% if field.errors %}
                                     <div class="alert alert-danger mt-2">
                                         {{ field.errors|first }}

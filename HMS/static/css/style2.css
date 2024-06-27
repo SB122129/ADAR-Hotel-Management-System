@@ -3,10 +3,7 @@ body {
     font-family: 'Montserrat', sans-serif;
     }
     
-.btn-custom {
-    background-color: blueviolet;
-    color: #fff;
-}
+
 .dropdown-toggle:focus {
 box-shadow: none !important;
 }

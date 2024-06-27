@@ -19,7 +19,7 @@
     <div class="row">
         {% for booking in bookings %}
             <div class="col-md-6">
-                <div class="card mb-5 rounded shadow">
+                <div class="card h-100 mb-5 rounded shadow">
                     <div class="card-body">
                         <h5 class="card-title"><strong><i class="bi bi-list-ol"></i>&ensp;Room number</strong>  {{ booking.room.room_number }}</h5>
                         <img src="{{booking.room.room_image.url}}" style="width: 400;height: 270px;" class="card-img-top rounded">
@@ -39,6 +39,27 @@
                             <div class="col-sm-6 text-left"><strong><i class="bi bi-door-open-fill"></i>&ensp;Booking Status</strong></div>
                             <div class="col-sm-6 text-center">{{ booking.status }}</div>
                         </div>
+                        
+                        
+                        {% if not booking.status == 'pending' %}
+                        <div class="row mb-2">
+                            <div class="col-sm-6 text-left"><i class="bi bi-cash"></i><strong>&ensp;Total Amount Paid</strong></div>
+                            <div class="col-sm-6 text-center">{{ booking.total_amount }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-6 text-left"><i class="bi bi-cash"></i><strong>&ensp;Original Amount Paid</strong></div>
+                            <div class="col-sm-6 text-center">{{ booking.original_booking_amount }}</div>
+                        </div>
+                        
+                        {% if booking.booking_extend_amount %}
+                        <div class="row mb-2">
+                            <div class="col-sm-6 text-left"><i class="bi bi-cash"></i><strong>&ensp;Booking Extension Amount Paid</strong></div>
+                            <div class="col-sm-6 text-center">{{ booking.booking_extend_amount }}</div>
+                        </div>
+                        {% endif %}
+                            
+                        {% endif %}
+                            
                     </div>
                     <div class="d-flex justify-content-center m-3">
                         {% if booking.status == 'pending' %}

@@ -1,0 +1,16 @@
+{% extends "accountss/base.html" %}
+
+{% block title %}Hall Details{% endblock %}
+
+{% block content %}
+<h1>{{ object.name }}</h1>
+<p>{{ object.description }}</p>
+<p>Price per hour: ${{ object.price_per_hour }}</p>
+<p>Capacity: {{ object.capacity }}</p>
+
+{% if user.is_authenticated %}
+    <a href="{% url 'booking_create' %}?hall={{ object.pk }}">Book Now</a>
+{% else %}
+    <p>Please <a href="{% url 'login' %}">login</a> to book this hall.</p>
+{% endif %}
+{% endblock %}

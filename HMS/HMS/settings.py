@@ -60,10 +60,17 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
+# Celery configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Make sure Redis is running
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
 
-ALLOWED_HOSTS = [ '*']
+ALLOWED_HOSTS = [ 'airlines-tc-attribute-mj.trycloudflare.com','127.0.0.1:8000','localhost']
 CSRF_TRUSTED_ORIGINS = [
-    'https://broadly-lenient-adder.ngrok-free.app',
+    'https://airlines-tc-attribute-mj.trycloudflare.com',
     'http://127.0.0.1:8000/',
 ]
 
@@ -101,6 +108,7 @@ INSTALLED_APPS = [
     'social_django',
     'admins',
     'gym',
+    'Hall',
     'django_countries',
     'paypal.standard.ipn',
     'telegram_bot'
@@ -291,3 +299,13 @@ AUTHENTICATION_BACKENDS = (
 )
 
 RUN_TELEGRAM_BOT = True
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
+EMAIL_PORT = 587  # SMTP server port (587 for TLS, 465 for SSL)
+EMAIL_USE_TLS = True  # True for TLS, False for SSL
+EMAIL_HOST_USER = 'adarhotel33@gmail.com'  # SMTP server username
+EMAIL_HOST_PASSWORD = 'akxamsudgtdbvgpl'  # SMTP server password
+EMAIL_USE_SSL = False  # Set to True if using SSL
+DEFAULT_FROM_EMAIL = 'adarhotel33@gmail.com'  # Default sender email address

@@ -90,6 +90,8 @@ class Booking(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     user = models.ForeignKey(Custom_user, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    original_booking_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    booking_extend_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     check_in_date = models.DateField()
     check_out_date = models.DateField()
     extended_check_out_date = models.DateField(null=True, blank=True)  # New field for extended checkout date
@@ -113,9 +115,7 @@ class Booking(models.Model):
         if self.check_out_date <= self.check_in_date:
             raise ValidationError('Check-out date must be after the check-in date.')
 
-        # Ensure extended check-out date is after check-out date
-        if self.extended_check_out_date and self.extended_check_out_date <= self.check_out_date:
-            raise ValidationError('Extended check-out date must be after the current check-out date.')
+
 
     def save(self, *args, **kwargs):
         
@@ -134,7 +134,7 @@ class Booking(models.Model):
             # Calculate duration of stay
                 duration = (self.check_out_date - self.check_in_date).days
             # Calculate amount based on price per night and duration
-                self.total_amount = self.room.price_per_night * duration
+                self.original_booking_amount = self.room.price_per_night * duration
             # Perform regular save with validation
             super().save(*args, **kwargs)
     

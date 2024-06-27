@@ -1,0 +1,17 @@
+{% extends "accountss/base.html" %}
+
+{% block title %}Hall List{% endblock %}
+
+{% block content %}
+<h1>Available Halls</h1>
+<ul>
+    {% for hall in object_list %}
+    <li>
+        <a href="{% url 'hall_detail' hall.pk %}">{{ hall.name }}</a>
+        <p>{{ hall.description }}</p>
+        <p>Price per hour: ${{ hall.price_per_hour }}</p>
+        <p>Capacity: {{ hall.capacity }}</p>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
