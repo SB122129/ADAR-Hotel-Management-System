@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-
+from config import BASE_URL
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from datetime import datetime
@@ -153,8 +153,8 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
         tx_ref = membership.tx_ref
 
         url = "https://api.chapa.co/v1/transaction/initialize"
-        redirect_url = f'https://broadly-lenient-adder.ngrok-free.app/gym/bookings'
-        webhook_url = f'https://broadly-lenient-adder.ngrok-free.app/room/chapa-webhook/'
+        redirect_url = f'{BASE_URL}/gym/bookings'
+        webhook_url = f'{BASE_URL}/room/chapa-webhook/'
 
         payload = {
             "amount": amount,
@@ -194,8 +194,8 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
                 "payment_method": "paypal"
             },
             "redirect_urls": {
-                "return_url": f"https://broadly-lenient-adder.ngrok-free.app/gym/paypal-return/?membership_id={membership.id}",
-                "cancel_url": f"https://broadly-lenient-adder.ngrok-free.app/gym/paypal-cancel/?membership_id={membership.id}"
+                "return_url": f"{BASE_URL}/gym/paypal-return/?membership_id={membership.id}",
+                "cancel_url": f"{BASE_URL}/gym/paypal-cancel/?membership_id={membership.id}"
             },
             "transactions": [{
                 "item_list": {

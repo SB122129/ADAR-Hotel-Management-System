@@ -3,19 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Room Booking Confirmation</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
         body {
-            font-family: 'Montserrat', sans-serif;
+            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f6f6f6;
         }
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 900px;
             margin: 0 auto;
             background-color: #ffffff;
             padding: 20px;
@@ -49,6 +46,7 @@
             background-color: #4CAF50;
             text-decoration: none;
             border-radius: 5px;
+            text-align: center;
         }
         .footer {
             text-align: center;
@@ -58,37 +56,58 @@
             border-top: 1px solid #dddddd;
             margin-top: 20px;
         }
+        .row {
+            width: 100%;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .col-6 {
+            float: left;
+            width: 50%;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+        strong {
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .centered-button {
+            text-align: center;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Room Booking Confirmation</h1>
+            <h1>ADAR Hotel Room Booking Confirmation</h1>
         </div>
         <div class="content">
-            <p>Dear {{ booking.user.first_name }},</p>
+            <h3>Dear {{ booking.user.first_name }},</h3>
             <p>You have successfully booked your {{ booking.room.room_type }} suite with room number {{ booking.room.room_number }}.</p>
             <p><strong>Booking Details</strong></p>
-            <div class="row mb-2">
-                        <div class="col-6"><i class="bi bi-list-ol"></i><strong>Room Number</strong></div>
-                        <div class="col-6">{{ booking.room }}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-6"><i class="bi bi-calendar-plus-fill"></i><strong>Check-in Date</strong></div>
-                        <div class="col-6">{{ booking.check_in_date }}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-6"><i class="bi bi-calendar-minus-fill"></i><strong>Check-out Date</strong></div>
-                        <div class="col-6">{% if booking.extended_check_out_date %} {{ booking.extended_check_out_date }} {% else %} {{ booking.check_out_date }} {% endif %}</div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-6"><i class="bi bi-cash"></i><strong>Amount Paid</strong></div>
-                        <div class="col-6">{{ booking.original_booking_amount }}</div>
-                    </div>
-            <p>We look forward to welcoming you!</p>
-            <div class="d-flex justify-content-center">
-            <a href="{{ booking_url }}" class="button">View Bookings</a>
-        </div>
+            <div class="row mb-2 clearfix">
+                <div class="col-6"><strong>Room Number</strong></div>
+                <div class="col-6">{{ booking.room }}</div>
+            </div>
+            <div class="row mb-2 clearfix">
+                <div class="col-6"><strong>Check-in Date</strong></div>
+                <div class="col-6">{{ booking.check_in_date }}</div>
+            </div>
+            <div class="row mb-2 clearfix">
+                <div class="col-6"><strong>Check-out Date</strong></div>
+                <div class="col-6">{% if booking.extended_check_out_date %} {{ booking.extended_check_out_date }} {% else %} {{ booking.check_out_date }} {% endif %}</div>
+            </div>
+            <div class="row mb-2 clearfix">
+                <div class="col-6"><strong>Amount Paid</strong></div>
+                <div class="col-6">{{ booking.original_booking_amount }}</div>
+            </div>
+            <div class="centered-button">
+                <a href="{{ booking_url }}" class="button">View Bookings</a>
+            </div>
         </div>
         <div class="footer">
             <p>Thank you for choosing our hotel!</p>

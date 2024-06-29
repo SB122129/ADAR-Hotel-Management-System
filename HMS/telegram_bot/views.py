@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from telegram import Update
 import json
+from config import BASE_URL
 import random,string
 from django.conf import settings
 from django.http import HttpResponse
@@ -253,8 +254,8 @@ async def payment_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await query.message.reply_text('Please proceed with Chapa payment.')
         booking = context.user_data['booking']
         amount = str(booking.total_amount)
-        redirect_url = f'https://broadly-lenient-adder.ngrok-free.app/room/bookings'
-        webhook_url = f'https://broadly-lenient-adder.ngrok-free.app/room/chapa-webhook/'
+        redirect_url = f'{BASE_URL}/room/bookings'
+        webhook_url = f'{BASE_URL}/room/chapa-webhook/'
 
         payload = {
             "amount": amount,
@@ -302,8 +303,8 @@ async def payment_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 "payment_method": "paypal"
             },
             "redirect_urls": {
-                "return_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-return/?booking_id={booking.id}",
-                "cancel_url": f"https://broadly-lenient-adder.ngrok-free.app/room/paypal-cancel/?booking_id={booking.id}"
+                "return_url": f"{BASE_URL}/room/paypal-return/?booking_id={booking.id}",
+                "cancel_url": f"{BASE_URL}/room/paypal-cancel/?booking_id={booking.id}"
             },
             "transactions": [{
                 "item_list": {
@@ -348,7 +349,7 @@ async def pending_payments(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     if not user:
         await query.message.reply_text('User not found. Please restart the bot and enter your email.')
-        return ConversationHandler.END
+        return MENU
 
     try:
         bookings = await sync_to_async(list)(Booking.objects.filter(user=user, status='pending'))
@@ -385,9 +386,13 @@ async def pending_payments(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     except Exception as e:
         logger.error(f"Error fetching pending payments: {e}")
-        await query.message.reply_text('An error occurred while fetching your pending payments. Please try again later.', reply_markup=get_main_menu_buttons())
+        await query.message.reply_text('An error occurred while fetching your pending payments. Please try again later.')
+        await query.message.reply_text(
+            'What would you like to do next?',
+            reply_markup=get_main_menu_buttons()
+        )
         return MENU
-
+        
 async def pay_pending(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
@@ -426,14 +431,20 @@ async def my_bookings(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     user = context.user_data.get('user')
 
     if not user:
-        await query.message.reply_text('User not found. Please restart the bot and enter your email.')
-        return ConversationHandler.END
+        await query.message.reply_text(
+            'What would you like to do next?',
+            reply_markup=get_main_menu_buttons()
+        )
+        return MENU
 
     try:
         bookings = await sync_to_async(list)(Booking.objects.filter(user=user).exclude(status__in=['cancelled']))
 
         if not bookings:
-            await query.message.reply_text('You have no bookings.')
+            await query.message.reply_text(
+            'No bookings to show.What would you like to do next?',
+            reply_markup=get_main_menu_buttons()
+        )
             return MENU
 
         for booking in bookings:
@@ -466,7 +477,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         'Booking cancelled. To start over, type /start.',
         reply_markup=get_main_menu_buttons()
     )
-    return ConversationHandler.END
+    return MENU
 
 
 # Display user's bookings and ask which one to cancel
@@ -484,9 +495,13 @@ async def cancel_booking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         bookings = await sync_to_async(list)(Booking.objects.filter(user=user, status='confirmed'))
 
         if not bookings:
-            await query.message.reply_text('You have no confirmed bookings to cancel.')
+            await query.message.reply_text(
+        'You have no confirmed bookings to cancel. What would you like to do next?',
+        reply_markup=get_main_menu_buttons()
+    )
+    
             return MENU
-
+            
         for booking in bookings:
             room = booking.room
             message = (
@@ -557,7 +572,8 @@ async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 def set_webhook():
     application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
-    application.bot.set_webhook(url='https://broadly-lenient-adder.ngrok-free.app/telegram/webhook/')
+    application.bot.set_webhook(url='{BASE_URL}/telegram/webhook/')
+
 
 @csrf_exempt
 def start_bot(request):

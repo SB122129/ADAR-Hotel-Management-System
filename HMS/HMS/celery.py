@@ -13,5 +13,14 @@ app = Celery('HMS')
 # should have a `CELERY_` prefix.
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
+# myproject/celery.py
+app.conf.update(
+    worker_hijack_root_logger=False,  # Disable root logger hijack
+    worker_redirect_stdouts_level='INFO',
+    worker_log_format='[%(asctime)s: %(levelname)s/%(processName)s] %(message)s',
+    worker_task_log_format='[%(asctime)s: %(levelname)s/%(processName)s] %(message)s',
+)
+
+
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()

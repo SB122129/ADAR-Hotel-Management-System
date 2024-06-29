@@ -48,7 +48,6 @@ DEBUG = True
 #     },
 # }
 
-# settings.py
 
 from django.contrib.messages import constants as messages
 
@@ -68,9 +67,53 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
-ALLOWED_HOSTS = [ 'airlines-tc-attribute-mj.trycloudflare.com','127.0.0.1:8000','localhost']
+
+# from huey_config import RedisHuey
+
+# HUEY = RedisHuey(
+#     'my-app', 
+#     host='localhost', 
+#     port=6379
+# )
+
+
+
+
+# DJANGO_HUEY = {
+#     'huey_class': 'huey.RedisHuey',  # Use 'huey.SqliteHuey', 'huey.MemoryHuey', etc.
+#     'name': 'room',
+#     'results': True,
+#     'store_none': False,
+#     'immediate': False,  # If True, runs tasks synchronously, mainly for debugging/testing
+#     'utc': True,
+#     'blocking': True,  # If True, Huey will block until results are available.
+#     'backend_class': 'huey.RedisBackend',  # Use 'huey.MemoryBackend', etc.
+#     'connection': {
+#         'host': 'localhost',
+#         'port': 6379,
+#         'db': 0,
+#         'connection_pool': None,  # Use a Redis connection pool
+#         'read_timeout': 1,  # If >0, sets the Redis client's socket read timeout
+#         'max_errors': 1000,  # Max # of errors before giving up
+#         'retry_delay': 1,  # # of seconds to wait between errors
+#     },
+#     'consumer': {
+#         'workers': 4,
+#         'worker_type': 'thread',  # 'thread' or 'greenlet'
+#         'initial_delay': 0.1,  # Small amount of time to sleep at start
+#         'backoff': 1.15,  # Exponential backoff using this rate
+#         'max_delay': 10.0,  # Max amount of time to pause between retries
+#         'scheduler_interval': 1,  # Check schedule every second
+#         'periodic': True,  # Enable crontab feature
+#         'check_worker_health': True,  # Enable worker health checks
+#     },
+# }
+
+
+
+ALLOWED_HOSTS = [ '*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://airlines-tc-attribute-mj.trycloudflare.com',
+    'https://alyz1358fq6u.share.zrok.io',
     'http://127.0.0.1:8000/',
 ]
 
@@ -111,8 +154,10 @@ INSTALLED_APPS = [
     'Hall',
     'django_countries',
     'paypal.standard.ipn',
-    'telegram_bot'
-    
+    # 'django_huey',
+     "huey.contrib.djhuey",
+    "hueymail",
+    'telegram_bot.apps.TelegramBotConfig',
 ]
 
 import environ
@@ -301,7 +346,8 @@ AUTHENTICATION_BACKENDS = (
 RUN_TELEGRAM_BOT = True
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_BACKEND = 'hueymail.backends.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
 EMAIL_PORT = 587  # SMTP server port (587 for TLS, 465 for SSL)
 EMAIL_USE_TLS = True  # True for TLS, False for SSL
@@ -309,3 +355,5 @@ EMAIL_HOST_USER = 'adarhotel33@gmail.com'  # SMTP server username
 EMAIL_HOST_PASSWORD = 'akxamsudgtdbvgpl'  # SMTP server password
 EMAIL_USE_SSL = False  # Set to True if using SSL
 DEFAULT_FROM_EMAIL = 'adarhotel33@gmail.com'  # Default sender email address
+
+HUEY_EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

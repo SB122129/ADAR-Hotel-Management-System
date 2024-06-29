@@ -1,2 +1,2 @@
 # config.py
-BASE_URL = 'https://airlines-tc-attribute-mj.trycloudflare.com'
+BASE_URL = 'https://alyz1358fq6u.share.zrok.io'
