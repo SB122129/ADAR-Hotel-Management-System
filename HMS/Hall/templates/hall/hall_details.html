@@ -22,7 +22,13 @@
     </div>
 </div>
 </div>
-<div class="col-lg-6"></div>
+<div class="col-lg-6">
+    <form action="{% url 'check_availability' hall.pk %}" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Check Availability</button>
+    </form>
+</div>
 </div>
 </div>
 {% endblock %}

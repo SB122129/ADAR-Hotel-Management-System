@@ -1,0 +1,8 @@
+<!-- payment_page.html -->
+<h1>Payment Page</h1>
+<p>Booking for: {{ booking.hall.name }}</p>
+<p>Total Cost: ${{ total_cost }}</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Confirm Payment</button>
+</form>
