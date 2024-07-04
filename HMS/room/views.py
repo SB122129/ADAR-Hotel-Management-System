@@ -50,7 +50,6 @@ from django.http import HttpResponseNotFound
 from django.http import HttpResponseServerError
 from django.core.mail import EmailMultiAlternatives
 from premailer import transform
-from .signals import booking_confirmed
 
 
 
@@ -535,7 +534,6 @@ class PayPalCancelView(View):
 
 
 
-from .tasks import send_booking_confirmation_email
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ChapaWebhookView(View):
@@ -671,7 +669,7 @@ class ChapaWebhookView(View):
 
         
 
-
+logger = logging.getLogger(__name__)
 
 
 

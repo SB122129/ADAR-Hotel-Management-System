@@ -9,11 +9,11 @@ from .forms import BookingForm
 
 class HallListView(ListView):
     model = Hall
-    template_name = 'hall_list.html'
+    template_name = 'hall/hall_list.html'
 
 class HallDetailView(DetailView):
     model = Hall
-    template_name = 'hall_detail.html'
+    template_name = 'hall/hall_details.html'
 
 class BookingCreateView(LoginRequiredMixin, CreateView):
     model = Hall_Booking

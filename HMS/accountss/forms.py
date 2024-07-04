@@ -14,7 +14,7 @@ class CustomUserCreationForm(UserCreationForm):
     )
     username = forms.CharField(validators=[username_regex])
     name_regex = RegexValidator(
-        regex=r'^[a-zA-Z]{2,10}$',
+        regex=r'^[a-zA-Z]{2,15}$',
         message="Name must be at least 2 letters and atmost 10 letters long and contain only letters."
     )
     first_name = forms.CharField(validators=[name_regex])
@@ -41,7 +41,7 @@ class CustomUserCreationForm(UserCreationForm):
 
 class CustomUserUpdateForm(forms.ModelForm):
     username_regex = RegexValidator(
-        regex=r'^.{2,10}$',
+        regex=r'^.{2,15}$',
         message="Username must be 2 to 10 characters long."
     )
     username = forms.CharField(validators=[username_regex])

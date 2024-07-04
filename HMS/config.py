@@ -1,2 +1,2 @@
 # config.py
-BASE_URL = 'https://alyz1358fq6u.share.zrok.io'
+BASE_URL = 'https://adarhotel33.loophole.site'

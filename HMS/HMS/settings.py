@@ -113,12 +113,14 @@ CELERY_TIMEZONE = 'UTC'
 
 ALLOWED_HOSTS = [ '*']
 CSRF_TRUSTED_ORIGINS = [
-    'https://alyz1358fq6u.share.zrok.io',
     'http://127.0.0.1:8000/',
+    'https://broadly-lenient-adder.ngrok-free.app',
+    'https://adarhotel33.loophole.site',
 ]
 
 CSRF_COOKIE_SECURE = False
 CSRF_USE_SESSIONS = False
+
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 # Application definition
 
@@ -157,7 +159,7 @@ INSTALLED_APPS = [
     # 'django_huey',
      "huey.contrib.djhuey",
     "hueymail",
-    'telegram_bot.apps.TelegramBotConfig',
+    'telegram_bot',
 ]
 
 import environ
@@ -237,11 +239,16 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.user.user_details',
 )
 
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # Options are 'mandatory', 'optional', or 'none'
+from config import BASE_URL
+ACCOUNT_EMAIL_VERIFICATION = 'non'  # Options are 'mandatory', 'optional', or 'none'
 ACCOUNT_EMAIL_REQUIRED = True
+
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = "74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com"
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = "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"
-#SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://a7a4-196-189-112-211.ngrok-free.app/social/complete/google-oauth2/'
+# SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = f'{BASE_URL}/social/complete/google-oauth2/'
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+SOCIAL_AUTH_LOGIN_ERROR_URL = 'login'
+SOCIAL_AUTH_RAISE_EXCEPTIONS = False
 
 # SOCIAL_AUTH_GOOGLE_OAUTH2 = {
 #     'CLIENT_ID': '74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com',
@@ -290,6 +297,7 @@ DATABASES = {
      }
 }
 
+
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
@@ -332,7 +340,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
-LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/'
 AUTH_USER_MODEL = 'accountss.Custom_user'
 
@@ -356,4 +363,3 @@ EMAIL_HOST_PASSWORD = 'akxamsudgtdbvgpl'  # SMTP server password
 EMAIL_USE_SSL = False  # Set to True if using SSL
 DEFAULT_FROM_EMAIL = 'adarhotel33@gmail.com'  # Default sender email address
 
-HUEY_EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

@@ -3,14 +3,26 @@
 {% block title %}Hall Details{% endblock %}
 
 {% block content %}
-<h1>{{ object.name }}</h1>
-<p>{{ object.description }}</p>
-<p>Price per hour: ${{ object.price_per_hour }}</p>
-<p>Capacity: {{ object.capacity }}</p>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-6 mt-5">
+<div class="card shadow mt-5">
+    <img src="{{ object.image.url }}" alt="" class="card-img-top rounded">
+    <div class="card-body">
+        <h1 class="card-title font-weight-bold">{{ object.name }}</h1>
+        <p class="card-text small">{{ object.description }}</p>
+        <p class="card-text">Price per hour: ${{ object.price_per_hour }}</p>
+        <p class="card-text">Capacity: {{ object.capacity }}</p>
 
-{% if user.is_authenticated %}
-    <a href="{% url 'booking_create' %}?hall={{ object.pk }}">Book Now</a>
-{% else %}
-    <p>Please <a href="{% url 'login' %}">login</a> to book this hall.</p>
-{% endif %}
+        {% if user.is_authenticated %}
+            <a href="{% url 'booking_create' %}?hall={{ object.pk }}" class="btn btn-primary">Book Now</a>
+        {% else %}
+            <p>Please <a href="{% url 'login' %}">login</a> to book this hall.</p>
+        {% endif %}
+    </div>
+</div>
+</div>
+<div class="col-lg-6"></div>
+</div>
+</div>
 {% endblock %}

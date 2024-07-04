@@ -9,7 +9,7 @@
                 <form class="form  mb-5 w-100" method='post'>
                     {% csrf_token %}
                     {% if messages %}
-                    <div class="alert alert-warning text-danger text-center alert-dismissible fade show" role="alert">
+                    <div class="alert alert-warning text-danger text-center font-weight-bold small alert-dismissible fade show" role="alert">
                         {% for message in messages %}
                         {{ message }}
                         {% endfor %}
