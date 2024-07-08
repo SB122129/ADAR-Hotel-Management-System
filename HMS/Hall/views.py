@@ -1,19 +1,20 @@
 # views.py
-
+from django.contrib import messages
 from django.views.generic import ListView, DetailView, CreateView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.shortcuts import redirect
 from .models import Hall, Hall_Booking
 from django.views.generic import DetailView, FormView
-from .models import Hall, Booking
+from .models import Hall, Hall_Booking
 from .forms import BookingForm
 from django.shortcuts import redirect
 from django.views.generic import CreateView
 from .forms import BookingForm
 from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404
-from .models import Booking
+from .forms import CheckAvailabilityForm, BookingForm
+
 
 class HallListView(ListView):
     model = Hall
@@ -22,9 +23,14 @@ class HallListView(ListView):
 class HallDetailView(DetailView):
     model = Hall
     template_name = 'hall/hall_details.html'
+    context_object_name = 'hall'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = CheckAvailabilityForm()
+        return context
 class CheckAvailabilityView(FormView):
-    form_class = BookingForm
+    form_class = CheckAvailabilityForm
     template_name = 'check_availability.html'
 
     def form_valid(self, form):
@@ -34,9 +40,9 @@ class CheckAvailabilityView(FormView):
         start_time = form.cleaned_data['start_time']
         end_time = form.cleaned_data['end_time']
 
-        availability = not Hall_Booking.objects.filter(
+        availability = not Booking.objects.filter(
             hall=hall,
-            start_date__lte=end_date,
+            start_date__lte=end_date if end_date else start_date,
             end_date__gte=start_date,
             start_time__lte=end_time,
             end_time__gte=start_time,
