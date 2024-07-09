@@ -41,6 +41,17 @@
                                 <div class="col-sm-5 text-left"><strong>Status</strong></div>
                                 <div class="col-sm-7 text-center">{{ membership.status }}</div>
                             </div>
+                            {% if membership.for_first_name %}
+                                <div class="row mb-2">
+                                    <div class="col-sm-5 text-left"><strong>For</strong></div>
+                                    <div class="col-sm-7 text-center">{{ membership.for_first_name }} {{ membership.for_last_name }}</div>
+                                </div>
+                                {% else %}
+                                <div class="row mb-2">
+                                    <div class="col-sm-5 text-left"><strong>For</strong></div>
+                                    <div class="col-sm-7 text-center">{{ membership.user.first_name }} {{ membership.user.last_name }}</div>
+                                </div>        
+                            {% endif %}
                             <div class="d-flex justify-content-center mt-3">
                                 {% if membership.status == 'pending' %}
                                     <a href="{% url 'membership_signup' membership.plan.id %}?membership_id={{ membership.id }}&start_date={{ membership.start_date|date:'Y-m-d' }}" class="btn btn-sm btn-success rounded btn-primary">Pay</a>

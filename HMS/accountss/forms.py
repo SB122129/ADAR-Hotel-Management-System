@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 
 from django.core.validators import RegexValidator
 
+
 class CustomUserCreationForm(UserCreationForm):
     username_regex = RegexValidator(
         regex=r'^.{2,10}$',
@@ -15,14 +16,18 @@ class CustomUserCreationForm(UserCreationForm):
     username = forms.CharField(validators=[username_regex])
     name_regex = RegexValidator(
         regex=r'^[a-zA-Z]{2,15}$',
-        message="Name must be at least 2 letters and atmost 10 letters long and contain only letters."
+        message="Name must be at least 2 letters and atmost 15 letters long and contain only letters."
     )
     first_name = forms.CharField(validators=[name_regex])
     last_name = forms.CharField(validators=[name_regex])
 
     class Meta:
         model = Custom_user
-        fields = ['username','first_name', 'last_name', 'email', 'country', 'telegram_username', 'profile_picture', 'phone_number']
+        fields = ['username', 'first_name', 'last_name', 'email', 'country', 'telegram_username', 'profile_picture', 'phone_number']
+
+    def __init__(self, *args, **kwargs):
+        super(CustomUserCreationForm, self).__init__(*args, **kwargs)
+        self.fields['phone_number'].widget = forms.TextInput(attrs={'placeholder': '+2519xxxxxxxx or +2517xxxxxxxx'})
 
     def clean_email(self):
         email = self.cleaned_data.get('email')

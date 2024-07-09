@@ -156,13 +156,14 @@
 
             if (!planIdInput.value) {
                 event.preventDefault();
-                showAlert('Please select a plan before submitting.', 'danger');
+                showAlert('Please select a plan', 'danger');
             }
         });
 
         function showAlert(message, type) {
             const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-dismissible text-center mt-5 alert-${type} rounded`;
+            alertDiv.className = `alert alert-dismissible text-center mt-5 alert-${type} rounded mx-auto d-block`;
+            alertDiv.style.width = "80%";
             alertDiv.innerHTML = `
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
