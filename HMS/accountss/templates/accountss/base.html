@@ -83,9 +83,7 @@ a.dropdown-item:hover{
             <div class="navbar-nav ml-auto pt-1">
                 <a class="nav-item nav-link text-warning" href="{% url 'home' %}">Home</a>
                 <a class="nav-item nav-link text-warning" href="{% url 'about' %}">About</a>
-                <a class="nav-item nav-link text-warning" href="{% url 'hall_list' %}">Halls</a>
                 <div class="dropdown ml-3">
-                  
                     <a style="outline: none;" class="btn  pt-2 text-warning dropdown-toggle-no-caret nav-link" id="dropdownMenuButton" aria-haspopup="true" aria-expanded="false">Room</a>
                     <div class="dropdown-menu transparent-dropdown" aria-labelledby="dropdownMenuButton">
                         <a class="dropdown-item nav-link text-warning " href="{% url 'rooms' %}">View Rooms</a>
@@ -94,6 +92,15 @@ a.dropdown-item:hover{
                         {% endif %}
                     </div>
                 </div>
+                <div class="dropdown ml-3">
+                  <a style="outline: none;" class="btn  pt-2 text-warning dropdown-toggle-no-caret nav-link" id="dropdownMenuButton" aria-haspopup="true" aria-expanded="false">Hall</a>
+                  <div class="dropdown-menu transparent-dropdown" aria-labelledby="dropdownMenuButton">
+                      <a class="dropdown-item nav-link text-warning " href="{% url 'hall_list' %}">View Halls</a>
+                      {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
+                      <a class="dropdown-item nav-link text-warning" href="{% url 'hall_bookings' %}">My Bookings</a>
+                      {% endif %}
+                  </div>
+              </div>
                 <div class="dropdown ml-3">
                   <a style="outline: none;" class="btn  pt-2 text-warning dropdown-toggle-no-caret nav-link" id="dropdownMenuButton" aria-haspopup="true" aria-expanded="false">Fitness</a>
                   <div class="dropdown-menu transparent-dropdown" aria-labelledby="dropdownMenuButton">

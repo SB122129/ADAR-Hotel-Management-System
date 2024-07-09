@@ -14,6 +14,7 @@ from .forms import BookingForm
 from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404
 from .forms import CheckAvailabilityForm, BookingForm
+import datetime
 
 
 class HallListView(ListView):
@@ -31,7 +32,7 @@ class HallDetailView(DetailView):
         return context
 class CheckAvailabilityView(FormView):
     form_class = CheckAvailabilityForm
-    template_name = 'check_availability.html'
+    template_name = 'hall/hall_details.html'
 
     def form_valid(self, form):
         hall = Hall.objects.get(pk=self.kwargs['pk'])
@@ -40,7 +41,7 @@ class CheckAvailabilityView(FormView):
         start_time = form.cleaned_data['start_time']
         end_time = form.cleaned_data['end_time']
 
-        availability = not Booking.objects.filter(
+        availability = not Hall_Booking.objects.filter(
             hall=hall,
             start_date__lte=end_date if end_date else start_date,
             end_date__gte=start_date,
@@ -49,32 +50,105 @@ class CheckAvailabilityView(FormView):
             status='confirmed'
         ).exists()
 
-        context = {
+        if availability:
+            # Store the form data in session
+            self.request.session['booking_data'] = {
+                'start_date': str(start_date),
+                'end_date': str(end_date) if end_date else None,
+                'start_time': str(start_time),
+                'end_time': str(end_time)
+            }
+            return redirect(reverse_lazy('book_hall', kwargs={'pk': hall.pk}))
+        else:
+            context = {
+                'form': form,
+                'hall': hall,
+                'availability': availability,
+            }
+            return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['hall'] = Hall.objects.get(pk=self.kwargs['pk'])
+        return context    
+
+# views.py
+from decimal import Decimal
+
+class BookingView(TemplateView):
+    template_name = 'hall/booking_create.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        hall = get_object_or_404(Hall, pk=self.kwargs['pk'])
+        booking_data = self.request.session.get('booking_data')
+
+        if not booking_data:
+            # Handle case where booking data is missing
+            return redirect('hall_detail', pk=hall.pk)
+
+        start_date = booking_data['start_date']
+        end_date = booking_data.get('end_date')
+        start_time = booking_data['start_time']
+        end_time = booking_data['end_time']
+
+        context.update({
             'hall': hall,
-            'availability': availability
-        }
-        return self.render_to_response(context)    
+            'start_date': start_date,
+            'end_date': end_date,
+            'start_time': start_time,
+            'end_time': end_time,
+        })
 
-class BookingView(CreateView):
-    form_class = BookingForm
-    template_name = 'booking_create.html'
+        # Calculate total cost
+        start_time_dt = datetime.datetime.strptime(start_time, '%H:%M:%S').time()
+        end_time_dt = datetime.datetime.strptime(end_time, '%H:%M:%S').time()
+        duration_hours = Decimal((datetime.datetime.combine(datetime.date.today(), end_time_dt) - datetime.datetime.combine(datetime.date.today(), start_time_dt)).seconds) / Decimal(3600)
 
-    def form_valid(self, form):
-        booking = form.save(commit=False)
-        booking.user = self.request.user
-        hall = Hall.objects.get(pk=self.kwargs['pk'])
-        booking.hall = hall
+        if end_date:
+            days = (datetime.datetime.strptime(end_date, '%Y-%m-%d').date() - datetime.datetime.strptime(start_date, '%Y-%m-%d').date()).days + 1
+            total_cost = duration_hours * hall.price_per_hour * Decimal(days)
+        else:
+            total_cost = duration_hours * hall.price_per_hour
 
-        # Calculate the cost
-        duration = (booking.end_time.hour - booking.start_time.hour)
-        cost_per_hour = 100  # Example cost per hour
-        total_cost = duration * cost_per_hour
+        context['total_cost'] = total_cost
+        return context
 
-        booking.status = 'pending'
-        booking.save()
+    def post(self, request, *args, **kwargs):
+        hall = get_object_or_404(Hall, pk=self.kwargs['pk'])
+        user = request.user
+        booking_data = self.request.session.get('booking_data')
 
-        # Redirect to payment page with total_cost
-        return redirect('payment_create', booking.pk, total_cost)
+        if not booking_data:
+            # Handle case where booking data is missing
+            return redirect('hall_detail', pk=hall.pk)
+
+        start_date = booking_data['start_date']
+        end_date = booking_data.get('end_date')
+        start_time = booking_data['start_time']
+        end_time = booking_data['end_time']
+        total_cost = self.get_context_data(**kwargs)['total_cost']
+
+        # Create the booking
+        booking = Hall_Booking.objects.create(
+            user=user,
+            hall=hall,
+            start_date=start_date,
+            end_date=end_date,
+            start_time=start_time,
+            end_time=end_time,
+            amount_due=total_cost,
+            is_paid=False,
+            status='pending'
+        )
+
+        # Clear booking data from session
+        del request.session['booking_data']
+
+        return redirect('payment_page', pk=booking.pk, total_cost=total_cost)
+
+
+
     
 
 
@@ -94,3 +168,7 @@ class PaymentView(TemplateView):
         booking.save()
         messages.success(request, 'Your booking has been confirmed.')
         return redirect('home')    
+class BookingListView(ListView):
+    model = Hall_Booking
+    template_name = 'hall/my_bookings.html'  # Path to your template
+    context_object_name = 'bookings'

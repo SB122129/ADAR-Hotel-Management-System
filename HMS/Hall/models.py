@@ -20,12 +20,18 @@ class Hall(models.Model):
     capacity = models.IntegerField()
     image = models.ImageField(upload_to='media/hall_images/', blank=True)
     floor = models.IntegerField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=Hall_STATUS_CHOICES, default='available')
 
 
     def __str__(self):
         return self.hall_number
 
 class Hall_Booking(models.Model):
+    Booking_STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('confirmed', 'Confirmed'),
+        ('cancelled', 'Cancelled'),
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     hall = models.ForeignKey(Hall, on_delete=models.CASCADE)
     start_date = models.DateField()
@@ -35,6 +41,7 @@ class Hall_Booking(models.Model):
     amount_due = models.DecimalField(max_digits=10, decimal_places=2)
     is_paid = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=Booking_STATUS_CHOICES, default='pending')
 
     def __str__(self):
         return f"{self.user.username} - {self.hall.name}"

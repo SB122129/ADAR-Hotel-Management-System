@@ -1,4 +1,4 @@
-{% extends "base_generic.html" %}
+{% extends "accountss/base.html" %}
 
 {% block title %}My Bookings{% endblock %}
 
@@ -16,7 +16,7 @@
             <p>Amount Due: ${{ booking.amount_due }}</p>
             <p>Status: {% if booking.is_paid %}Paid{% else %}Pending{% endif %}</p>
             {% if not booking.is_paid %}
-                <form method="post" action="{% url 'retry_payment' booking.pk %}">
+                <form method="post" action="">
                     {% csrf_token %}
                     <button type="submit">Pay Now</button>
                 </form>
