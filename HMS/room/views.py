@@ -552,6 +552,8 @@ class ChapaWebhookView(View):
 
         if tx_ref.startswith('booking'):
             return self.process_booking_payment(tx_ref, payload)
+        elif tx_ref.startswith('hall_booking'):
+            return self.process_hall_booking_payment(tx_ref, payload)
         elif tx_ref.startswith('membership'):
             return self.process_membership_payment(tx_ref, payload)
         else:
@@ -662,6 +664,7 @@ class ChapaWebhookView(View):
 
         
         booking.status = 'confirmed'
+        booking.is_paid = True
         booking.save()
 
         # # Send confirmation email

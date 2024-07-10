@@ -285,6 +285,7 @@ class PayPalReturnView(View):
         if payment.execute({"payer_id": payer_id}):
             if payment.state == "approved":
                 booking.status = 'confirmed'
+                booking.is_paid = True
                 booking.save()
 
                 payment_record, created = Hall_Payment.objects.get_or_create(

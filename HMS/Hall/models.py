@@ -45,7 +45,7 @@ class Hall_Booking(models.Model):
     status = models.CharField(max_length=20, choices=Booking_STATUS_CHOICES, default='pending')
 
     def __str__(self):
-        return f"{self.user.username} - {self.hall.name}"
+        return f"{self.user.username} - {self.hall.hall_type}"
 
 
 
