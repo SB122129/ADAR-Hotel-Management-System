@@ -50,6 +50,7 @@ from django.http import HttpResponseNotFound
 from django.http import HttpResponseServerError
 from django.core.mail import EmailMultiAlternatives
 from premailer import transform
+from Hall.models import *
 
 
 
@@ -604,8 +605,7 @@ class ChapaWebhookView(View):
                 booking.total_amount += booking.booking_extend_amount
             booking.save(bypass_validation=True)
 
-        # Trigger the email task
-        # send_booking_confirmation_email.delay(booking.id, booking.extended_check_out_date, "booking_url_placeholder")
+        
         booking_url = f"{BASE_URL}/room/my-bookings/"
         if booking.extended_check_out_date:
             subject = 'Room Booking Extension Confirmation'
@@ -631,6 +631,56 @@ class ChapaWebhookView(View):
         print("Booking and room updated")
         return HttpResponse("Booking webhook processed successfully")
 
+    def process_hall_booking_payment(self, tx_ref, payload):
+        try:
+            booking = Hall_Booking.objects.get(tx_ref=tx_ref)
+        except Hall_Booking.DoesNotExist:
+            print("Hall Booking not found")
+            return HttpResponseNotFound("Hall Booking not found")
+        except Hall_Booking.MultipleObjectsReturned:
+            print("Multiple hall bookings found")
+            return HttpResponseServerError("Multiple hall bookings found")
+
+        print("Hall Booking found:", booking)
+
+        payment, created = Hall_Payment.objects.get_or_create(
+            booking=booking,
+            defaults={
+                'status': 'completed',
+                'transaction_id': tx_ref,
+                'payment_method': 'chapa'
+            }
+        )
+
+        if not created:
+            print("Payment already exists for this booking.")
+            payment.status = 'completed'
+            payment.transaction_id = tx_ref
+            payment.save()
+
+        print("Payment record created or updated:", payment)
+
+        
+        booking.status = 'confirmed'
+        booking.save()
+
+        # # Send confirmation email
+        # booking_url = f"{BASE_URL}/hall/my-bookings/"
+        # subject = 'Hall Booking Confirmation'
+        # html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
+        # html_content = transform(html_content)
+
+        # email = EmailMultiAlternatives(
+        #     subject=subject,
+        #     from_email='adarhotel33@gmail.com',
+        #     to=[booking.user.email]
+        # )
+        # email.attach_alternative(html_content, "text/html")
+        # email.send()
+
+        print("Hall booking updated")
+        return HttpResponse("Hall booking webhook processed successfully")
+   
     def process_membership_payment(self, tx_ref, payload):
         try:
             membership = Membership.objects.get(tx_ref=tx_ref)
