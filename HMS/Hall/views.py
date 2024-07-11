@@ -54,13 +54,13 @@ class HallListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['today'] = timezone.now().date()
-        context['hall_types'] = Hall_Category.objects.all()  # Assuming HallType is your hall type model
+        context['hall_types'] = Hall_Category.objects.all()  
 
         min_price = Hall.objects.aggregate(Min('price_per_hour'))['price_per_hour__min']
         max_price = Hall.objects.aggregate(Max('price_per_hour'))['price_per_hour__max']
 
         if min_price is not None and max_price is not None:
-            context['price_range'] = range(int(min_price), int(max_price) + 1, 100)  # Adjust the step as needed
+            context['price_range'] = range(int(min_price), int(max_price) + 1, 400)  # Adjust the step as needed
         else:
             context['price_range'] = []
 
@@ -364,7 +364,14 @@ class BookingListView(ListView):
     context_object_name = 'bookings'
 
     def get_queryset(self):
+        self.cancel_past_bookings()  # Call the function to cancel past bookings
         return Hall_Booking.objects.filter(user=self.request.user).exclude(status='cancelled')
+
+    def cancel_past_bookings(self):
+        past_bookings = Hall_Booking.objects.filter(user=self.request.user, end_date__lt=timezone.now().date()).exclude(status='cancelled')
+        for booking in past_bookings:
+            booking.status = 'cancelled'
+            booking.save()
 
 
 

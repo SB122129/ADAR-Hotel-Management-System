@@ -4,7 +4,7 @@
 {% block content %}
 <style>
   .halls-masthead {
-    background-image: url("{% static '/images/hall.jpg' %}"); /* Adjust the path to your image */
+    background-image: url("{% static '/images/hall1.jpg' %}"); /* Adjust the path to your image */
     background-size: cover;
     background-position: center;
     height: 100vh; /* Adjust the height as needed */
@@ -19,7 +19,7 @@
         <div class="row h-100 align-items-center">
             <div class="col-12 text-center">
                 <h2 class="font-weight-bold text-light">Halls</h2>
-                <p class="font-weight-bold">Perfect for your events and gatherings</p>
+                <p class="font-weight-bold text-light">Perfect for your events and gatherings</p>
             </div>
         </div>
     </div>
@@ -30,20 +30,20 @@
 <div class="container mb-5">
     <form method="get" class="form-inline justify-content-center" id="filter-form">
         <div class="form-group mx-2">
-            <label for="price" class="sr-only">Max Price</label>
-            <select name="price" id="price" class="form-control form-control-sm rounded">
-                <option value="">Select Max Price</option>
+            <label for="price" class="sr-only font-weight-bold">Max Price</label>
+            <select name="price" id="price" class="form-control rounded font-weight-bold">
+                <option value="" class="font-weight-bold">Select Max Price</option>
                 {% for price in price_range %}
-                    <option value="{{ price }}" {% if request.GET.price == price|stringformat:"s" %}selected{% endif %}>ETB {{ price }}</option>
+                    <option value="{{ price }}" class="font-weight-bold" {% if request.GET.price == price|stringformat:"s" %}selected{% endif %}>ETB {{ price }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="form-group mx-2">
+        <div class="form-group mx-2 ">
             <label for="hall_type" class="sr-only">Hall Type</label>
-            <select name="hall_type" id="hall_type" class="form-control form-control-sm rounded">
-                <option value="">All Hall Types</option>
+            <select name="hall_type" id="hall_type" class="form-control font-weight-bold rounded">
+                <option value="" class="font-weight-bold">All Hall Types</option>
                 {% for type in hall_types %}
-                    <option value="{{ type.id }}" {% if request.GET.hall_type == type.id|stringformat:"s" %}selected{% endif %}>{{ type.name }}</option>
+                    <option value="{{ type.id }}" class="font-weight-bold" {% if request.GET.hall_type == type.id|stringformat:"s" %}selected{% endif %}>{{ type.name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -63,8 +63,8 @@
                     <p class="card-text">{{ hall.description|truncatewords:20 }}</p>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <strong>Price per day</strong>
-                            <span>ETB {{ hall.price_per_day }}</span>
+                            <strong>Price per hour</strong>
+                            <span>ETB {{ hall.price_per_hour }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <strong>Capacity</strong>
