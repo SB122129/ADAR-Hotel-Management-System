@@ -1,26 +1,107 @@
-{% extends "accountss/base.html" %}
-
+{% extends 'accountss/base.html' %}
+{% load static %}
 
 {% block content %}
-<br>
-<h3 class="mt-5 mb-3 text-center font-weight-bold">Available Halls</h3>
-<div class="container d-flex justify-content-center">
-    <div class="row">
-    {% for hall in object_list %}
-    <div class="col-lg-6">
-    <div class="card shadow-lg mb-4 rounded ">
-        <img src="{{hall.image.url}}" alt="" class="card-img-top rounded h-75">
-        <div class="card-body">
-        <a href="{% url 'hall_detail' hall.pk %}" class="font-weight-bold">{{ hall.hall_number }}<a/>
-        <p>{{ hall.description|truncatewords:15 }}</p>
-        <p>Price per day: ${{ hall.price_per_day }}</p>
-        <p>Capacity: {{ hall.capacity }}</p>
-        <p>Floor: {{ hall.floor }}</p>
-        
+<style>
+  .halls-masthead {
+    background-image: url("{% static '/images/hall.jpg' %}"); /* Adjust the path to your image */
+    background-size: cover;
+    background-position: center;
+    height: 100vh; /* Adjust the height as needed */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+<!-- Header -->
+<header class="masthead halls-masthead mb-5">
+    <div class="container h-100">
+        <div class="row h-100 align-items-center">
+            <div class="col-12 text-center">
+                <h2 class="font-weight-bold text-light">Halls</h2>
+                <p class="font-weight-bold">Perfect for your events and gatherings</p>
+            </div>
+        </div>
     </div>
-  </div>
+</header>
+<!-- End of Header -->
+
+<!-- Filter Form -->
+<div class="container mb-5">
+    <form method="get" class="form-inline justify-content-center" id="filter-form">
+        <div class="form-group mx-2">
+            <label for="price" class="sr-only">Max Price</label>
+            <select name="price" id="price" class="form-control form-control-sm rounded">
+                <option value="">Select Max Price</option>
+                {% for price in price_range %}
+                    <option value="{{ price }}" {% if request.GET.price == price|stringformat:"s" %}selected{% endif %}>ETB {{ price }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group mx-2">
+            <label for="hall_type" class="sr-only">Hall Type</label>
+            <select name="hall_type" id="hall_type" class="form-control form-control-sm rounded">
+                <option value="">All Hall Types</option>
+                {% for type in hall_types %}
+                    <option value="{{ type.id }}" {% if request.GET.hall_type == type.id|stringformat:"s" %}selected{% endif %}>{{ type.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
 </div>
-{% endfor %}
+<!-- End of Filter Form -->
+
+{% if halls %}
+<div class="container">
+    <div class="row">
+        {% for hall in halls %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm rounded">
+                <img src="{{ hall.image.url }}" alt="{{ hall.hall_type.name }}" class="card-img-top rounded lazyload">
+                <div class="card-body">
+                    <h3 class="card-title"><strong>{{ hall.hall_number }}</strong></h3>
+                    <p class="card-text">{{ hall.description|truncatewords:20 }}</p>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Price per day</strong>
+                            <span>ETB {{ hall.price_per_day }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Capacity</strong>
+                            <span>{{ hall.capacity }} guests</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong>Floor</strong>
+                            <span>{{ hall.floor }}</span>
+                        </li>
+                    </ul>
+                    <div class="mt-3 d-flex justify-content-center">
+                        <a href="{% url 'hall_detail' hall.id %}" class="btn btn-sm btn-warning rounded">Details</a>&ensp;
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
+{% else %}
+<div class="container d-flex justify-content-center">
+    <div class="alert alert-warning rounded w-50" role="alert">
+        <h6 class="text-center"><i class="bi bi-info-circle"></i>&ensp;No Halls available</h6>
+    </div>
 </div>
-{% endblock %}
+{% endif %}
+<!-- Halls Listing -->
+
+<script>
+    document.getElementById('price').addEventListener('change', function() {
+        document.getElementById('hall_type').selectedIndex = 0;  // Reset hall type to "All Hall Types"
+        document.getElementById('filter-form').submit();
+    });
+
+    document.getElementById('hall_type').addEventListener('change', function() {
+        document.getElementById('filter-form').submit();
+    });
+</script>
+
+{% endblock content %}

@@ -6,7 +6,7 @@ from django.urls import reverse_lazy
 from django.shortcuts import redirect
 from .models import Hall, Hall_Booking
 from django.views.generic import DetailView, FormView
-from .models import Hall, Hall_Booking, Hall_Payment
+from .models import Hall, Hall_Booking, Hall_Payment,Hall_Category
 from django.shortcuts import redirect
 from django.shortcuts import get_object_or_404
 from .forms import CheckAvailabilityForm, BookingForm
@@ -26,14 +26,45 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from premailer import transform
 import paypalrestsdk
+from django.views.generic.edit import UpdateView
+from django.urls import reverse_lazy
+from django.db import transaction
 import json
 from config import BASE_URL
-
+from django.utils import timezone
+from django.db.models import Min, Max
 
 class HallListView(ListView):
     model = Hall
     template_name = 'hall/hall_list.html'
+    context_object_name = 'halls'
 
+    def get_queryset(self):
+        queryset = Hall.objects.filter(status='available')  # Adjust the status field as per your model
+        price = self.request.GET.get('price')
+        hall_type = self.request.GET.get('hall_type')
+
+        if price:
+            queryset = queryset.filter(price_per_hour__lte=price)
+        if hall_type:
+            queryset = queryset.filter(hall_type__id=hall_type)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['today'] = timezone.now().date()
+        context['hall_types'] = Hall_Category.objects.all()  # Assuming HallType is your hall type model
+
+        min_price = Hall.objects.aggregate(Min('price_per_hour'))['price_per_hour__min']
+        max_price = Hall.objects.aggregate(Max('price_per_hour'))['price_per_hour__max']
+
+        if min_price is not None and max_price is not None:
+            context['price_range'] = range(int(min_price), int(max_price) + 1, 100)  # Adjust the step as needed
+        else:
+            context['price_range'] = []
+
+        return context
 class HallDetailView(DetailView):
     model = Hall
     template_name = 'hall/hall_details.html'
@@ -109,8 +140,8 @@ class BookingView(TemplateView):
             'hall': hall,
             'start_date': start_date,
             'end_date': end_date,
-            'start_time': start_time,
-            'end_time': end_time,
+            'start_time':  datetime.datetime.strptime(start_time, '%H:%M:%S').time(),
+            'end_time':  datetime.datetime.strptime(end_time, '%H:%M:%S').time(),
         })
 
         # Calculate total cost
@@ -286,6 +317,7 @@ class PayPalReturnView(View):
             if payment.state == "approved":
                 booking.status = 'confirmed'
                 booking.is_paid = True
+                booking.tx_ref = f"hall_booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
                 booking.save()
 
                 payment_record, created = Hall_Payment.objects.get_or_create(
@@ -328,5 +360,66 @@ class PayPalCancelView(View):
 
 class BookingListView(ListView):
     model = Hall_Booking
-    template_name = 'hall/my_bookings.html'  
+    template_name = 'hall/my_bookings.html'
     context_object_name = 'bookings'
+
+    def get_queryset(self):
+        return Hall_Booking.objects.filter(user=self.request.user).exclude(status='cancelled')
+
+
+
+class HallBookingCancelView(LoginRequiredMixin, UpdateView):
+    model = Hall_Booking
+    fields = []  # No fields to update through the form
+    success_url = reverse_lazy('hall_bookings')  # Replace with your actual URL name for the hall bookings list
+
+    def get_queryset(self):
+        owner_queryset = super().get_queryset()
+        return owner_queryset.filter(user=self.request.user)
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        try:
+            booking = self.get_object()
+            booking.status = 'cancelled'
+            booking.save()
+
+            
+            # # Prepare the booking URL and render the cancellation email template
+            # booking_url = f"{BASE_URL}/hall/my-bookings/"
+            # html_content = render_to_string('hall/cancellation_email_template.html', {'booking': booking, 'booking_url': booking_url})
+
+            # # Inline CSS using WeasyPrint (if required)
+            # html_content = HTML(string=html_content).write_pdf()
+
+            # # Create the email message with only HTML content
+            # email = EmailMultiAlternatives(
+            #     subject='Hall Booking Cancellation Confirmation',
+            #     from_email='adarhotel33@gmail.com',
+            #     to=[booking.user.email]
+            # )
+            # # Attach the HTML content
+            # email.attach_alternative(html_content, "text/html")
+
+            # # Send the email
+            # email.send()
+
+            return HttpResponseRedirect(self.success_url)
+        except Exception as e:
+            print(f"Exception when canceling hall booking: {e}")
+            return HttpResponseBadRequest("Error occurred while canceling the hall booking.")
+
+    @transaction.atomic
+    def delete(self, request, *args, **kwargs):
+        try:
+            booking = self.get_object()
+            hall_id = booking.hall.id
+            response = super().delete(request, *args, **kwargs)
+            hall = Hall.objects.get(id=hall_id)
+            return response
+        except Exception as e:
+            print(f"Exception when deleting hall booking: {e}")
+            return HttpResponseBadRequest("Error occurred while deleting the hall booking.")
+
+    def form_invalid(self, form):
+        return HttpResponseRedirect(self.success_url)

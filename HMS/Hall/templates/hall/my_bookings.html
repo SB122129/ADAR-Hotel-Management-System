@@ -3,28 +3,99 @@
 {% block title %}My Bookings{% endblock %}
 
 {% block content %}
-<h1>My Bookings</h1>
-{% if object_list %}
-    <ul>
-        {% for booking in object_list %}
-        <li>
-            <h2>Hall: {{ booking.hall.name }}</h2>
-            <p>Start Date: {{ booking.start_date }}</p>
-            <p>End Date: {{ booking.end_date }}</p>
-            <p>Start Time: {{ booking.start_time }}</p>
-            <p>End Time: {{ booking.end_time }}</p>
-            <p>Amount Due: ${{ booking.amount_due }}</p>
-            <p>Status: {% if booking.is_paid %}Paid{% else %}Pending{% endif %}</p>
-            {% if not booking.is_paid %}
-                <form method="post" action="">
-                    {% csrf_token %}
-                    <button type="submit">Pay Now</button>
-                </form>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p>You have no bookings.</p>
-{% endif %}
+{% load widget_tweaks %}
+<br>
+<div class="container mt-5">
+    <h3 class="text-center mb-3 font-weight-bold">My Bookings</h3>
+    <div class="container" style="margin-top: 1rem;">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }}">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <div class="row">
+        {% if object_list %}
+            {% for booking in object_list %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 rounded shadow">
+                        <div class="card-body">
+                            <h5 class="card-title"><strong><i class="bi bi-list-ol"></i>&ensp; {{ booking.hall.hall_type }}</strong></h5>
+                            <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-calendar-plus"></i>&ensp;Start Date</strong></div>
+                                <div class="col-sm-6 text-center">{{ booking.start_date }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-calendar-minus"></i>&ensp;End Date</strong></div>
+                                <div class="col-sm-6 text-center">{{ booking.end_date }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-clock"></i>&ensp;Start Time</strong></div>
+                                <div class="col-sm-6 text-center">{{ booking.start_time|time:"h:i A" }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-clock"></i>&ensp;End Time</strong></div>
+                                <div class="col-sm-6 text-center">{{ booking.end_time|time:"h:i A" }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-cash"></i>&ensp;Amount Due</strong></div>
+                                <div class="col-sm-6 text-center">${{ booking.amount_due|floatformat:2 }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-info-circle"></i>&ensp;Status</strong></div>
+                                <div class="col-sm-6 text-center">{% if booking.is_paid %}Paid{% else %}Pending{% endif %}</div>
+                            </div>
+                            <div class="d-flex justify-content-center m-3">
+                                {% if not booking.is_paid %}
+                                    <form method="post" action="">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success rounded">Pay Now</button>
+                                    </form>
+                                {% endif %}
+                                <button type="button" class="btn btn-sm btn-danger rounded" data-toggle="modal" data-target="#cancelModal{{ booking.pk }}">
+                                    Cancel Booking
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- The Modal -->
+                <div class="modal fade" id="cancelModal{{ booking.pk }}" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel{{ booking.pk }}" aria-hidden="true">
+                    <div class="modal-dialog rounded" role="document">
+                        <div class="modal-content rounded">
+                            <div class="modal-header border-0">
+                                <h5 class="modal-title font-weight-bold" id="cancelModalLabel{{ booking.pk }}">Cancel Booking</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body font-weight-bold mb-3">
+                                Are you sure you want to cancel your booking for {{ booking.hall.name }}?
+                            </div>
+                            <div class="modal-footer border-0">
+                                <form method="post" action="{% url 'hall_booking_cancel' pk=booking.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm rounded btn-danger">Confirm</button>
+                                </form>
+                                <button type="button" class="btn btn-sm rounded btn-secondary" data-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="container d-flex justify-content-center">
+                <div class="alert alert-warning rounded mt-3" role="alert">
+                    <h6 class="text-center"><i class="bi bi-info-circle"></i>&ensp;No bookings have been made</h6>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

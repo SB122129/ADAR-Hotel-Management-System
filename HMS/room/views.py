@@ -477,6 +477,7 @@ class PayPalReturnView(View):
             if payment.state == "approved":
                 booking.is_paid = True
                 booking.status = 'confirmed'
+                booking.tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
                 # booking.room.status='occupied'
                 # Check if booking.total_amount is None and use 0 if it is, otherwise use its value
                 if booking.booking_extend_amount is None:

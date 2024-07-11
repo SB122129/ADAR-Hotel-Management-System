@@ -19,11 +19,11 @@
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <strong><i class="bi bi-clock-fill"></i>&ensp;Start Time</strong>
-                    <span>{{ start_time|time:"g:i A" }}</span>
+                    <span>{{ start_time|date:"g:i A" }}</span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <strong><i class="bi bi-clock-fill"></i>&ensp;End Time</strong>
-                    <span>{{ end_time|time:"g:i A" }}</span>
+                    <span>{{ end_time|date:"g:i A" }}</span>
                 </li>
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                     <strong><i class="bi bi-cash-stack"></i>&ensp;Total Cost</strong>
