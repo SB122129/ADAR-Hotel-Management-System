@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from accountss.models import *
@@ -9,6 +10,7 @@ from django.shortcuts import render
 from django import forms
 from gym.models import *
 from .forms import *
+
 
 # Custom User Views
 # class CustomUserListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
@@ -115,16 +117,23 @@ class LanguageDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     success_url = reverse_lazy('admins:language_list')
 
 # Category Views
-class CategoryListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
+class CategoryListView(ListView):
     model = Category
     template_name = 'admins/category_list.html'
     context_object_name = 'categories'
+    paginate_by = 10
+
     def get_queryset(self):
+        query = self.request.GET.get('search')
+        if query:
+            return Category.objects.filter(name__icontains=query)
         return Category.objects.order_by('name')
 
 class CategoryDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     model = Category
     template_name = 'admins/category_detail.html'
+
+
 
 class CategoryCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
     model = Category
@@ -132,23 +141,40 @@ class CategoryCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
     form_class = CategoryForm
     success_url = reverse_lazy('admins:category_list')
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Category created successfully.')
+        return response
+
 class CategoryUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = Category
     template_name = 'admins/category_form.html'
     form_class = CategoryForm
     success_url = reverse_lazy('admins:category_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Category updated successfully.')
+        return response
+
 class CategoryDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Category
     template_name = 'admins/category_confirm_delete.html'
     success_url = reverse_lazy('admins:category_list')
 
 # Room Views
-class RoomListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
+class RoomListView(ListView):
     model = Room
     template_name = 'admins/room_list.html'
-    context_object_name = 'rooms'
+    context_object_name = 'object_list'
+    paginate_by = 10
+
     def get_queryset(self):
-        return Room.objects.order_by('id')
+        queryset = Room.objects.all().order_by('id')
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(Q(room_number__icontains=search_query) | Q(room_type__name__icontains=search_query))
+        return queryset
 
 
 class RoomDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
@@ -161,11 +187,21 @@ class RoomCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
     form_class = RoomForm
     success_url = reverse_lazy('admins:room_list')
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Room created successfully.')
+        return response
+
 class RoomUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     model = Room
     template_name = 'admins/room_form.html'
     form_class = RoomForm
     success_url = reverse_lazy('admins:room_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Room updated successfully.')
+        return response
 
 class RoomDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Room
@@ -176,12 +212,28 @@ class RoomDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 
 
 # Booking Views
-class BookingListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
+from django.views.generic import ListView
+from django.db.models import Q
+from room.models import Booking
+
+class BookingListView(ListView):
     model = Booking
     template_name = 'admins/booking_list.html'
-    context_object_name = 'bookings'
+    context_object_name = 'object_list'
+    paginate_by = 10
+
     def get_queryset(self):
-        return Booking.objects.order_by('id')
+        queryset = Booking.objects.all().order_by('id')
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(room__room_number__icontains=search_query) |
+                Q(room__room_type__name__icontains=search_query) |
+                Q(user__username__icontains=search_query) |
+                Q(tx_ref__icontains=search_query)
+            )
+        return queryset
+
 
 
 class BookingDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
@@ -205,7 +257,15 @@ class BookingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     template_name = 'admins/booking_confirm_delete.html'
     success_url = reverse_lazy('admins:booking_list')
 
-# Reservation Views
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        success_url = self.get_success_url()
+        try:
+            self.object.delete()
+            messages.success(self.request, 'Booking successfully deleted.')
+        except Exception as e:
+            messages.error(self.request, f'Failed to delete booking: {str(e)}')
+        return super().delete(request, *args, **kwargs)
 
 
 
@@ -247,45 +307,26 @@ class MembershipPlanDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteVie
 
 
 
-
-
-
-class ReservationListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
-    model = Reservation
-    template_name = 'admins/reservation_list.html'
-    context_object_name = 'reservations'
-    def get_queryset(self):
-        return Category.objects.order_by('name')
-
-
-class ReservationDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
-    model = Reservation
-    template_name = 'admins/reservation_detail.html'
-
-class ReservationCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
-    model = Reservation
-    template_name = 'admins/reservation_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:reservation_list')
-
-class ReservationUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
-    model = Reservation
-    template_name = 'admins/reservation_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:reservation_list')
-
-class ReservationDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
-    model = Reservation
-    template_name = 'admins/reservation_confirm_delete.html'
-    success_url = reverse_lazy('admins:reservation_list')
-
 # Payment Views
-class PaymentListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
+
+class PaymentListView(LoginRequiredMixin, ListView):
     model = Payment
     template_name = 'admins/payment_list.html'
-    context_object_name = 'payments'
+    context_object_name = 'object_list'
+    paginate_by = 10
+
     def get_queryset(self):
-        return Payment.objects.order_by('id')
+        queryset = Payment.objects.all().order_by('id')
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(booking__room__room_number__icontains=search_query) |
+                Q(booking__room__room_type__name__icontains=search_query) |
+                Q(booking__user__username__icontains=search_query) |
+                Q(transaction_id__icontains=search_query)
+            )
+        return queryset
+
 
 
 class PaymentDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):

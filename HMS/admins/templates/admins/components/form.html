@@ -1,27 +1,31 @@
 {% extends 'admins/base.html' %}
 {% block content %}
 {% load widget_tweaks %}
-<h2 class="text-center mb-2">{{ title }}</h2>
+
 <div class="d-flex justify-content-center">
-    <form method="post" enctype="multipart/form-data" class="w-75 d-flex flex-column align-items-center">
-        {% csrf_token %}
-        {% for field in form %}
-            <div class="mb-3 w-75">
-                <label class="mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field|add_class:"form-control rounded" }}
-                {% if field.errors %}
-                    <div class="alert alert-danger mt-2">
-                        {{ field.errors|first }}
+    <div class="card shadow-sm w-75 mt-4">
+        <h5 class=" card-title text-center mb-2 font-weight-bold mt-2">Room Add / Create</h5>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" class="d-flex flex-column align-items-center">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="mb-3 w-75">
+                        <label class="mb-1 font-weight-bold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field|add_class:"form-control rounded" }}
+                        {% if field.errors %}
+                            <div class="alert alert-danger mt-2">
+                                {{ field.errors|first }}
+                            </div>
+                        {% endif %}
                     </div>
-                {% endif %}
-            </div>
-        {% endfor %}
-    
-        <div class="d-flex justify-content-center w-50 mt-3 mb-5">
-            <button type="submit" class="btn btn-sm btn-primary w-25">{{ submit_text }}</button>
-            &ensp;<a href="{% url list_url %}" class="btn btn-sm  w-25 btn-secondary">Cancel</a>
+                {% endfor %}
+
+                <div class="d-flex justify-content-center w-50 mt-3 mb-5">
+                    <button type="submit" class="btn btn-sm btn-primary w-25">{{ submit_text }}</button>
+                    &ensp;<a href="{% url 'admins:room_list' %}" class="btn btn-sm w-25 btn-secondary">Cancel</a>
+                </div>
+            </form>
         </div>
-    </form>
+    </div>
 </div>
 {% endblock %}
-

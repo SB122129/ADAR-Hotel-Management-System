@@ -1,5 +1,5 @@
 from django import forms
-from .models import Booking, Reservation, Payment, RoomRating
+from .models import Booking, Payment, RoomRating
 from datetime import date
 from django import forms
 from .models import Booking
@@ -38,11 +38,6 @@ class BookingForm(forms.ModelForm):
 
         return guests
         
-class ReservationForm(forms.ModelForm):
-    class Meta:
-        model = Reservation
-        fields = ['check_in_date', 'check_out_date']
-
 
 class RoomRatingForm(forms.ModelForm):
     class Meta:

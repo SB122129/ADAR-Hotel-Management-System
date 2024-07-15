@@ -27,6 +27,10 @@
                         <div class="card-body">
                             <h5 class="card-title"><strong><i class="bi bi-list-ol"></i>&ensp; {{ booking.hall.hall_type }}</strong></h5>
                             <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-calendar-plus"></i>&ensp;Hall Number</strong></div>
+                                <div class="col-sm-6 text-center">{{ booking.hall.hall_number }}</div>
+                            </div>
+                            <div class="row mb-2">
                                 <div class="col-sm-6 text-left"><strong><i class="bi bi-calendar-plus"></i>&ensp;Start Date</strong></div>
                                 <div class="col-sm-6 text-center">{{ booking.start_date }}</div>
                             </div>
@@ -54,7 +58,7 @@
                                 {% if not booking.is_paid %}
                                 <a href="{% url 'payment_page' booking.id %}" class="btn btn-sm btn-success rounded">
                                     Pay
-                                </a>
+                                </a> &ensp;
                                 {% endif %}
                                 <button type="button" class="btn btn-sm btn-danger rounded" data-toggle="modal" data-target="#cancelModal{{ booking.pk }}">
                                     Cancel Booking
@@ -80,7 +84,9 @@
                             <div class="modal-footer border-0">
                                 <form method="post" action="{% url 'hall_booking_cancel' pk=booking.pk %}">
                                     {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm rounded btn-danger">Confirm</button>
                                 </form>
+
                                 <button type="button" class="btn btn-sm rounded btn-secondary" data-dismiss="modal">Cancel</button>
                             </div>
                         </div>

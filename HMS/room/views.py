@@ -2,10 +2,12 @@ from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Room, Booking, Reservation, Payment, RoomRating,Receipt
-from .forms import BookingForm, ReservationForm, RoomRatingForm
+from .models import Room, Booking, Payment, RoomRating,Receipt
+from .forms import BookingForm, RoomRatingForm
 import requests
 import random
+from django.db.models import Q
+from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from django.db.models import Min, Max
@@ -76,6 +78,13 @@ class RoomListView(ListView):
         
         return queryset
 
+    def cancel_past_bookings(self):
+        past_bookings = Booking.objects.filter(
+                        Q(check_out_date__lt=timezone.now().date()) | Q(extended_check_out_date__lt=timezone.now().date()),
+                        user=self.request.user).exclude(status='cancelled')
+        for booking in past_bookings:
+            booking.status = 'cancelled'
+            booking.save()
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['today'] = timezone.now().date()
@@ -105,14 +114,6 @@ class RoomDetailView(DetailView):
     context_object_name = 'room'
 
 
-class ReservationCreateView(LoginRequiredMixin, CreateView):
-    model = Reservation
-    form_class = ReservationForm
-    template_name = 'room/reservation_create.html'
-
-    def form_valid(self, form):
-        form.instance.user = self.request.user
-        return super().form_valid(form)
 
 
 class BookingListView(LoginRequiredMixin, ListView):
@@ -121,15 +122,16 @@ class BookingListView(LoginRequiredMixin, ListView):
     context_object_name = 'bookings'
 
     def get_queryset(self):
+        self.cancel_past_bookings() 
         return Booking.objects.filter(user=self.request.user).exclude(status__in=['cancelled'])
+    def cancel_past_bookings(self):
+        past_bookings = Booking.objects.filter(
+                        Q(check_out_date__lt=timezone.now().date()) | Q(extended_check_out_date__lt=timezone.now().date()),
+                        user=self.request.user).exclude(status='cancelled')
+        for booking in past_bookings:
+            booking.status = 'cancelled'
+            booking.save()
 
-
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic.edit import CreateView
-from .models import Room, Booking
-from .forms import BookingForm
-from django.core.mail import send_mail
 
 
 
@@ -668,19 +670,21 @@ class ChapaWebhookView(View):
         booking.is_paid = True
         booking.save()
 
-        # # Send confirmation email
-        # booking_url = f"{BASE_URL}/hall/my-bookings/"
-        # subject = 'Hall Booking Confirmation'
-        # html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
-        # html_content = transform(html_content)
+        booking_url = f"{BASE_URL}/hall/my-bookings/"
+        html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
 
-        # email = EmailMultiAlternatives(
-        #     subject=subject,
-        #     from_email='adarhotel33@gmail.com',
-        #     to=[booking.user.email]
-        # )
-        # email.attach_alternative(html_content, "text/html")
-        # email.send()
+        
+        # Create the email message with only HTML content
+        email = EmailMultiAlternatives(
+            subject='Hall Booking Confirmation',
+            from_email='adarhotel33@gmail.com',
+            to=[booking.user.email]
+        )
+        # Attach the HTML content
+        email.attach_alternative(html_content, "text/html")
+
+        # Send the email
+        email.send()
 
         print("Hall booking updated")
         return HttpResponse("Hall booking webhook processed successfully")
@@ -716,6 +720,21 @@ class ChapaWebhookView(View):
 
         membership.status = 'active'
         membership.save()
+        membership_url = f"{BASE_URL}/gym/my-memberships/"
+        html_content = render_to_string('gym/membership_confirmation_template.html', {'membership': membership, 'membership_url': membership_url})
+
+        
+        # Create the email message with only HTML content
+        email = EmailMultiAlternatives(
+            subject='Gym Membership Confirmation',
+            from_email='adarhotel33@gmail.com',
+            to=[membership.user.email]
+        )
+        # Attach the HTML content
+        email.attach_alternative(html_content, "text/html")
+
+        # Send the email
+        email.send()
         print("Membership updated")
 
         return HttpResponse("Membership webhook processed successfully")
@@ -766,18 +785,6 @@ class BookingCancelView(LoginRequiredMixin, UpdateView):
             print(f"Exception when canceling booking: {e}")
             return HttpResponseBadRequest("Error occurred while canceling the booking.")
 
-    @transaction.atomic
-    def delete(self, request, *args, **kwargs):
-        try:
-            booking = self.get_object()
-            room_id = booking.room.id
-            response = super().delete(request, *args, **kwargs)
-            room = Room.objects.get(id=room_id)
-            room.update_room_status()  # Explicitly call update_room_status
-            return response
-        except Exception as e:
-            print(f"Exception when deleting booking: {e}")
-            return HttpResponseBadRequest("Error occurred while deleting the booking.")
 
     def form_invalid(self, form):
         return HttpResponseRedirect(self.success_url)
@@ -804,8 +811,6 @@ class ReceiptUploadView(CreateView):
 
 @receiver(post_save, sender=Booking)
 @receiver(post_delete, sender=Booking)
-@receiver(post_save, sender=Reservation)
-@receiver(post_delete, sender=Reservation)
 def update_room_status(sender, instance, **kwargs):
     instance.room.update_room_status()
 
@@ -814,5 +819,3 @@ def update_room_statuses():
     rooms = Room.objects.all()
     for room in rooms:
         room.update_room_status()
-
-# Call this function at the beginning of views that display room lists

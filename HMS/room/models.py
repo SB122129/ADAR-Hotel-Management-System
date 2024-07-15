@@ -21,8 +21,7 @@ class RoomManager(models.Manager):
 
         available_rooms = self.filter(
             Q(room_status='vacant') | (
-                ~Q(booking__status__in=['pending', 'confirmed'], booking__check_in_date__lte=now, booking__check_out_date__gte=now) &
-                ~Q(reservation__status__in=['pending', 'confirmed'], reservation__check_in_date__lte=now, reservation__check_out_date__gte=now)
+                ~Q(booking__status__in=['pending', 'confirmed'], booking__check_in_date__lte=now, booking__check_out_date__gte=now)
             )
         ).distinct()
 
@@ -60,9 +59,7 @@ class Room(models.Model):
             self.room_status = 'reserved'
         elif self.booking_set.filter(status='confirmed', check_out_date__gte=now).exists():
             self.room_status = 'occupied'
-        elif self.reservation_set.filter(check_in_date__gt=now).exists():
-            self.room_status = 'reserved'
-        elif not self.booking_set.exclude(status='cancelled').exists() and not self.reservation_set.filter(check_out_date__gte=now).exists():
+        elif not self.booking_set.exclude(status='cancelled').exists():
             self.room_status = 'vacant'
         else:
             self.room_status = 'vacant'
@@ -71,7 +68,6 @@ class Room(models.Model):
         self.save()
 
 
-# Update room status when booking or reservation is saved
 
 
 
@@ -189,23 +185,6 @@ class Receipt(models.Model):
     file = models.FileField(upload_to='media/receipts/')
 
 
-class Reservation(models.Model):
-    STATUS_CHOICES = (
-        ('pending', 'Pending'),
-        ('confirmed', 'Confirmed'),
-        ('cancelled', 'Cancelled'),
-    )
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    user = models.ForeignKey(Custom_user, on_delete=models.CASCADE)
-    check_in_date = models.DateField()
-    check_out_date = models.DateField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.room.update_room_status()
-
 
 class RoomRating(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
@@ -218,6 +197,5 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 @receiver(post_save, sender=Booking)
-@receiver(post_save, sender=Reservation)
 def update_room_status(sender, instance, **kwargs):
     instance.room.update_room_status()

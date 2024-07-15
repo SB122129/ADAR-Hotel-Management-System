@@ -39,13 +39,7 @@ urlpatterns = [
     path('bookings/<int:pk>/update/', BookingUpdateView.as_view(), name='booking_update'),
     path('bookings/<int:pk>/delete/', BookingDeleteView.as_view(), name='booking_delete'),
 
-    # Reservation URLs
-    path('reservations/', ReservationListView.as_view(), name='reservation_list'),
-    path('reservations/<int:pk>/', ReservationDetailView.as_view(), name='reservation_detail'),
-    path('reservations/add/', ReservationCreateView.as_view(), name='reservation_add'),
-    path('reservations/<int:pk>/update/', ReservationUpdateView.as_view(), name='reservation_update'),
-    path('reservations/<int:pk>/delete/', ReservationDeleteView.as_view(), name='reservation_delete'),
-
+    
     # Payment URLs
     path('payments/', PaymentListView.as_view(), name='payment_list'),
     path('payments/<int:pk>/', PaymentDetailView.as_view(), name='payment_detail'),

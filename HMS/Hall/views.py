@@ -320,6 +320,7 @@ class PayPalReturnView(View):
                 booking.tx_ref = f"hall_booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
                 booking.save()
 
+
                 payment_record, created = Hall_Payment.objects.get_or_create(
                     booking=booking,
                     defaults={
@@ -330,18 +331,22 @@ class PayPalReturnView(View):
                 )
 
                 messages.success(request, 'Payment completed successfully.')
-                # booking_url = f"{settings.BASE_URL}/hall/my-bookings/"
-                # subject = 'Hall Booking Confirmation'
-                # html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
-                # html_content = transform(html_content)
+                # # Prepare the booking URL and render the cancellation email template
+                booking_url = f"{BASE_URL}/hall/my-bookings/"
+                html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
 
-                # email = EmailMultiAlternatives(
-                #     subject=subject,
-                #     from_email='your_email@example.com',
-                #     to=[booking.user.email]
-                # )
-                # email.attach_alternative(html_content, "text/html")
-                # email.send()
+                
+                # Create the email message with only HTML content
+                email = EmailMultiAlternatives(
+                    subject='Hall Booking Confirmation',
+                    from_email='adarhotel33@gmail.com',
+                    to=[booking.user.email]
+                )
+                # Attach the HTML content
+                email.attach_alternative(html_content, "text/html")
+
+                # Send the email
+                email.send()
 
                 return redirect('hall_bookings')
             else:
@@ -364,7 +369,7 @@ class BookingListView(ListView):
     context_object_name = 'bookings'
 
     def get_queryset(self):
-        self.cancel_past_bookings()  # Call the function to cancel past bookings
+        self.cancel_past_bookings()  
         return Hall_Booking.objects.filter(user=self.request.user).exclude(status='cancelled')
 
     def cancel_past_bookings(self):
@@ -393,40 +398,27 @@ class HallBookingCancelView(LoginRequiredMixin, UpdateView):
 
             
             # # Prepare the booking URL and render the cancellation email template
-            # booking_url = f"{BASE_URL}/hall/my-bookings/"
-            # html_content = render_to_string('hall/cancellation_email_template.html', {'booking': booking, 'booking_url': booking_url})
+            booking_url = f"{BASE_URL}/hall/my-bookings/"
+            html_content = render_to_string('hall/cancellation_email_template.html', {'booking': booking, 'booking_url': booking_url})
 
-            # # Inline CSS using WeasyPrint (if required)
-            # html_content = HTML(string=html_content).write_pdf()
+            
+            # Create the email message with only HTML content
+            email = EmailMultiAlternatives(
+                subject='Hall Booking Cancellation',
+                from_email='adarhotel33@gmail.com',
+                to=[booking.user.email]
+            )
+            # Attach the HTML content
+            email.attach_alternative(html_content, "text/html")
 
-            # # Create the email message with only HTML content
-            # email = EmailMultiAlternatives(
-            #     subject='Hall Booking Cancellation Confirmation',
-            #     from_email='adarhotel33@gmail.com',
-            #     to=[booking.user.email]
-            # )
-            # # Attach the HTML content
-            # email.attach_alternative(html_content, "text/html")
-
-            # # Send the email
-            # email.send()
+            # Send the email
+            email.send()
 
             return HttpResponseRedirect(self.success_url)
         except Exception as e:
             print(f"Exception when canceling hall booking: {e}")
             return HttpResponseBadRequest("Error occurred while canceling the hall booking.")
 
-    @transaction.atomic
-    def delete(self, request, *args, **kwargs):
-        try:
-            booking = self.get_object()
-            hall_id = booking.hall.id
-            response = super().delete(request, *args, **kwargs)
-            hall = Hall.objects.get(id=hall_id)
-            return response
-        except Exception as e:
-            print(f"Exception when deleting hall booking: {e}")
-            return HttpResponseBadRequest("Error occurred while deleting the hall booking.")
 
     def form_invalid(self, form):
         return HttpResponseRedirect(self.success_url)

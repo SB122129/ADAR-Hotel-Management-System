@@ -5,8 +5,6 @@ from .views import *
 urlpatterns = [
     path('membership-plans/', MembershipPlanListView.as_view(), name='membership_plans'),
     path('membership-signup/<int:plan_id>/', MembershipSignupView.as_view(), name='membership_signup'),
-    path('memberships/success/<int:membership_id>/', MembershipSuccessView.as_view(), name='membership_success'),
-    path('memberships/cancel/<int:membership_id>/', MembershipCancelView.as_view(), name='membership_cancel'),
     path('paypal-return/', PayPalReturnView.as_view(), name='paypal_return'),
     path('paypal-cancel/', PayPalCancelView.as_view(), name='paypal_cancel'),
     path('my-memberships/', MyMembershipsView.as_view(), name='my_memberships'),

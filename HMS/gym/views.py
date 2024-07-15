@@ -20,8 +20,11 @@ from .forms import *
 from dateutil.relativedelta import relativedelta
 import random
 import string
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 import requests
 import paypalrestsdk
+from django.utils import timezone
 
 
 
@@ -31,7 +34,13 @@ class MyMembershipsView(LoginRequiredMixin, ListView):
     context_object_name = 'memberships'
 
     def get_queryset(self):
+        self.cancel_memberships_bookings()
         return Membership.objects.filter(user=self.request.user)
+    def cancel_memberships_bookings(self):
+        past_memberships = Membership.objects.filter(user=self.request.user, end_date__lt=timezone.now().date()).exclude(status='cancelled')
+        for membership in past_memberships:
+            membership.status = 'cancelled'
+            membership.save()
 
 
 class MembershipPlanListView(LoginRequiredMixin, ListView):
@@ -250,23 +259,25 @@ class CancelMembershipView(LoginRequiredMixin, View):
         membership.is_cancelled = True
         membership.status = 'cancelled'
         membership.save()
+        # # Prepare the booking URL and render the cancellation email template
+        membership_url = f"{BASE_URL}/gym/my-memberships/"
+        html_content = render_to_string('gym/cancellation_email_template.html', {'membership': membership, 'membership_url': membership_url})
+
+        
+        # Create the email message with only HTML content
+        email = EmailMultiAlternatives(
+            subject='Gym Membership Cancellation',
+            from_email='adarhotel33@gmail.com',
+            to=[membership.user.email]
+        )
+        # Attach the HTML content
+        email.attach_alternative(html_content, "text/html")
+
+        # Send the email
+        email.send()
         messages.success(request, 'Membership has been cancelled successfully.')
         return redirect('my_memberships')
 
-class MembershipSuccessView(LoginRequiredMixin, View):
-    def get(self, request, *args, **kwargs):
-        membership_id = self.kwargs['membership_id']
-        membership = get_object_or_404(Membership, id=membership_id)
-        membership.is_active = True
-        membership.save()
-        return redirect('my_memberships')
-
-class MembershipCancelView(LoginRequiredMixin, View):
-    def get(self, request, *args, **kwargs):
-        membership_id = self.kwargs['membership_id']
-        membership = get_object_or_404(Membership, id=membership_id)
-        membership.delete()
-        return redirect('my_memberships')
 
 class PayPalReturnView(View):
     def get(self, request, *args, **kwargs):
@@ -284,6 +295,21 @@ class PayPalReturnView(View):
             )
             membership.status = 'active'
             membership.save()
+            membership_url = f"{BASE_URL}/gym/my-memberships/"
+            html_content = render_to_string('gym/membership_confirmation_template.html', {'membership': membership, 'membership_url': membership_url})
+
+            
+            # Create the email message with only HTML content
+            email = EmailMultiAlternatives(
+                subject='Gym Membership Confirmation',
+                from_email='adarhotel33@gmail.com',
+                to=[membership.user.email]
+            )
+            # Attach the HTML content
+            email.attach_alternative(html_content, "text/html")
+
+            # Send the email
+            email.send()
             messages.success(request, 'Payment successful and membership activated.')
         else:
             messages.error(request, 'Payment failed. Please try again.')
