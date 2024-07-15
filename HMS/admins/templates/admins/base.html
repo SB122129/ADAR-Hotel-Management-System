@@ -27,24 +27,24 @@
     <div id="sidebar-wrapper">
         <ul class="sidebar-nav">
             <li class="sidebar-brand">
-                <a class="text-warning" href="{% url 'admins:admin_dashboard' %}">
+                <a class="text-warning font-weight-bold" href="{% url 'admins:admin_dashboard' %}">
                     ADAR Admin
                 </a>
             </li>
             <li>
-                <a href="{% url 'admins:category_list' %}">Room Categories</a>
+                <a href="{% url 'admins:category_list' %}"><strong>Room Catagories</strong></a>
             </li>
             <li>
-                <a href="{% url 'admins:room_list' %}">Rooms</a>
+                <a href="{% url 'admins:room_list' %}" ><strong>Rooms</strong></a>
             </li>
             <li>
-                <a href="{% url 'admins:booking_list' %}">Bookings</a>
+                <a href="{% url 'admins:booking_list' %}" ><strong>Bookings</strong></a>
             </li>
             <li>
-                <a href="{% url 'admins:payment_list' %}">Payments</a>
+                <a href="{% url 'admins:payment_list' %}" ><strong>Payments</strong></a>
             </li>
             <li>
-                <a href="{% url 'chat' %}">Chat</a>
+                <a href="{% url 'chat' %}"><strong>Chat</strong></a>
             </li>
         </ul>
     </div>
