@@ -91,6 +91,7 @@ class Booking(models.Model):
     check_in_date = models.DateField()
     check_out_date = models.DateField()
     extended_check_out_date = models.DateField(null=True, blank=True)  # New field for extended checkout date
+    created_at = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
     guests = models.IntegerField(null=True, blank=True)
     tx_ref = models.CharField(max_length=100, unique=True, null=True, blank=True)

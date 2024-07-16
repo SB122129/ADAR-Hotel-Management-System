@@ -706,7 +706,8 @@ class ChapaWebhookView(View):
             defaults={
                 'status': 'completed',
                 'transaction_id': tx_ref,
-                'amount': payload.get('amount')
+                'amount': payload.get('amount'),
+                'payment_method' : 'chapa'
             }
         )
 
@@ -714,6 +715,7 @@ class ChapaWebhookView(View):
             print("Payment already exists for this membership.")
             membership_payment.status = 'completed'
             membership_payment.transaction_id = tx_ref
+            membership_payment.payment_method ='chapa'
             membership_payment.save()
 
         print("Payment record created or updated:", membership_payment)

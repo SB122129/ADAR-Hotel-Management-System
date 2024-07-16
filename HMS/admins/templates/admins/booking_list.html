@@ -21,10 +21,10 @@
         <div class="input-group w-75">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by room number, type, user, or transaction reference" value="{{ request.GET.search }}">
             <div class="input-group-append">
-                <button class="btn btn-warning pb-3" type="submit">Search</button>
+                <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
-        <a href="{% url 'admins:booking_list' %}" class="btn btn-secondary">Show All</a>
+        <a href="{% url 'admins:booking_list' %}" class="btn btn-sm btn-success">Show All</a>
     </form>
 
     <div class="d-flex justify-content-center">
@@ -56,10 +56,6 @@
                     <td class="align-middle">{{ item.get_status_display }}</td>
                     <td class="text-center">
                         <div class="btn-group" role="group">
-                            <!-- Edit button -->
-                            <a href="{% url 'admins:booking_update' item.id %}" class="btn btn-link text-primary">
-                                <span class="material-symbols-outlined">edit_note</span>
-                            </a>
                             <!-- View button -->
                             <a href="{% url 'admins:booking_detail' item.id %}" class="btn btn-link text-warning">
                                 <span class="material-symbols-outlined">info</span>
@@ -127,13 +123,13 @@
                 {% if page_obj.number == num %}
                 <li class="page-item active bg-warning text-dark"><span class="page-link bg-warning text-dark">{{ num }}</span></li>
                 {% elif num > page_obj.number|add:-5 and num < page_obj.number|add:5 %}
-                <li class="page-item"><a class="page-link bg-warning text-dark" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a></li>
                 {% endif %}
                 {% endfor %}
 
                 {% if page_obj.has_next %}
                 <li class="page-item ">
-                    <a class="page-link bg-warning text-dark" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Next">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>

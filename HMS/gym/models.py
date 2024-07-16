@@ -41,9 +41,14 @@ class Membership(models.Model):
         return f"{self.user.username} - {self.plan.name}"
 
 class MembershipPayment(models.Model):
+    PAYMENT_METHOD_CHOICES = (
+        ('chapa', 'Chapa'),
+        ('paypal', 'PayPal'),
+    )
     membership = models.OneToOneField(Membership, on_delete=models.CASCADE)
     payment_date = models.DateTimeField(auto_now_add=True)
     transaction_id = models.CharField(max_length=100)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='chapa')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending')
 

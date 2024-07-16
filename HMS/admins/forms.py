@@ -64,7 +64,20 @@ class RoomForm(forms.ModelForm):
 
 # forms.py
 
+from django import forms
+from gym.models import MembershipPlan, Membership, MembershipPayment
+
 class MembershipPlanForm(forms.ModelForm):
     class Meta:
         model = MembershipPlan
-        fields = ['name', 'price', 'duration_months', 'description']
+        fields = '__all__'
+
+class MembershipForm(forms.ModelForm):
+    class Meta:
+        model = Membership
+        fields = '__all__'
+
+class MembershipPaymentForm(forms.ModelForm):
+    class Meta:
+        model = MembershipPayment
+        fields = '__all__'

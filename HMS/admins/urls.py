@@ -11,13 +11,7 @@ urlpatterns = [
     # path('users/<int:pk>/update/', CustomUserUpdateView.as_view(), name='custom_user_update'),
     # path('users/<int:pk>/delete/', CustomUserDeleteView.as_view(), name='custom_user_delete'),
     path('admin_dashboard/', admin_dashboard, name='admin_dashboard'),
-    # Language URLs
-    path('languages/', LanguageListView.as_view(), name='language_list'),
-    path('languages/<int:pk>/', LanguageDetailView.as_view(), name='language_detail'),
-    path('languages/add/', LanguageCreateView.as_view(), name='language_add'),
-    path('languages/<int:pk>/update/', LanguageUpdateView.as_view(), name='language_update'),
-    path('languages/<int:pk>/delete/', LanguageDeleteView.as_view(), name='language_delete'),
-
+    
     # Category URLs
     path('categories/', CategoryListView.as_view(), name='category_list'),
     path('categories/<int:pk>/', CategoryDetailView.as_view(), name='category_detail'),
@@ -35,18 +29,32 @@ urlpatterns = [
     # Booking URLs
     path('bookings/', BookingListView.as_view(), name='booking_list'),
     path('bookings/<int:pk>/', BookingDetailView.as_view(), name='booking_detail'),
-    path('bookings/add/', BookingCreateView.as_view(), name='booking_add'),
-    path('bookings/<int:pk>/update/', BookingUpdateView.as_view(), name='booking_update'),
     path('bookings/<int:pk>/delete/', BookingDeleteView.as_view(), name='booking_delete'),
 
     
     # Payment URLs
     path('payments/', PaymentListView.as_view(), name='payment_list'),
     path('payments/<int:pk>/', PaymentDetailView.as_view(), name='payment_detail'),
-    path('payments/add/', PaymentCreateView.as_view(), name='payment_add'),
-    path('payments/<int:pk>/update/', PaymentUpdateView.as_view(), name='payment_update'),
     path('payments/<int:pk>/delete/', PaymentDeleteView.as_view(), name='payment_delete'),
 
+    path('membershipplans/', MembershipPlanListView.as_view(), name='membershipplan_list'),
+    path('membershipplans/<int:pk>/', MembershipPlanDetailView.as_view(), name='membershipplan_detail'),
+    path('membershipplans/create/', MembershipPlanCreateView.as_view(), name='membershipplan_create'),
+    path('membershipplans/<int:pk>/update/', MembershipPlanUpdateView.as_view(), name='membershipplan_update'),
+    path('membershipplans/<int:pk>/delete/', MembershipPlanDeleteView.as_view(), name='membershipplan_delete'),
+
+    # Membership URLs
+    path('memberships/', MembershipListView.as_view(), name='membership_list'),
+    path('memberships/<int:pk>/', MembershipDetailView.as_view(), name='membership_detail'),
+    path('memberships/<int:pk>/delete/', MembershipDeleteView.as_view(), name='membership_delete'),
+
+    # MembershipPayment URLs
+    path('membershippayments/', MembershipPaymentListView.as_view(), name='membershippayment_list'),
+    path('membershippayments/<int:pk>/', MembershipPaymentDetailView.as_view(), name='membershippayment_detail'),
+    path('membershippayments/<int:pk>/delete/', MembershipPaymentDeleteView.as_view(), name='membershippayment_delete'),
+
+    
+    
     # RoomRating URLs
     path('room_ratings/', RoomRatingListView.as_view(), name='room_rating_list'),
     path('room_ratings/<int:pk>/', RoomRatingDetailView.as_view(), name='room_rating_detail'),
@@ -66,12 +74,7 @@ urlpatterns = [
     path('chat_messages/<int:pk>/', ChatMessageDetailView.as_view(), name='chat_message_detail'),
     path('chat_messages/add/', ChatMessageCreateView.as_view(), name='chat_message_add'),
     path('chat_messages/<int:pk>/update/', ChatMessageUpdateView.as_view(), name='chat_message_update'),
-    path('chat_messages/<int:pk>/delete/', ChatMessageDeleteView.as_view(), name='chat_message_delete'),
+    # path('chat_messages/<int:pk>/delete/', ChatMessageDeleteView.as_view(), name='chat_message_delete'),
 
-    # ChatBot URLs
-    # path('chat_bots/', ChatBotListView.as_view(), name='chat_bot_list'),
-    # path('chat_bots/<int:pk>/', ChatBotDetailView.as_view(), name='chat_bot_detail'),
-    # path('chat_bots/add/', ChatBotCreateView.as_view(), name='chat_bot_add'),
-    # path('chat_bots/<int:pk>/update/', ChatBotUpdateView.as_view(), name='chat_bot_update'),
-    # path('chat_bots/<int:pk>/delete/', ChatBotDeleteView.as_view(), name='chat_bot_delete'),
+    
 ]

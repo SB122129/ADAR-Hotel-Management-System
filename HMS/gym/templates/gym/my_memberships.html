@@ -39,7 +39,7 @@
                             </div>
                             <div class="row mb-2">
                                 <div class="col-sm-5 text-left"><strong>Status</strong></div>
-                                <div class="col-sm-7 text-center">{{ membership.status }}</div>
+                                <div class="col-sm-7 text-center">{{ membership.get_status_display }}</div>
                             </div>
                             {% if membership.for_first_name %}
                                 <div class="row mb-2">

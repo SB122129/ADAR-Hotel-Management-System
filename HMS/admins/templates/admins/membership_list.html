@@ -1,43 +1,28 @@
 {% extends 'admins/base.html' %}
 
 {% block content %}
-<div class="container mt-3">
-    {% if messages %}
-        <div class="container">
-            {% for message in messages %}
-                <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-</div>
 <div class="container mt-5">
     <!-- Search Form -->
     <form method="get" action="" class="mb-4 d-flex justify-content-between">
         <div class="input-group w-75">
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by room number, type, user, or transaction reference" value="{{ request.GET.search }}">
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by user or plan or transaction id" value="{{ request.GET.search }}">
             <div class="input-group-append">
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
-        <a href="{% url 'admins:payment_list' %}" class="btn btn-sm btn-success">Show All</a>
+        <a href="{% url 'admins:membership_list' %}" class="btn btn-sm btn-success">Show All</a>
     </form>
 
     <div class="d-flex justify-content-center">
         <table class="table">
             <thead>
                 <tr>
-                    <th scope="col">Room Number</th>
                     <th scope="col">User</th>
-                    <th scope="col">Transaction ID</th>
-                    <th scope="col">Payment Date</th>
-                    <th scope="col">Amount</th>
+                    <th scope="col">Membership Plan</th>
+                    <th scope="col">Start Date</th>
+                    <th scope="col">End Date</th>
                     <th scope="col">Status</th>
-                    <th scope="col">Payment Method</th>
+                    <th scope="col">For</th>
                     <th scope="col" class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -45,59 +30,54 @@
                 {% if object_list %}
                 {% for item in object_list %}
                 <tr>
-                    <td class="align-middle">{{ item.booking.room.room_number }}</td>
-                    <td class="align-middle">{{ item.booking.user.username }}</td>
-                    <td class="align-middle">{{ item.transaction_id|default:"-" }}</td>
-                    <td class="align-middle">{{ item.payment_date }}</td>
-                    <td class="align-middle">ETB {{ item.booking.total_amount }}</td>
+                    <td class="align-middle">{{ item.user.username }}</td>
+                    <td class="align-middle">{{ item.plan.name }}</td>
+                    <td class="align-middle">{{ item.start_date }}</td>
+                    <td class="align-middle">{{ item.end_date }}</td>
                     <td class="align-middle">{{ item.get_status_display }}</td>
-                    <td class="align-middle">{{ item.get_payment_method_display }}</td>
+                    <td class="align-middle">{% if item.for_first_name %}{{ item.for_first_name }}{% else %} Self {% endif %}</td>
                     <td class="text-center">
                         <div class="btn-group" role="group">
-                            <!-- View button -->
-                            <a href="{% url 'admins:payment_detail' item.id %}" class="btn btn-link text-warning">
+                            
+                            <a href="{% url 'admins:membership_detail' item.id %}" class="btn btn-link text-warning">
                                 <span class="material-symbols-outlined">info</span>
                             </a>
-                            <!-- Delete button with modal trigger -->
-                            <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ item.id }}">
+                            <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-id="{{ item.id }}">
                                 <span class="material-symbols-outlined">delete_forever</span>
                             </button>
-
-                            <!-- Confirm Delete Modal -->
-                            <div class="modal fade" id="confirmDeleteModal{{ item.id }}" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteLabel{{ item.id }}" aria-hidden="true">
-                                <div class="modal-dialog" role="document">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="confirmDeleteLabel{{ item.id }}">Confirm Deletion</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            Are you sure you want to delete this payment?
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <form action="{% url 'admins:payment_delete' item.id %}" method="post">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-danger">Delete</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </td>
                 </tr>
+                <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Deletion</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Are you sure you want to delete this membership?
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form id="deleteForm" method="post" action="">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center text-danger">No data available</td>
+                    <td colspan="6" class="text-center text-danger">No data available</td>  
                 </tr>
                 {% endif %}
             </tbody>
         </table>
     </div>
 
-    <!-- Pagination Controls -->
     <div class="d-flex justify-content-center">
         <nav>
             <ul class="pagination">
@@ -143,5 +123,19 @@
             </ul>
         </nav>
     </div>
+
+    
 </div>
-{% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var confirmDeleteModal = document.getElementById('confirmDeleteModal');
+    confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var membershipId = button.getAttribute('data-id');
+        var deleteForm = document.getElementById('deleteForm');
+        deleteForm.action = '{% url "admins:membership_delete" 0 %}'.replace('0', membershipId);
+    });
+});
+</script>
+{% endblock content %}

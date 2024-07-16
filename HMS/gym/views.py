@@ -196,7 +196,7 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
             "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
             "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
         })
-
+        amount = membership.plan.price/50
         payment = Payment({
             "intent": "sale",
             "payer": {
@@ -211,13 +211,13 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
                     "items": [{
                         "name": f"Membership: {membership.plan.name}",
                         "sku": "item",
-                        "price": str(membership.plan.price),
+                        "price": str(amount),
                         "currency": "USD",
                         "quantity": 1
                     }]
                 },
                 "amount": {
-                    "total": str(membership.plan.price),
+                    "total": str(amount),
                     "currency": "USD"
                 },
                 "description": f"Payment for {membership.plan.name}"
@@ -292,6 +292,7 @@ class PayPalReturnView(View):
                 transaction_id=payment_id,
                 amount=membership.plan.price,
                 status='completed',
+                payment_method='paypal'
             )
             membership.status = 'active'
             membership.save()

@@ -20,6 +20,10 @@
                             <span>ETB {{ object.total_amount }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong><i class="bi bi-tag"></i>&ensp;Booking Extend Amount</strong>
+                            <span>ETB {{ object.booking_extend_amount }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
                             <strong><i class="bi bi-calendar-check"></i>&ensp;Check In Date</strong>
                             <span>{{ object.check_in_date }}</span>
                         </li>
@@ -45,8 +49,7 @@
                         </li>
                     </ul>
                     <div class="mt-3 d-flex justify-content-center">
-                        <a href="{% url 'admins:booking_update' object.pk %}" class="btn btn-warning rounded">Edit</a>&ensp;
-                        <a href="{% url 'admins:booking_list' %}" class="btn btn-secondary rounded">Back to List</a>
+                        <a href="{% url 'admins:booking_list' %}" class="btn btn-sm btn-secondary rounded">Back to List</a>
                     </div>
                 </div>
             </div>

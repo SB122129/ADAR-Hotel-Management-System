@@ -87,34 +87,6 @@ def admin_dashboard(request):
 
     
 
-class LanguageListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
-    model = Language
-    template_name = 'admins/language_list.html'
-    context_object_name = 'languages'
-    def get_queryset(self):
-        return Language.objects.order_by('name')
-
-
-class LanguageDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
-    model = Language
-    template_name = 'admins/language_detail.html'
-
-class LanguageCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
-    model = Language
-    template_name = 'admins/language_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:language_list')
-
-class LanguageUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
-    model = Language
-    template_name = 'admins/language_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:language_list')
-
-class LanguageDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
-    model = Language
-    template_name = 'admins/language_confirm_delete.html'
-    success_url = reverse_lazy('admins:language_list')
 
 # Category Views
 class CategoryListView(ListView):
@@ -240,17 +212,6 @@ class BookingDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     model = Booking
     template_name = 'admins/booking_detail.html'
 
-class BookingCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
-    model = Booking
-    template_name = 'admins/booking_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:booking_list')
-
-
-class BookingUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
-    model = Booking
-    template_name = 'admins/booking_form.html'
-    success_url = reverse_lazy('admins:booking_list')
 
 class BookingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Booking
@@ -269,45 +230,7 @@ class BookingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 
 
 
-class MembershipPlanListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
-    model = MembershipPlan
-    template_name = 'admins/membership_plan_list.html'
-    context_object_name = 'plans'
-
-    def get_queryset(self):
-        return MembershipPlan.objects.order_by('id')
-
-
-class MembershipPlanDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
-    model = MembershipPlan
-    template_name = 'admins/membership_plan_detail.html'
-
-
-class MembershipPlanCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
-    model = MembershipPlan
-    template_name = 'admins/membership_plan_form.html'
-    form_class = MembershipPlanForm
-    success_url = reverse_lazy('admins:membership_plan_list')
-
-
-class MembershipPlanUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
-    model = MembershipPlan
-    template_name = 'admins/membership_plan_form.html'
-    form_class = MembershipPlanForm
-    success_url = reverse_lazy('admins:membership_plan_list')
-
-
-class MembershipPlanDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
-    model = MembershipPlan
-    template_name = 'admins/membership_plan_confirm_delete.html'
-    success_url = reverse_lazy('admins:membership_plan_list')
-
-
-
-
-
-
-# Payment Views
+# Room Payment Views
 
 class PaymentListView(LoginRequiredMixin, ListView):
     model = Payment
@@ -333,22 +256,157 @@ class PaymentDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     model = Payment
     template_name = 'admins/payment_detail.html'
 
-class PaymentCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
-    model = Payment
-    template_name = 'admins/payment_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:payment_list')
 
-class PaymentUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
-    model = Payment
-    template_name = 'admins/payment_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:payment_list')
 
 class PaymentDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = Payment
     template_name = 'admins/payment_confirm_delete.html'
     success_url = reverse_lazy('admins:payment_list')
+
+
+
+
+
+from .forms import MembershipPlanForm, MembershipForm, MembershipPaymentForm
+
+# MembershipPlan Views
+class MembershipPlanListView(ListView):
+    model = MembershipPlan
+    template_name = 'admins/membershipplan_list.html'
+    context_object_name = 'membershipplans'
+    paginate_by = 10
+
+    def get_queryset(self):
+        query = self.request.GET.get('search')
+        if query:
+            return MembershipPlan.objects.filter(name__icontains=query)
+        return MembershipPlan.objects.order_by('name')
+
+class MembershipPlanDetailView(LoginRequiredMixin, DetailView):
+    model = MembershipPlan
+    template_name = 'admins/membershipplan_detail.html'
+
+class MembershipPlanCreateView(LoginRequiredMixin, CreateView):
+    model = MembershipPlan
+    template_name = 'admins/membershipplan_form.html'
+    form_class = MembershipPlanForm
+    success_url = reverse_lazy('admins:membershipplan_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Membership Plan created successfully.')
+        return response
+
+class MembershipPlanUpdateView(LoginRequiredMixin, UpdateView):
+    model = MembershipPlan
+    template_name = 'admins/membershipplan_form.html'
+    form_class = MembershipPlanForm
+    success_url = reverse_lazy('admins:membershipplan_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Membership Plan updated successfully.')
+        return response
+
+class MembershipPlanDeleteView(LoginRequiredMixin, DeleteView):
+    model = MembershipPlan
+    template_name = 'admins/membershipplan_confirm_delete.html'
+    success_url = reverse_lazy('admins:membershipplan_list')
+
+# Membership Views
+class MembershipListView(ListView):
+    model = Membership
+    template_name = 'admins/membership_list.html'
+    context_object_name = 'memberships'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = Membership.objects.all().order_by('id')
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(user__username__icontains=search_query) |
+                Q(plan__name__icontains=search_query) |
+                Q(tx_ref__icontains=search_query)
+            )
+        return queryset
+
+class MembershipDetailView(LoginRequiredMixin, DetailView):
+    model = Membership
+    template_name = 'admins/membership_detail.html'
+
+
+
+class MembershipDeleteView(LoginRequiredMixin, DeleteView):
+    model = Membership
+    template_name = 'admins/membership_confirm_delete.html'
+    success_url = reverse_lazy('admins:membership_list')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        success_url = self.get_success_url()
+        try:
+            self.object.delete()
+            messages.success(self.request, 'Membership successfully deleted.')
+        except Exception as e:
+            messages.error(self.request, f'Failed to delete membership: {str(e)}')
+        return super().delete(request, *args, **kwargs)
+
+# MembershipPayment Views
+class MembershipPaymentListView(LoginRequiredMixin, ListView):
+    model = MembershipPayment
+    template_name = 'admins/membershippayment_list.html'
+    context_object_name = 'membershippayments'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = MembershipPayment.objects.all().order_by('id')
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(membership__user__username__icontains=search_query) |
+                Q(membership__plan__name__icontains=search_query) |
+                Q(transaction_id__icontains=search_query)
+            )
+        return queryset
+
+class MembershipPaymentDetailView(LoginRequiredMixin, DetailView):
+    model = MembershipPayment
+    template_name = 'admins/membershippayment_detail.html'
+
+class MembershipPaymentCreateView(LoginRequiredMixin, CreateView):
+    model = MembershipPayment
+    template_name = 'admins/membershippayment_form.html'
+    form_class = MembershipPaymentForm
+    success_url = reverse_lazy('admins:membershippayment_list')
+
+class MembershipPaymentUpdateView(LoginRequiredMixin, UpdateView):
+    model = MembershipPayment
+    template_name = 'admins/membershippayment_form.html'
+    form_class = MembershipPaymentForm
+    success_url = reverse_lazy('admins:membershippayment_list')
+
+class MembershipPaymentDeleteView(LoginRequiredMixin, DeleteView):
+    model = MembershipPayment
+    template_name = 'admins/membershippayment_confirm_delete.html'
+    success_url = reverse_lazy('admins:membershippayment_list')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        success_url = self.get_success_url()
+        try:
+            self.object.delete()
+            messages.success(self.request, 'Membership Payment successfully deleted.')
+        except Exception as e:
+            messages.error(self.request, f'Failed to delete membership payment: {str(e)}')
+        return super().delete(request, *args, **kwargs)
+
+
+
+
+
+
+
 
 # RoomRating Views
 class RoomRatingListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
@@ -435,37 +493,3 @@ class ChatMessageUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
     fields = '__all__'
     success_url = reverse_lazy('admins:chat_message_list')
 
-class ChatMessageDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
-    model = ChatMessage
-    template_name = 'admins/chat_message_confirm_delete.html'
-    success_url = reverse_lazy('admins:chat_message_list')
-
-# ChatBot Views
-class ChatBotListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
-    model = ChatBot
-    template_name = 'admins/chat_bot_list.html'
-    context_object_name = 'chat_bots'
-    def get_queryset(self):
-        return Category.objects.order_by('name')
-
-
-class ChatBotDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
-    model = ChatBot
-    template_name = 'admins/chat_bot_detail.html'
-
-class ChatBotCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
-    model = ChatBot
-    template_name = 'admins/chat_bot_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:chat_bot_list')
-
-class ChatBotUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
-    model = ChatBot
-    template_name = 'admins/chat_bot_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:chat_bot_list')
-
-class ChatBotDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
-    model = ChatBot
-    template_name = 'admins/chat_bot_confirm_delete.html'
-    success_url = reverse_lazy('admins:chat_bot_list')
