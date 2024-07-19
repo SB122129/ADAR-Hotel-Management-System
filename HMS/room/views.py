@@ -863,6 +863,15 @@ class ReceiptUploadView(CreateView):
         return reverse_lazy('bookings')
 
 
+class UserRoomRatingsListView(LoginRequiredMixin, ListView):
+    model = RoomRating
+    template_name = 'room/my_room_ratings.html'
+    context_object_name = 'ratings'
+
+    def get_queryset(self):
+        return RoomRating.objects.filter(user=self.request.user)
+
+
 
 
 @receiver(post_save, sender=Booking)

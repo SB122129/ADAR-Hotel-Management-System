@@ -136,6 +136,8 @@ body {
               <a class="dropdown-item nav-link text-warning " href="{% url 'rooms' %}">View Rooms</a>
               {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
               <a class="dropdown-item nav-link text-warning" href="{% url 'bookings' %}">My Bookings</a>
+              <a class="dropdown-item nav-link text-warning" href="{% url 'my_room_ratings' %}">My Ratings</a>
+              
               {% endif %}
             </div>
           </div>
