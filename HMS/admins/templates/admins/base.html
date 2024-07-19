@@ -20,7 +20,13 @@
 <link rel="stylesheet" href="{% static 'css/style3.css' %}">
 <link rel="stylesheet" href="{% static 'css/style5.css?v=1.0' %}">
 <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
-
+<style>
+    .dropdown-menu {
+    position: absolute;
+    right: 0;
+    z-index: 1050;
+}
+</style>
 </head>
 <body>
 <div id="wrapper" class="wrapper-content">
@@ -65,8 +71,8 @@
                         <i class="bi bi-layout-sidebar"></i>
                     </button>
                 </div>
-                <div class="dropdown ml-auto">
-                    <button style="outline: none;" class="btn dropdown-toggle p-0" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <div class="dropdown">
+                    <button style="outline: none;" class="btn dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         {% if user.profile_picture and user.profile_picture.url %}
                             <img src="{{ user.profile_picture.url }}" class="rounded-circle" alt="{{ user.username }}" style="width: 30px; height: 30px; object-fit: cover;">
                         {% else %}

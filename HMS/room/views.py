@@ -793,6 +793,60 @@ class BookingCancelView(LoginRequiredMixin, UpdateView):
 
 
 
+class RoomRatingListView(ListView):
+    model = RoomRating
+    template_name = 'room/room_ratings.html'
+    context_object_name = 'ratings'
+
+    def get_queryset(self):
+        self.room = get_object_or_404(Room, pk=self.kwargs['pk'])
+        return RoomRating.objects.filter(room=self.room)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['room'] = self.room
+        return context
+
+class AddRoomRatingView(CreateView):
+    model = RoomRating
+    form_class = RoomRatingForm
+    template_name = 'room/add_room_rating.html'
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        form.instance.room = get_object_or_404(Room, pk=self.kwargs['pk'])
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['room'] = get_object_or_404(Room, pk=self.kwargs['pk'])
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('room_ratings', kwargs={'pk': self.kwargs['pk']})
+
+
+class EditRoomRatingView(UpdateView):
+    model = RoomRating
+    form_class = RoomRatingForm
+    template_name = 'room/edit_room_rating.html'
+    pk_url_kwarg = 'rating_id'
+
+    def get_success_url(self):
+        return reverse_lazy('room_ratings', kwargs={'pk': self.object.room.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['room'] = self.object.room  # Add the room to the context
+        return context
+class DeleteRoomRatingView(DeleteView):
+    model = RoomRating
+    pk_url_kwarg = 'rating_id'
+
+    def get_success_url(self):
+        return reverse_lazy('room_ratings', kwargs={'pk': self.object.room.pk})
+
+
 
 class ReceiptUploadView(CreateView):
     model = Receipt

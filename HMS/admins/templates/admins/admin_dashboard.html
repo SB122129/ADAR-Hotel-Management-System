@@ -13,46 +13,9 @@
 
 <div id="roomTypePopularityChart"></div>
 <div id="revenueByRoomTypeChart"></div>
-<div id="bookingTrendsChart"></div>
-<div id="revenueTrendsChart"></div>
-
 <script>
     Highcharts.setOptions({
         colors: ['#FFD700', '#000000']
-    });
-
-    // Booking Trends Chart
-    Highcharts.chart('bookingTrendsChart', {
-        chart: {
-            type: 'line'
-        },
-        title: {
-            text: 'Booking Trends'
-        },
-        xAxis: {
-            type: 'datetime'
-        },
-        series: [{
-            name: 'Bookings',
-            data: {{ booking_trends_data|safe }}
-        }]
-    });
-
-    // Revenue Trends Chart
-    Highcharts.chart('revenueTrendsChart', {
-        chart: {
-            type: 'line'
-        },
-        title: {
-            text: 'Revenue Trends'
-        },
-        xAxis: {
-            type: 'datetime'
-        },
-        series: [{
-            name: 'Revenue',
-            data: {{ revenue_trends_data|safe }}
-        }]
     });
 
     // Room Type Popularity Chart

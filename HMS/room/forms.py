@@ -43,5 +43,7 @@ class RoomRatingForm(forms.ModelForm):
     class Meta:
         model = RoomRating
         fields = ['rating', 'review']
-from django import forms
-
+        widgets = {
+            'rating': forms.NumberInput(attrs={'min': 1, 'max': 5}),
+            'review': forms.Textarea(attrs={'rows': 4}),
+        }

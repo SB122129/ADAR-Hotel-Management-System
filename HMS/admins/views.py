@@ -50,19 +50,6 @@ from django.core.serializers.json import DjangoJSONEncoder
 from datetime import datetime
 
 def admin_dashboard(request):
-    # Booking Trends (per day)
-    booking_trends = list(Booking.objects.annotate(day=TruncDay('check_in_date')).values('day').annotate(count=Count('id')))
-    booking_trends_data = [
-        {'x': int(datetime.combine(item['day'], datetime.min.time()).timestamp()) * 1000, 'y': item['count']}
-        for item in booking_trends
-    ]
-
-    # Revenue Over Time (per day)
-    revenue_trends = list(Booking.objects.filter(is_paid=True).annotate(day=TruncDay('check_in_date')).values('day').annotate(total_revenue=Sum('total_amount')))
-    revenue_trends_data = [
-        {'x': int(datetime.combine(item['day'], datetime.min.time()).timestamp()) * 1000, 'y': float(item['total_revenue'])}
-        for item in revenue_trends
-    ]
 
     # Room Type Popularity
     room_type_popularity = list(Booking.objects.values('room__room_type__name').annotate(count=Count('id')))
@@ -76,8 +63,6 @@ def admin_dashboard(request):
     ]
 
     context = {
-        'booking_trends_data': json.dumps(booking_trends_data, cls=DjangoJSONEncoder),
-        'revenue_trends_data': json.dumps(revenue_trends_data, cls=DjangoJSONEncoder),
         'room_type_popularity_data': json.dumps(room_type_popularity_data, cls=DjangoJSONEncoder),
         'revenue_by_room_type_data': json.dumps(revenue_by_room_type_data, cls=DjangoJSONEncoder),
     }

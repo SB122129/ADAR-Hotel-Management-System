@@ -1,0 +1,39 @@
+{% extends 'accountss/base.html' %}
+
+{% load rating_tags %} <!-- Load the custom template tags -->
+
+{% block content %}
+<br>
+<div class="container mt-5">
+    <h3 class="font-weight-bold">Ratings for {{ room.room_type }} Suite with Room Number {{ room.room_number }} 
+        <a href="{% url 'add_room_rating' room.pk %}" class="btn btn-primary btn-sm rounded float-right">Add Rating</a>
+    </h3>
+    <div class="mt-4">
+        {% for rating in ratings %}
+            <div class="card mb-3 rounded shadow-lg w-75">
+                <div class="card-body">
+                    <h6 class="card-title font-weight-bold">
+                        Rating &emsp;
+                        {% rating_range rating.rating as range %}
+                        {% for i in range %}
+                            <i class="fas fa-star text-warning small"></i>
+                        {% endfor %}
+                    </h6>
+                    <p class="card-text">{{ rating.review }}</p>
+                    <p class="card-text"><small class="text-muted">Rated by {{ rating.user.username }} on {{ rating.rating_date }}</small></p>
+                    {% if rating.user == request.user %}
+                    <a href="{% url 'edit_room_rating' rating.pk %}" class="btn btn-secondary btn-sm rounded">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_room_rating' rating.pk %}" class="btn btn-danger btn-sm rounded" >
+                        <i class="fas fa-trash-alt"></i>
+                    </a>
+                {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <p>No ratings yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

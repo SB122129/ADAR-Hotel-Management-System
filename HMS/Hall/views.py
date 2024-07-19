@@ -33,6 +33,7 @@ import json
 from config import BASE_URL
 from django.utils import timezone
 from django.db.models import Min, Max
+from django.db.models import Q
 
 class HallListView(ListView):
     model = Hall
@@ -81,20 +82,19 @@ class CheckAvailabilityView(FormView):
     def form_valid(self, form):
         hall = Hall.objects.get(pk=self.kwargs['pk'])
         start_date = form.cleaned_data['start_date']
-        end_date = form.cleaned_data['end_date']
+        end_date = form.cleaned_data['end_date'] if form.cleaned_data['end_date'] else start_date
         start_time = form.cleaned_data['start_time']
         end_time = form.cleaned_data['end_time']
 
-        availability = not Hall_Booking.objects.filter(
+        conflicting_bookings = Hall_Booking.objects.filter(
             hall=hall,
-            start_date__lte=end_date if end_date else start_date,
-            end_date__gte=start_date,
-            start_time__lte=end_time,
-            end_time__gte=start_time,
             status='confirmed'
-        ).exists()
+        ).filter(
+            Q(start_date__lte=end_date) & Q(end_date__gte=start_date) &
+            Q(start_time__lte=end_time) & Q(end_time__gte=start_time)
+        )
 
-        if availability:
+        if not conflicting_bookings.exists():
             # Store the form data in session
             self.request.session['booking_data'] = {
                 'start_date': str(start_date),
@@ -107,14 +107,14 @@ class CheckAvailabilityView(FormView):
             context = {
                 'form': form,
                 'hall': hall,
-                'availability': availability,
+                'availability': False,
             }
             return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['hall'] = Hall.objects.get(pk=self.kwargs['pk'])
-        return context    
+        return context
 
 # views.py
 from decimal import Decimal

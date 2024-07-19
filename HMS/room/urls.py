@@ -18,4 +18,9 @@ urlpatterns = [
     path('booking/<int:booking_id>/upload_receipt/', ReceiptUploadView.as_view(), name='upload_receipt'),
     path('paypal-return/', PayPalReturnView.as_view(), name='paypal_return'),
     path('paypal-cancel/', PayPalCancelView.as_view(), name='paypal_cancel'),
+    path('rating/<int:pk>/ratings/', RoomRatingListView.as_view(), name='room_ratings'),
+    path('rating/<int:pk>/add_rating/', AddRoomRatingView.as_view(), name='add_room_rating'),
+    path('rating/edit/<int:rating_id>/', EditRoomRatingView.as_view(), name='edit_room_rating'),
+    path('rating/delete/<int:rating_id>/', DeleteRoomRatingView.as_view(), name='delete_room_rating'),
+
 ]
