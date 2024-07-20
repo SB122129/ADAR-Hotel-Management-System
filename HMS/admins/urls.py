@@ -29,11 +29,17 @@ urlpatterns = [
     # Booking URLs
     path('bookings/', BookingListView.as_view(), name='booking_list'),
     path('bookings/<int:pk>/', BookingDetailView.as_view(), name='booking_detail'),
+    path('bookings/add/', BookingCreateView.as_view(), name='booking_create'),
+    path('bookings/<int:pk>/update/', BookingUpdateView.as_view(), name='booking_update'),
     path('bookings/<int:pk>/delete/', BookingDeleteView.as_view(), name='booking_delete'),
+    path('booking/<int:pk>/extend/', BookingExtendView.as_view(), name='booking_extend'),
+    
 
     
     # Payment URLs
     path('payments/', PaymentListView.as_view(), name='payment_list'),
+    path('payment/create/<int:booking_id>/', PaymentCreateView.as_view(), name='payment_create'),
+    path('payment/<int:booking_id>/extend/<int:pk>/update/', PaymentExtendView.as_view(), name='payment_extend_update'),
     path('payments/<int:pk>/', PaymentDetailView.as_view(), name='payment_detail'),
     path('payments/<int:pk>/delete/', PaymentDeleteView.as_view(), name='payment_delete'),
 

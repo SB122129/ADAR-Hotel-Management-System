@@ -489,7 +489,7 @@ class PayPalReturnView(View):
                     booking.check_out_date=booking.extended_check_out_date
                     if booking.booking_extend_amount is not None:
                         booking.total_amount += booking.booking_extend_amount 
-                    booking.save(bypass_validation=True)
+                    booking.save()
                 payment, created = Payment.objects.get_or_create(
                             booking=booking,
                             defaults={
@@ -608,7 +608,7 @@ class ChapaWebhookView(View):
                 print("", booking.total_amount)
                 print("", booking.booking_extend_amount)
                 booking.total_amount += booking.booking_extend_amount
-            booking.save(bypass_validation=True)
+            booking.save()
 
         
         booking_url = f"{BASE_URL}/room/my-bookings/"
@@ -762,7 +762,7 @@ class BookingCancelView(LoginRequiredMixin, UpdateView):
         try:
             booking = self.get_object()
             booking.status = 'cancelled'
-            booking.save(bypass_validation=True)
+            booking.save()
             booking.room.update_room_status()
             # Update the room status after cancellation
             booking_url = f"{BASE_URL}/room/my-bookings/"

@@ -6,9 +6,7 @@
         <div class="container ">
             {% for message in messages %}
                 <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     {{ message }}
                 </div>
             {% endfor %}
@@ -16,6 +14,7 @@
     {% endif %}
 </div>
 <div class="container mt-5">
+    <h4 class="text-center mb-4 m"><strong>Booking List</strong></h4>
     <!-- Search Form -->
     <form method="get" action="" class="mb-4 d-flex justify-content-between">
         <div class="input-group w-75">
@@ -28,6 +27,7 @@
     </form>
 
     <div class="d-flex justify-content-center">
+        
         <table class="table">
             <thead>
                 <tr>
@@ -38,6 +38,8 @@
                     <th scope="col">Check-out Date</th>
                     <th scope="col">Extended Check-out Date</th>
                     <th scope="col">Total Amount</th>
+                    <th scope="col">Checked-in</th>
+                    <th scope="col">Checked-out</th>
                     <th scope="col">Status</th>
                     <th scope="col" class="text-center">Actions</th>
                 </tr>
@@ -48,14 +50,24 @@
                 <tr>
                     <td class="align-middle">{{ item.room.room_number }}</td>
                     <td class="align-middle">{{ item.room.room_type.name }}</td>
-                    <td class="align-middle">{{ item.user.username }}</td>
+                    <td class="align-middle">{% if item.full_name %}{{item.full_name}}{% else %}{{ item.user.username }}{% endif %}</td>
                     <td class="align-middle">{{ item.check_in_date }}</td>
                     <td class="align-middle">{{ item.check_out_date }}</td>
                     <td class="align-middle">{{ item.extended_check_out_date|default:"-" }}</td>
-                    <td class="align-middle">ETB {{ item.total_amount }}</td>
+                    <td class="align-middle">{{ item.total_amount }}</td>
+                    <td class="align-middle">{{ item.checked_in }}</td>
+                    <td class="align-middle">{{ item.checked_out }}</td>
                     <td class="align-middle">{{ item.get_status_display }}</td>
                     <td class="text-center">
                         <div class="btn-group" role="group">
+                            <!-- Extend button -->
+                            <a href="{% url 'admins:booking_extend' item.id %}" class="btn btn-link text-primary">
+                                <span class="material-symbols-outlined">add</span>
+                            </a>
+                            <!-- Edit button -->
+                            <a href="{% url 'admins:booking_update' item.id %}" class="btn btn-link text-primary">
+                                <span class="material-symbols-outlined">edit_note</span>
+                            </a>
                             <!-- View button -->
                             <a href="{% url 'admins:booking_detail' item.id %}" class="btn btn-link text-warning">
                                 <span class="material-symbols-outlined">info</span>
@@ -144,6 +156,9 @@
                 {% endif %}
             </ul>
         </nav>
+    </div>
+    <div class="d-flex justify-content-center">
+        <a href="{% url 'admins:booking_create' %}" class="btn btn-warning w-25 mt-5">Create</a>
     </div>
 </div>
 {% endblock %}

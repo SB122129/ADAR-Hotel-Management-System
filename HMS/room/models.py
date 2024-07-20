@@ -70,13 +70,6 @@ class Room(models.Model):
 
 
 
-
-
-
-from django.db import models
-from django.core.exceptions import ValidationError
-from django.utils import timezone
-
 class Booking(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
@@ -84,7 +77,8 @@ class Booking(models.Model):
         ('cancelled', 'Cancelled'),
     )
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    user = models.ForeignKey(Custom_user, on_delete=models.CASCADE)
+    user = models.ForeignKey(Custom_user, on_delete=models.CASCADE, null=True, blank=True) 
+    full_name = models.CharField(max_length=100,null=True, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     original_booking_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     booking_extend_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -93,6 +87,8 @@ class Booking(models.Model):
     extended_check_out_date = models.DateField(null=True, blank=True)  # New field for extended checkout date
     created_at = models.DateTimeField(auto_now_add=True)
     is_paid = models.BooleanField(default=False)
+    checked_in = models.BooleanField(default=False)
+    checked_out = models.BooleanField(default=True)
     guests = models.IntegerField(null=True, blank=True)
     tx_ref = models.CharField(max_length=100, unique=True, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -103,45 +99,17 @@ class Booking(models.Model):
             return self.room.price_per_night * extended_days
         else:
             return 0
-    def clean(self):
-        # Ensure check-in date is not in the past
-        if self.check_in_date < timezone.now().date():
-            raise ValidationError('Check-in date cannot be in the past.')
-
-        # Ensure check-out date is not before check-in date
-        if self.check_out_date <= self.check_in_date:
-            raise ValidationError('Check-out date must be after the check-in date.')
-
-
 
     def save(self, *args, **kwargs):
-        
+        self.full_clean()  # Call clean method to perform validations
 
-        bypass_validation = kwargs.pop('bypass_validation', False)
-        if bypass_validation:
-            # Temporarily disable the clean method to bypass validation
-            self._disable_validation()
-            super().save(*args, **kwargs)
-            # Restore the clean method after saving
-            self._restore_validation()
-        else:
-            self.full_clean()  # Call clean method to perform validations
-
-            if self.pk is None:  # Only calculate amount if it's a new instance
+        if self.pk is None:  # Only calculate amount if it's a new instance
             # Calculate duration of stay
-                duration = (self.check_out_date - self.check_in_date).days
+            duration = (self.check_out_date - self.check_in_date).days
             # Calculate amount based on price per night and duration
-                self.original_booking_amount = self.room.price_per_night * duration
-            # Perform regular save with validation
-            super().save(*args, **kwargs)
-    
-    def _disable_validation(self):
-        self._clean = self.clean
-        self.clean = lambda: None
-
-    def _restore_validation(self):
-        self.clean = self._clean
-        del self._clean   # self.room.update_room_status()
+            self.original_booking_amount = self.room.price_per_night * duration
+        # Perform regular save with validation
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         room = self.room
@@ -157,6 +125,7 @@ class Booking(models.Model):
 
 
 
+
 class Payment(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),
@@ -166,6 +135,7 @@ class Payment(models.Model):
     PAYMENT_METHOD_CHOICES = (
         ('chapa', 'Chapa'),
         ('paypal', 'PayPal'),
+        ('cash', 'Cash'),
     )
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE)
     payment_date = models.DateTimeField(auto_now_add=True)

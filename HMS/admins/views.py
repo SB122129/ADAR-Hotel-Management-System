@@ -6,41 +6,12 @@ from accountss.models import *
 from room.models import *
 from social_media.models import *
 from .mixins import OwnerRequiredMixin
-from django.shortcuts import render
+from django.shortcuts import render, redirect,get_object_or_404
 from django import forms
 from gym.models import *
 from .forms import *
-
-
-# Custom User Views
-# class CustomUserListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
-#     model = Custom_user
-#     template_name = 'admins/custom_user_list.html'
-#     context_object_name = 'users'
-
-# class CustomUserDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
-#     model = Custom_user
-#     template_name = 'admins/custom_user_detail.html'
-
-# class CustomUserCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
-#     model = Custom_user
-#     template_name = 'admins/custom_user_form.html'
-#     fields = '__all__'
-#     success_url = reverse_lazy('admins:custom_user_list')
-
-# class CustomUserUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
-#     model = Custom_user
-#     template_name = 'admins/custom_user_form.html'
-#     fields = '__all__'
-#     success_url = reverse_lazy('admins:custom_user_list')
-
-# class CustomUserDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
-#     model = Custom_user
-#     template_name = 'admins/custom_user_confirm_delete.html'
-#     success_url = reverse_lazy('admins:custom_user_list')
-
-# Language Views
-
+import random
+import string
 from django.db.models import Count, Sum, Avg, F, ExpressionWrapper, fields
 from django.db.models.functions import TruncMonth,TruncDay
 from datetime import timedelta
@@ -180,7 +151,7 @@ class BookingListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = Booking.objects.all().order_by('id')
+        queryset = Booking.objects.all().order_by('-created_at')  # Changed from 'id' to '-created_at'
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
@@ -196,6 +167,33 @@ class BookingListView(ListView):
 class BookingDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
     model = Booking
     template_name = 'admins/booking_detail.html'
+
+class BookingCreateView(LoginRequiredMixin, CreateView):
+    model = Booking
+    form_class = BookingCreateForm
+    template_name = 'admins/booking_form.html'
+
+    def form_valid(self, form):
+        booking = form.save(commit=False)
+        full_name = form.cleaned_data['full_name']
+        booking.tx_ref = f"booking-{full_name.replace(' ', '')}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+        booking.status = 'pending'
+        
+        if booking.check_in_date and booking.check_out_date:
+            duration = (booking.check_out_date - booking.check_in_date).days
+            booking.original_booking_amount = booking.room.price_per_night * duration
+            booking.total_amount = booking.original_booking_amount
+        booking.save()
+        return redirect('admins:payment_create',booking_id=booking.id)
+
+
+
+class BookingUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+    model = Booking
+    template_name = 'admins/booking_update.html'
+    form_class = BookingUpdateForm
+    success_url = reverse_lazy('admins:booking_list')
+
 
 
 class BookingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
@@ -215,7 +213,109 @@ class BookingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 
 
 
+
+
+from django.urls import reverse
+
+class BookingExtendView(LoginRequiredMixin, UpdateView):
+    model = Booking
+    form_class = BookingExtendForm
+    template_name = 'admins/booking_extend_form.html'
+
+    def form_valid(self, form):
+        booking = form.save(commit=False)
+        additional_amount = booking.calculate_additional_amount()
+        booking.booking_extend_amount = additional_amount
+        booking.total_amount += additional_amount
+        booking.status = 'pending'
+        
+        # Save the booking first
+        booking.save()
+        
+        # Create or update the Payment object
+        payment, created = Payment.objects.get_or_create(
+            booking=booking,
+            defaults={'amount': additional_amount}
+        )
+        
+        if not created:
+            # If the payment already exists, update it
+            payment.amount = additional_amount
+            payment.save()
+        
+        # Generate a new tx_ref for the payment
+        full_name = booking.full_name
+        booking.tx_ref = f"booking-{full_name.replace(' ', '')}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+        booking.save()
+        
+        # Redirect to the payment extension view with booking and payment IDs
+        return redirect(reverse('admins:payment_extend_update', kwargs={'booking_id': booking.id, 'pk': payment.id}))
+
+
 # Room Payment Views
+
+class PaymentExtendView(LoginRequiredMixin, UpdateView):
+    model = Payment
+    form_class = PaymentExtendForm
+    template_name = 'admins/payment_extend_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        booking_id = self.kwargs.get('booking_id')
+        context['booking'] = get_object_or_404(Booking, pk=booking_id)
+        return context
+
+    def get_object(self):
+        # Get the payment object based on the booking_id and the payment id
+        booking_id = self.kwargs.get('booking_id')
+        payment_id = self.kwargs.get('pk')  # 'pk' is used to get the payment instance
+        booking = get_object_or_404(Booking, pk=booking_id)
+        # Fetch or create a payment related to the booking if needed
+        return get_object_or_404(Payment, id=payment_id, booking=booking)
+
+    def form_valid(self, form):
+        payment = form.save(commit=False)
+        booking_id = self.kwargs.get('booking_id')
+        booking = get_object_or_404(Booking, pk=booking_id)
+        payment.booking = booking
+        payment.amount = booking.booking_extend_amount  # Set amount manually
+        payment.save()
+        booking.status = 'confirmed'
+        booking.check_out_date = booking.extended_check_out_date
+        booking.save()
+        messages.success(self.request, 'Booking and Payment for Extentsion completed')
+        return redirect('admins:booking_list')
+
+class PaymentCreateView(LoginRequiredMixin, CreateView):
+    model = Payment
+    form_class = PaymentCreateForm
+    template_name = 'admins/payment_form.html'
+    success_url = reverse_lazy('admins:payment_list')
+
+    def get_context_data(self, **kwargs):
+        context = super(PaymentCreateView, self).get_context_data(**kwargs)
+        booking_id = self.kwargs.get('booking_id')  
+        context['booking'] = get_object_or_404(Booking, pk=booking_id)
+        return context
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        booking_id = self.kwargs.get('booking_id')
+        booking = get_object_or_404(Booking, pk=booking_id)
+        kwargs.update({'initial': {'booking': booking}})
+        return kwargs
+
+    def form_valid(self, form):
+        payment = form.save(commit=False)
+        booking = get_object_or_404(Booking, pk=self.kwargs.get('booking_id'))
+        payment.booking = booking
+        payment.transaction_id = booking.tx_ref
+        payment.payment_date = datetime.now()
+        payment.save()
+        booking.status = 'confirmed'
+        booking.save()
+        messages.success(self.request, 'Booking and Payment completed')
+        return redirect(self.success_url)
+
 
 class PaymentListView(LoginRequiredMixin, ListView):
     model = Payment

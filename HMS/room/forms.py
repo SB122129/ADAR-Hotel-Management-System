@@ -3,6 +3,7 @@ from .models import Booking, Payment, RoomRating
 from datetime import date
 from django import forms
 from .models import Booking
+from django.utils import timezone
 from django.core.exceptions import ValidationError
 
 class BookingExtendForm(forms.ModelForm):
@@ -37,6 +38,23 @@ class BookingForm(forms.ModelForm):
             raise ValidationError(f'The number of guests cannot exceed the room capacity which is {self.room.capacity} for this room.')
 
         return guests
+
+    def clean_check_in_date(self):
+        check_in_date = self.cleaned_data.get('check_in_date')
+        if check_in_date < timezone.now().date():
+            raise ValidationError('Check-in date cannot be in the past.')
+        return check_in_date
+
+    def clean(self):
+        cleaned_data = super().clean()
+        check_in_date = cleaned_data.get('check_in_date')
+        check_out_date = cleaned_data.get('check_out_date')
+
+        if check_in_date and check_out_date:
+            if check_out_date <= check_in_date:
+                raise ValidationError('Check-out date must be after the check-in date.')
+
+        return cleaned_data
         
 
 class RoomRatingForm(forms.ModelForm):

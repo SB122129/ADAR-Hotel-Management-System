@@ -575,7 +575,7 @@ async def confirm_cancellation(update: Update, context: ContextTypes.DEFAULT_TYP
     # Change the status to 'cancelled'
     
     booking.status = 'cancelled'
-    await sync_to_async(booking.save)(bypass_validation=True)
+    await sync_to_async(booking.save)()
     
     await query.message.reply_text(f'Booking ID {booking.id} has been cancelled successfully.')
     
