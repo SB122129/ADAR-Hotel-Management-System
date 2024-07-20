@@ -1,0 +1,40 @@
+<!-- templates/admins/payment_create.html -->
+
+{% extends 'admins/base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-sm rounded">
+        <div class="card-body">
+            <h3 class="card-title font-weight-bold">Select Payment Method</h3>
+            <ul class="list-group list-group-flush mt-3">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong>Booking ID</strong>
+                    <span>{{ booking.id }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong>Amount Due</strong>
+                    <span>{{ booking.amount_due }} ETB</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <strong>Status</strong>
+                    <span>{{ booking.status }}</span>
+                </li>
+            </ul>
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="payment_method" class="form-label">Select Payment Method</label>
+                    <select id="payment_method" name="payment_method" class="form-select">
+                        {% for method_key, method_value in payment_methods %}
+                            <option value="{{ method_key }}">{{ method_value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="d-flex justify-content-center">
+                    <button type="submit" class="btn rounded btn-success w-50">Confirm Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

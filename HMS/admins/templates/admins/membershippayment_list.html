@@ -17,6 +17,7 @@
         <table class="table">
             <thead>
                 <tr>
+                    <th scope="col">Membership</th>
                     <th scope="col">User</th>
                     <th scope="col">Membership</th>
                     <th scope="col">Amount</th>
@@ -30,6 +31,7 @@
                 {% if object_list %}
                 {% for item in object_list %}
                 <tr>
+                    <td class="align-middle"><a href="{% url 'admins:membership_detail' item.membership.pk %}" class="text-decoration-none text-primary">{{ item.membership }}</td>
                     <td class="align-middle">{{ item.membership.user.username }}</td>
                     <td class="align-middle">{{ item.membership.plan.name }}</td>
                     <td class="align-middle">ETB {{ item.amount }}</td>

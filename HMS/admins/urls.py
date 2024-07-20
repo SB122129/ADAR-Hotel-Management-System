@@ -68,6 +68,28 @@ urlpatterns = [
     path('room_ratings/<int:pk>/update/', RoomRatingUpdateView.as_view(), name='room_rating_update'),
     path('room_ratings/<int:pk>/delete/', RoomRatingDeleteView.as_view(), name='room_rating_delete'),
 
+    
+    # Hall URLs
+    path('hall/create/', HallCreateView.as_view(), name='hall_create'),
+    path('hall/<int:pk>/update/', HallUpdateView.as_view(), name='hall_update'),
+    path('hall/<int:pk>/delete/', HallDeleteView.as_view(), name='hall_delete'),
+    path('hall/<int:pk>/', HallDetailView.as_view(), name='hall_detail'),
+    path('hall/', HallListView.as_view(), name='hall_list'),
+    
+    # Hall Booking URLs
+    path('hall/availability/', HallAvailabilityView.as_view(), name='hall_availability'),
+    path('hall/booking-create/<int:pk>/', HallBookingCreateView.as_view(), name='hall_booking_create'),
+    path('hall_booking/<int:pk>/update/', HallBookingUpdateView.as_view(), name='hall_booking_update'),
+    path('hall_booking/<int:pk>/delete/', HallBookingDeleteView.as_view(), name='hall_booking_delete'),
+    path('hall_booking/', HallBookingListView.as_view(), name='hall_booking_list'),
+    path('hall_booking/<int:pk>/', HallBookingDetailView.as_view(), name='hall_booking_detail'),
+
+    # Hall Payment URLs
+    path('hall_payment/<int:pk>/delete/', HallPaymentDeleteView.as_view(), name='hall_payment_delete'),
+    path('hall_payment/', HallPaymentListView.as_view(), name='hall_payment_list'),
+    path('hall-payment/<int:pk>/', HallPaymentDetailView.as_view(), name='hall_payment_detail'),
+    path('hall/payment/<int:pk>/', HallPaymentCreateView.as_view(), name='hall_payment_create'),
+    
     # SocialMediaPost URLs
     path('social_media_posts/', SocialMediaPostListView.as_view(), name='social_media_post_list'),
     path('social_media_posts/<int:pk>/', SocialMediaPostDetailView.as_view(), name='social_media_post_detail'),

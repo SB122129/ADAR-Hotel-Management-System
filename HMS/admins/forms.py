@@ -163,3 +163,74 @@ class MembershipPaymentForm(forms.ModelForm):
     class Meta:
         model = MembershipPayment
         fields = '__all__'
+
+
+
+from django import forms
+from Hall.models import Hall, Hall_Booking, Hall_Payment
+
+class CheckAvailabilityForm(forms.Form):
+    hall = forms.ModelChoiceField(queryset=Hall.objects.all(), widget=forms.Select(attrs={'class': 'form-control'}))
+    start_date = forms.DateField(widget=forms.TextInput(attrs={'type': 'date'}))
+    end_date = forms.DateField(required=False, widget=forms.TextInput(attrs={'type': 'date'}))
+    start_time = forms.TimeField(widget=forms.TextInput(attrs={'type': 'time'}))
+    end_time = forms.TimeField(widget=forms.TextInput(attrs={'type': 'time'}))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        hall = cleaned_data.get('hall')
+
+        if end_date and end_date < start_date:
+            raise ValidationError("End date cannot be before start date.")
+
+        if end_date == start_date and end_time < start_time:
+            raise ValidationError("End time cannot be before start time when start and end dates are the same.")
+
+        return cleaned_data
+
+class HallForm(forms.ModelForm):
+    class Meta:
+        model = Hall
+        fields = '__all__'
+
+class HallBookingUpdateForm(forms.ModelForm):
+    occupied = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    status = forms.ChoiceField(choices=Hall_Booking.Booking_STATUS_CHOICES, widget=forms.Select(attrs={'class': 'form-control'}))
+
+    class Meta:
+        model = Hall_Booking
+        fields = ['occupied', 'status']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        occupied = cleaned_data.get("occupied")
+        status = cleaned_data.get("status")
+
+        if occupied and status == 'cancelled':
+            raise forms.ValidationError("Occupied hall cannot have status 'cancelled'.")
+
+        return cleaned_data
+
+
+
+class HallBookingForm(forms.ModelForm):
+    class Meta:
+        model = Hall_Booking
+        fields = ['full_name']
+        widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-control rounded'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['hall'].queryset = Hall.objects.all()  # Adjust as necessary
+
+    
+class HallPaymentForm(forms.ModelForm):
+    class Meta:
+        model = Hall_Payment
+        fields = '__all__'

@@ -1,7 +1,8 @@
+from decimal import Decimal
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView,TemplateView, DetailView,FormView, CreateView, UpdateView, DeleteView
 from accountss.models import *
 from room.models import *
 from social_media.models import *
@@ -522,6 +523,306 @@ class RoomRatingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
     model = RoomRating
     template_name = 'admins/room_rating_confirm_delete.html'
     success_url = reverse_lazy('admins:room_rating_list')
+
+
+
+
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, UpdateView, DeleteView, ListView
+from Hall.models import Hall, Hall_Booking, Hall_Payment
+from .forms import HallForm, HallBookingForm, HallPaymentForm
+
+# Hall Views
+class HallCreateView(CreateView):
+    model = Hall
+    form_class = HallForm
+    template_name = 'admins/hall_form.html'
+    success_url = reverse_lazy('admins:hall_list')
+
+class HallDetailView(DetailView):
+    model = Hall
+    template_name = 'admins/hall_detail.html'
+class HallUpdateView(UpdateView):
+    model = Hall
+    form_class = HallForm
+    template_name = 'admins/hall_form.html'
+    success_url = reverse_lazy('admins:hall_list')
+
+class HallDeleteView(DeleteView):
+    model = Hall
+    template_name = 'admins/hall_confirm_delete.html'
+    success_url = reverse_lazy('admins:hall_list')
+
+class HallListView(ListView):
+    model = Hall
+    template_name = 'admins/hall_list.html'
+    context_object_name = 'object_list'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = Hall.objects.all().order_by('hall_number')  # Adjust ordering as needed
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(hall_number__icontains=search_query) |
+                Q(hall_type__name__icontains=search_query)  # Assuming hall_type is a CharField or similar
+            )
+        return queryset
+
+# Hall Booking Views
+class HallAvailabilityView(FormView):
+    form_class = CheckAvailabilityForm
+    template_name = 'admins/hall_availability.html'
+
+    def form_valid(self, form):
+        hall = form.cleaned_data['hall']
+        start_date = form.cleaned_data['start_date'].strftime('%Y-%m-%d')
+        end_date = form.cleaned_data['end_date'].strftime('%Y-%m-%d') if form.cleaned_data['end_date'] else start_date
+        start_time = form.cleaned_data['start_time'].strftime('%H:%M:%S')
+        end_time = form.cleaned_data['end_time'].strftime('%H:%M:%S')
+
+        conflicting_bookings = Hall_Booking.objects.filter(
+            hall=hall,
+            status='confirmed'
+        ).filter(
+            Q(start_date__lte=end_date) & Q(end_date__gte=start_date) &
+            Q(start_time__lte=end_time) & Q(end_time__gte=start_time)
+        )
+
+        availability = not conflicting_bookings.exists()
+        context = {
+            'form': form,
+            'hall': hall,
+            'availability': availability,
+        }
+
+        if availability:
+            # Store booking data in session with string conversion
+            self.request.session['booking_data'] = {
+                'start_date': start_date,
+                'end_date': end_date,
+                'start_time': start_time,
+                'end_time': end_time,
+            }
+            return redirect('admins:hall_booking_create', pk=hall.pk)  # Redirect to booking create view
+
+        return self.render_to_response(context)
+
+
+# views.py (in HallBookingCreateView)
+
+from datetime import datetime
+
+class HallBookingCreateView(TemplateView):
+    template_name = 'admins/hall_booking_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        hall = get_object_or_404(Hall, pk=self.kwargs['pk'])
+        booking_data = self.request.session.get('booking_data')
+
+        if not booking_data:
+            # Handle case where booking data is missing
+            return redirect('admins:hall_availability')
+
+        start_date = booking_data['start_date']
+        end_date = booking_data.get('end_date')
+        start_time = booking_data['start_time']
+        end_time = booking_data['end_time']
+
+        # Calculate total cost
+        start_time_dt = datetime.strptime(start_time, '%H:%M:%S').time()
+        end_time_dt = datetime.strptime(end_time, '%H:%M:%S').time()
+        today = date.today()  # Correct usage of date.today()
+
+        duration_hours = Decimal((datetime.combine(today, end_time_dt) - datetime.combine(today, start_time_dt)).seconds) / Decimal(3600)
+
+        if end_date:
+            days = (datetime.strptime(end_date, '%Y-%m-%d').date() - datetime.strptime(start_date, '%Y-%m-%d').date()).days + 1
+            total_cost = duration_hours * hall.price_per_hour * Decimal(days)
+        else:
+            total_cost = duration_hours * hall.price_per_hour
+
+        context.update({
+            'hall': hall,
+            'start_date': start_date,
+            'end_date': end_date,
+            'start_time': start_time_dt,
+            'end_time': end_time_dt,
+            'total_cost': total_cost,
+        })
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        hall = get_object_or_404(Hall, pk=self.kwargs['pk'])
+        user = request.user
+        booking_data = self.request.session.get('booking_data')
+
+        if not booking_data:
+            # Handle case where booking data is missing
+            return redirect('admins:hall_availability')
+
+        start_date = booking_data['start_date']
+        end_date = booking_data.get('end_date')
+        start_time = booking_data['start_time']
+        end_time = booking_data['end_time']
+        total_cost = self.get_context_data(**kwargs)['total_cost']
+        full_name = request.POST.get('full_name')
+
+        # Create the booking
+        booking = Hall_Booking.objects.create(
+            hall=hall,
+            start_date=start_date,
+            end_date=end_date,
+            start_time=start_time,
+            end_time=end_time,
+            amount_due=total_cost,
+            status='pending',
+            full_name=full_name  # Save the full name to the booking
+        )
+
+        # Clear booking data from session
+        del request.session['booking_data']
+
+        return redirect('admins:hall_payment_create', pk=booking.pk)
+
+
+
+class HallCreatePaymentView(TemplateView):
+    template_name = 'admins/hall_payment_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        booking = get_object_or_404(Hall_Booking, pk=self.kwargs['pk'])
+        context['booking'] = booking
+        context['payment_methods'] = Hall_Payment.PAYMENT_METHOD_CHOICES
+        return context
+
+    def post(self, request, *args, **kwargs):
+        booking = get_object_or_404(Hall_Booking, pk=self.kwargs['pk'])
+        payment_method = request.POST.get('payment_method')
+
+        if payment_method not in dict(Hall_Payment.PAYMENT_METHOD_CHOICES).keys():
+            messages.error(request, 'Invalid payment method selected.')
+            return render(request, self.template_name, self.get_context_data())
+
+        # Create the payment instance
+        payment = Hall_Payment.objects.create(
+            booking=booking,
+            payment_method=payment_method,
+            transaction_id=self.generate_transaction_id(),
+        )
+
+        # For simplicity, let's assume cash payments are completed immediately
+        if payment_method == 'cash':
+            payment.status = 'completed'
+            payment.save()
+            messages.success(request, 'Cash payment has been successfully processed.')
+            return redirect('admins:hall_booking_list')
+
+        # Redirect to a success page or update the booking status as needed
+        messages.success(request, f'{payment_method.capitalize()} payment method selected.')
+        return redirect('admins:hall_booking_list')
+
+    def generate_transaction_id(self):
+        """Generate a unique transaction ID."""
+        import random
+        import string
+        return ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+
+class HallBookingDetailView(DetailView):
+    model = Hall_Booking
+    template_name = 'admins/hall_booking_detail.html'
+    context_object_name = 'object'
+
+class HallBookingUpdateView(UpdateView):
+    model = Hall_Booking
+    form_class = HallBookingUpdateForm
+    template_name = 'admins/hall_booking_update_form.html'
+    success_url = reverse_lazy('admins:hall_booking_list')
+
+class HallBookingDeleteView(DeleteView):
+    model = Hall_Booking
+    template_name = 'admins/hall_booking_confirm_delete.html'
+    success_url = reverse_lazy('admins:hall_booking_list')
+
+class HallBookingListView(ListView):
+    model = Hall_Booking
+    template_name = 'admins/hall_booking_list.html'
+    context_object_name = 'object_list'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = Hall_Booking.objects.all().order_by('-created_at')  # Adjust as needed
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(user__username__icontains=search_query) |
+                Q(hall__hall_number__icontains=search_query) |
+                Q(hall__hall_type__name__icontains=search_query) |
+                Q(tx_ref__icontains=search_query)  # Adjust this field as needed
+            )
+        return queryset
+
+# Hall Payment Views
+class HallPaymentCreateView(CreateView):
+    model = Hall_Payment
+    form_class = HallPaymentForm
+    template_name = 'admins/hall_payment_form.html'
+    success_url = reverse_lazy('admins:hall_payment_list')
+
+class HallPaymentUpdateView(UpdateView):
+    model = Hall_Payment
+    form_class = HallPaymentForm
+    template_name = 'admins/hall_payment_form.html'
+    success_url = reverse_lazy('admins:hall_payment_list')
+
+class HallPaymentDeleteView(DeleteView):
+    model = Hall_Payment
+    template_name = 'admins/hall_payment_confirm_delete.html'
+    success_url = reverse_lazy('admins:hall_payment_list')
+
+class HallPaymentDetailView(DetailView):
+    model = Hall_Payment
+    template_name = 'admins/hall_payment_detail.html'
+    context_object_name = 'payment'
+
+class HallPaymentListView(ListView):
+    model = Hall_Payment
+    template_name = 'admins/hall_payment_list.html'
+    context_object_name = 'object_list'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = Hall_Payment.objects.all().order_by('-payment_date')
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(transaction_id__icontains=search_query) |
+                Q(status__icontains=search_query)
+            )
+        return queryset
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # SocialMediaPost Views
 class SocialMediaPostListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
