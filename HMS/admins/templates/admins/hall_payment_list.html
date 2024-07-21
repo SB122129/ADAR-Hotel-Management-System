@@ -1,5 +1,17 @@
 {% extends 'admins/base.html' %}
 {% block content %}
+<div class="container mt-3">
+    {% if messages %}
+        <div class="container ">
+            {% for message in messages %}
+                <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
 <h4 class="text-center mt-4 mb-4"><strong>Hall Payment List</strong></h4>
 
 <div class="container mt-5">
@@ -31,7 +43,7 @@
                 {% for payment in object_list %}
                     <tr>
                         <td>{{ payment.id }}</td>
-                        <td><a href="{% url 'admins:hall_booking_detail' payment.booking.pk %}" class="text-decoration-none text-primary">{{ payment.booking }}</a></td>
+                        <td><a href="{% url 'admins:hall_booking_detail' payment.booking.pk %}" class="text-decoration-none text-primary">{% if payment.booking.user.username %}{{ payment.booking.user.username }}{% else %}{{ payment.booking.full_name }}{% endif %}-{{payment.booking.id}}</a></td>
                         <td>{{ payment.payment_date }}</td>
                         <td>{{ payment.transaction_id|default:"-" }}</td>
                         <td>{{ payment.get_status_display }}</td>

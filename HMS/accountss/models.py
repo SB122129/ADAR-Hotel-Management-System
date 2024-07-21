@@ -11,10 +11,12 @@ class Custom_user(AbstractUser):
         ('manager', 'Manager'),
         ('customer', 'Customer'),
         ('admin', 'Admin'),
+        ('receptionist', 'Receptionist'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
     first_login = models.BooleanField(default=True)
     email = models.EmailField(unique=True)
+    last_login = models.DateTimeField()
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     telegram_username = models.CharField(max_length=100, unique=True, null=True, blank=True)

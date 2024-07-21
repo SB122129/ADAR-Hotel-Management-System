@@ -4,6 +4,38 @@ from django.core.exceptions import ValidationError
 from room.models import *
 from django import forms
 from gym.models import MembershipPlan
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+
+
+class CustomUserCreationForm(UserCreationForm):
+    class Meta:
+        model = Custom_user
+        fields = ('username', 'email', 'first_name', 'last_name', 'country', 'phone_number')
+
+class CustomUserChangeForm(UserChangeForm):
+    password = forms.CharField(label="Password", required=False, widget=forms.PasswordInput)
+    password_confirmation = forms.CharField(label="Password confirmation", required=False, widget=forms.PasswordInput)
+
+    class Meta:
+        model = Custom_user
+        fields = ('username', 'email', 'first_name', 'last_name', 'country', 'phone_number')
+
+    def clean_password_confirmation(self):
+        password = self.cleaned_data.get("password")
+        password_confirmation = self.cleaned_data.get("password_confirmation")
+        if password and password_confirmation and password != password_confirmation:
+            raise forms.ValidationError("Passwords don't match")
+        return password_confirmation
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data.get("password")
+        if password:
+            user.set_password(password)
+        if commit:
+            user.save()
+        return user
+
 class CategoryForm(forms.ModelForm):
     name_regex = RegexValidator(
         regex=r'^[a-zA-Z]{3,10}$',
@@ -81,6 +113,7 @@ class BookingUpdateForm(forms.ModelForm):
 
 from django import forms
 from room.models import Booking, Room
+import re
 
 class BookingCreateForm(forms.ModelForm):
     class Meta:
@@ -97,18 +130,33 @@ class BookingCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['room'].queryset = Room.objects.filter(room_status='vacant')  # Filter available rooms
+        self.fields['full_name'].validators.append(self.validate_full_name)
+        self.fields['guests'].validators.append(self.validate_guests)
 
     def clean(self):
         cleaned_data = super().clean()
         check_in_date = cleaned_data.get('check_in_date')
         check_out_date = cleaned_data.get('check_out_date')
         room = cleaned_data.get('room')
+        guests = cleaned_data.get('guests')
 
         if check_in_date and check_out_date and room:
             if check_out_date <= check_in_date:
                 raise forms.ValidationError("Check-out date must be after check-in date.")
-        # Additional validation can be added here
+            if guests > room.capacity:
+                self.add_error('guests', f"Number of guests cannot exceed room capacity -> {room.capacity}.")
+
         return cleaned_data
+
+    def validate_full_name(self, full_name):
+        if len(full_name) > 100:
+            raise ValidationError("Full name must not exceed 100 characters.")
+        if not re.match("^[a-zA-Z ]*$", full_name):
+            raise ValidationError("Full name must only contain letters.")
+
+    def validate_guests(self, guests):
+        if guests < 1:
+            raise ValidationError("There must be at least one guest.")
 
 
 class BookingExtendForm(forms.ModelForm):
@@ -152,17 +200,70 @@ from gym.models import MembershipPlan, Membership, MembershipPayment
 class MembershipPlanForm(forms.ModelForm):
     class Meta:
         model = MembershipPlan
-        fields = '__all__'
+        fields = ['name', 'price', 'duration_months', 'description']
 
-class MembershipForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(MembershipPlanForm, self).__init__(*args, **kwargs)
+        self.fields['name'].validators.append(self.validate_name)
+        self.fields['price'].validators.append(self.validate_price)
+        self.fields['duration_months'].validators.append(self.validate_duration_months)
+
+    def validate_name(self, value):
+        if not 3 <= len(value) <= 50:
+            raise ValidationError("Name must be between 3 and 50 characters long.")
+        if not re.match("^[a-zA-Z0-9 ]*$", value):
+            raise ValidationError("Name must only contain letters and numbers.")
+
+    def validate_price(self, value):
+        if value < 1:
+            raise ValidationError("Price must be at least 1.")
+
+    def validate_duration_months(self, value):
+        if value < 1:
+            raise ValidationError("Duration in months must be at least 1.")
+
+
+
+class MembershipUpdateForm(forms.ModelForm):
     class Meta:
         model = Membership
-        fields = '__all__'
+        fields = ['status']
 
-class MembershipPaymentForm(forms.ModelForm):
+
+class MembershipCreateForm(forms.ModelForm):
+    plan = forms.ModelChoiceField(queryset=MembershipPlan.objects.all(), required=True)
+    start_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    payment_method = forms.ChoiceField(choices=[('cash', 'Cash'),('paypal','Paypal'),('chapa','Chapa')], required=True)
+    for_phone_number = forms.CharField(widget=forms.TextInput(attrs={'placeholder': '+2519xxxxxxxx or +2517xxxxxxxx'}))
+
     class Meta:
-        model = MembershipPayment
-        fields = '__all__'
+        model = Membership
+        fields = ['plan', 'start_date', 'for_first_name', 'for_last_name', 'for_phone_number', 'for_email', 'status']
+
+    def clean_start_date(self):
+        start_date = self.cleaned_data['start_date']
+        if start_date < date.today():
+            raise ValidationError("Start date cannot be in the past.")
+        return start_date
+
+    def clean_for_first_name(self):
+        first_name = self.cleaned_data['for_first_name']
+        if not re.match("^[a-zA-Z]{3,20}$", first_name):
+            raise ValidationError("First name must be letters only and between 3 and 20 characters.")
+        return first_name
+
+    def clean_for_last_name(self):
+        last_name = self.cleaned_data['for_last_name']
+        if not re.match("^[a-zA-Z]{3,20}$", last_name):
+            raise ValidationError("Last name must be letters only and between 3 and 20 characters.")
+        return last_name
+
+    def clean_for_phone_number(self):
+        phone_number = self.cleaned_data['for_phone_number']
+        if not re.match("^\+2519[0-9]{8}$|^\+2517[0-9]{8}$", phone_number):
+            raise ValidationError("Phone number must follow the pattern +2519xxxxxxxx or +2517xxxxxxxx.")
+        return phone_number
+
 
 
 
@@ -195,7 +296,19 @@ class CheckAvailabilityForm(forms.Form):
 class HallForm(forms.ModelForm):
     class Meta:
         model = Hall
-        fields = '__all__'
+        fields = ['hall_type','capacity', 'price_per_hour', 'description', 'image', 'floor']
+
+    def clean_capacity(self):
+        capacity = self.cleaned_data.get('capacity')
+        if capacity < 1:
+            raise forms.ValidationError("Capacity must be at least 1.")
+        return capacity
+
+    def clean_price_per_hour(self):
+        price_per_hour = self.cleaned_data.get('price_per_hour')
+        if price_per_hour < 1:
+            raise forms.ValidationError("Price per hour must be at least 1.")
+        return price_per_hour
 
 class HallBookingUpdateForm(forms.ModelForm):
     occupied = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
@@ -228,9 +341,16 @@ class HallBookingForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['hall'].queryset = Hall.objects.all()  # Adjust as necessary
+        self.fields['full_name'].validators.append(self.validate_full_name)
+
+    def validate_full_name(self, value):
+        if not 3 <= len(value) <= 100:
+            raise ValidationError("Full name must be between 3 and 100 characters.")
+        if not re.match("^[a-zA-Z\s]*$", value):
+            raise ValidationError("Full name must only contain letters and spaces.")
 
     
 class HallPaymentForm(forms.ModelForm):
     class Meta:
         model = Hall_Payment
-        fields = '__all__'
+        fields = ['payment_method']

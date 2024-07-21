@@ -4,14 +4,18 @@ from .views import *
 app_name = 'admins'
 
 urlpatterns = [
-    # # CustomUser URLs
-    # path('users/', CustomUserListView.as_view(), name='custom_user_list'),
-    # path('users/<int:pk>/', CustomUserDetailView.as_view(), name='custom_user_detail'),
-    # path('users/add/', CustomUserCreateView.as_view(), name='custom_user_add'),
-    # path('users/<int:pk>/update/', CustomUserUpdateView.as_view(), name='custom_user_update'),
-    # path('users/<int:pk>/delete/', CustomUserDeleteView.as_view(), name='custom_user_delete'),
     path('admin_dashboard/', admin_dashboard, name='admin_dashboard'),
     
+    path('managers/', ManagerListView.as_view(), name='manager_list'),
+    path('managers/create/', ManagerCreateView.as_view(), name='manager_create'),
+    path('managers/update/<int:pk>/', ManagerUpdateView.as_view(), name='manager_update'),
+    path('managers/delete/<int:pk>/', ManagerDeleteView.as_view(), name='manager_delete'),
+
+    path('receptionists/', ReceptionistListView.as_view(), name='receptionist_list'),
+    path('receptionists/create/', ReceptionistCreateView.as_view(), name='receptionist_create'),
+    path('receptionists/update/<int:pk>/', ReceptionistUpdateView.as_view(), name='receptionist_update'),
+    path('receptionists/delete/<int:pk>/', ReceptionistDeleteView.as_view(), name='receptionist_delete'),
+
     # Category URLs
     path('categories/', CategoryListView.as_view(), name='category_list'),
     path('categories/<int:pk>/', CategoryDetailView.as_view(), name='category_detail'),
@@ -50,8 +54,10 @@ urlpatterns = [
     path('membershipplans/<int:pk>/delete/', MembershipPlanDeleteView.as_view(), name='membershipplan_delete'),
 
     # Membership URLs
+    path('memberships/create/', MembershipCreateView.as_view(), name='membership_create'),
     path('memberships/', MembershipListView.as_view(), name='membership_list'),
     path('memberships/<int:pk>/', MembershipDetailView.as_view(), name='membership_detail'),
+    path('memberships/<int:pk>/update/', MembershipUpdateView.as_view(), name='membership_update'),
     path('memberships/<int:pk>/delete/', MembershipDeleteView.as_view(), name='membership_delete'),
 
     # MembershipPayment URLs

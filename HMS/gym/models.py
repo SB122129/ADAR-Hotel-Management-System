@@ -20,9 +20,9 @@ class Membership(models.Model):
         ('active', 'Active'),
         ('cancelled', 'Cancelled'),
     ]
-    user = models.ForeignKey(Custom_user, on_delete=models.CASCADE)
+    user = models.ForeignKey(Custom_user, on_delete=models.CASCADE,null=True, blank=True)
     plan = models.ForeignKey(MembershipPlan, on_delete=models.CASCADE)
-    start_date = models.DateField(auto_now_add=True)
+    start_date = models.DateField()
     end_date = models.DateField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     tx_ref = models.CharField(max_length=100, unique=True, null=True, blank=True)
@@ -44,6 +44,7 @@ class MembershipPayment(models.Model):
     PAYMENT_METHOD_CHOICES = (
         ('chapa', 'Chapa'),
         ('paypal', 'PayPal'),
+        ('cash', 'Cash'),
     )
     membership = models.OneToOneField(Membership, on_delete=models.CASCADE)
     payment_date = models.DateTimeField(auto_now_add=True)
@@ -54,3 +55,6 @@ class MembershipPayment(models.Model):
 
     def __str__(self):
         return f"Payment for {self.membership.user.username} - {self.membership.plan.name}"
+    
+
+    

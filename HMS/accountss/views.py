@@ -43,6 +43,8 @@ def redirect_view(request):
 
 
 
+from django.utils import timezone  
+
 class CustomLoginView(LoginView):
     template_name = 'accountss/login.html'
     
@@ -57,18 +59,22 @@ class CustomLoginView(LoginView):
             update_session_auth_hash(self.request, user)  # Update the session, because the backend hashes some of the user session data.
             messages.info(self.request, 'Please complete your profile.')
             return reverse_lazy('profile_update', kwargs={'pk': user.pk})
-        elif user.role == 'owner':
+        elif user.role == 'owner' or user.role == 'manager' or user.role == 'receptionist':
             return reverse_lazy('admins:admin_dashboard')
         elif user.role == 'admin':
             return reverse_lazy('admin:index')
-        elif user.role == 'manager':
-            return reverse_lazy('manager_dashboard')
-        else:  # default to 'customer'
+        else:  
             return reverse_lazy('home')
 
     def form_invalid(self, form):
         messages.error(self.request, "Invalid username or password")
         return super().form_invalid(form)
+
+    def form_valid(self, form):
+        user = form.get_user()
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+        return super().form_valid(form)
 
 
 
@@ -82,10 +88,14 @@ class RegisterView(CreateView):
 
     def form_valid(self, form):
         user = form.save(commit=False)
-        user.is_active = False
-        user.save()
-        self.send_verification_email(user)
-        messages.success(self.request, 'Please verify your email address to complete the registration.')
+        if user.role == 'customer':  # Assuming 'customer' is the role name
+            user.is_active = False
+            user.save()
+            self.send_verification_email(user)
+            messages.success(self.request, 'Please verify your email address to complete the registration.')
+        else:
+            user.is_active = True
+            user.save()
         return super().form_valid(form)
 
     def send_verification_email(self, user):
@@ -105,6 +115,7 @@ class RegisterView(CreateView):
         )
         email.attach_alternative(html_content, "text/html")
         email.send()
+
 
 def activate(request, uidb64, token):
     try:

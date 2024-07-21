@@ -2,11 +2,11 @@ from decimal import Decimal
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.urls import reverse_lazy
-from django.views.generic import ListView,TemplateView, DetailView,FormView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView,TemplateView,View, DetailView,FormView, CreateView, UpdateView, DeleteView
 from accountss.models import *
 from room.models import *
 from social_media.models import *
-from .mixins import OwnerRequiredMixin
+from .mixins import *
 from django.shortcuts import render, redirect,get_object_or_404
 from django import forms
 from gym.models import *
@@ -18,6 +18,7 @@ from django.db.models.functions import TruncMonth,TruncDay
 from datetime import timedelta
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+from django.contrib.messages.views import SuccessMessageMixin
 
 from datetime import datetime
 
@@ -45,8 +46,82 @@ def admin_dashboard(request):
     
 
 
+
+# owner views for creating manager and receptionsits
+
+class ManagerListView(OwnerRequiredMixin, ListView):
+    model = Custom_user
+    template_name = 'admins/manager_list.html'
+    context_object_name = 'managers'
+    paginate_by = 10
+
+    def get_queryset(self):
+        query = self.request.GET.get('search')
+        if query:
+            return Custom_user.objects.filter(role='manager', first_name__icontains=query)
+        return Custom_user.objects.filter(role='manager').order_by('first_name')
+
+class ManagerCreateView(OwnerRequiredMixin, CreateView):
+    model = Custom_user
+    form_class = CustomUserCreationForm
+    template_name = 'admins/manager_form.html'
+    success_url = reverse_lazy('admins:manager_list')
+
+    def form_valid(self, form):
+        form.instance.role = 'manager'
+        return super().form_valid(form)
+
+class ManagerUpdateView(OwnerRequiredMixin, UpdateView):
+    model = Custom_user
+    form_class = CustomUserChangeForm
+    template_name = 'admins/manager_form.html'
+    success_url = reverse_lazy('admins:manager_list')
+
+class ManagerDeleteView(OwnerRequiredMixin, DeleteView):
+    model = Custom_user
+    template_name = 'admins/manager_confirm_delete.html'
+    success_url = reverse_lazy('admins:manager_list')
+
+class ReceptionistListView(OwnerOrManagerRequiredMixin, ListView):
+    model = Custom_user
+    template_name = 'admins/receptionist_list.html'
+    context_object_name = 'receptionists'
+    paginate_by = 10
+
+    def get_queryset(self):
+        query = self.request.GET.get('search')
+        if query:
+            return Custom_user.objects.filter(role='receptionist', first_name__icontains=query)
+        return Custom_user.objects.filter(role='receptionist')
+
+class ReceptionistCreateView(OwnerOrManagerRequiredMixin, CreateView):
+    model = Custom_user
+    form_class = CustomUserCreationForm
+    template_name = 'admins/receptionist_form.html'
+    success_url = reverse_lazy('admins:receptionist_list')
+
+    def form_valid(self, form):
+        form.instance.role = 'receptionist'
+        return super().form_valid(form)
+
+class ReceptionistUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
+    model = Custom_user
+    form_class = CustomUserChangeForm
+    template_name = 'admins/receptionist_form.html'
+    success_url = reverse_lazy('admins:receptionist_list')
+
+class ReceptionistDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
+    model = Custom_user
+    template_name = 'admins/receptionist_confirm_delete.html'
+    success_url = reverse_lazy('admins:receptionist_list')
+
+
+
+
+
+
 # Category Views
-class CategoryListView(ListView):
+class CategoryListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     model = Category
     template_name = 'admins/category_list.html'
     context_object_name = 'categories'
@@ -58,41 +133,35 @@ class CategoryListView(ListView):
             return Category.objects.filter(name__icontains=query)
         return Category.objects.order_by('name')
 
-class CategoryDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
+class CategoryDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
     model = Category
     template_name = 'admins/category_detail.html'
 
 
 
-class CategoryCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
+class CategoryCreateView(OwnerOrManagerRequiredMixin,  CreateView,SuccessMessageMixin):
     model = Category
     template_name = 'admins/category_form.html'
     form_class = CategoryForm
     success_url = reverse_lazy('admins:category_list')
+    success_message = "Room category was created successfully."
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, 'Category created successfully.')
-        return response
-
-class CategoryUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+    
+class CategoryUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
     model = Category
     template_name = 'admins/category_form.html'
     form_class = CategoryForm
     success_url = reverse_lazy('admins:category_list')
+    success_message = "Room category was updated successfully."
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, 'Category updated successfully.')
-        return response
 
-class CategoryDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
+class CategoryDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     model = Category
     template_name = 'admins/category_confirm_delete.html'
     success_url = reverse_lazy('admins:category_list')
 
 # Room Views
-class RoomListView(ListView):
+class RoomListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     model = Room
     template_name = 'admins/room_list.html'
     context_object_name = 'object_list'
@@ -106,11 +175,11 @@ class RoomListView(ListView):
         return queryset
 
 
-class RoomDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
+class RoomDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
     model = Room
     template_name = 'admins/room_detail.html'
 
-class RoomCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
+class RoomCreateView(OwnerOrManagerRequiredMixin, CreateView):
     model = Room
     template_name = 'admins/room_form.html'
     form_class = RoomForm
@@ -121,7 +190,7 @@ class RoomCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
         messages.success(self.request, 'Room created successfully.')
         return response
 
-class RoomUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+class RoomUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
     model = Room
     template_name = 'admins/room_form.html'
     form_class = RoomForm
@@ -132,7 +201,7 @@ class RoomUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
         messages.success(self.request, 'Room updated successfully.')
         return response
 
-class RoomDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
+class RoomDeleteView(OwnerOrManagerRequiredMixin,  DeleteView):
     model = Room
     template_name = 'admins/room_confirm_delete.html'
     success_url = reverse_lazy('admins:room_list')
@@ -145,7 +214,7 @@ from django.views.generic import ListView
 from django.db.models import Q
 from room.models import Booking
 
-class BookingListView(ListView):
+class BookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     model = Booking
     template_name = 'admins/booking_list.html'
     context_object_name = 'object_list'
@@ -165,11 +234,11 @@ class BookingListView(ListView):
 
 
 
-class BookingDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
+class BookingDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
     model = Booking
     template_name = 'admins/booking_detail.html'
 
-class BookingCreateView(LoginRequiredMixin, CreateView):
+class BookingCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
     model = Booking
     form_class = BookingCreateForm
     template_name = 'admins/booking_form.html'
@@ -189,7 +258,7 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
 
 
 
-class BookingUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+class BookingUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
     model = Booking
     template_name = 'admins/booking_update.html'
     form_class = BookingUpdateForm
@@ -197,7 +266,7 @@ class BookingUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
 
 
 
-class BookingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
+class BookingDeleteView(OwnerManagerOrReceptionistRequiredMixin, DeleteView):
     model = Booking
     template_name = 'admins/booking_confirm_delete.html'
     success_url = reverse_lazy('admins:booking_list')
@@ -218,7 +287,7 @@ class BookingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 
 from django.urls import reverse
 
-class BookingExtendView(LoginRequiredMixin, UpdateView):
+class BookingExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
     model = Booking
     form_class = BookingExtendForm
     template_name = 'admins/booking_extend_form.html'
@@ -255,7 +324,7 @@ class BookingExtendView(LoginRequiredMixin, UpdateView):
 
 # Room Payment Views
 
-class PaymentExtendView(LoginRequiredMixin, UpdateView):
+class PaymentExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
     model = Payment
     form_class = PaymentExtendForm
     template_name = 'admins/payment_extend_form.html'
@@ -287,7 +356,7 @@ class PaymentExtendView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, 'Booking and Payment for Extentsion completed')
         return redirect('admins:booking_list')
 
-class PaymentCreateView(LoginRequiredMixin, CreateView):
+class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
     model = Payment
     form_class = PaymentCreateForm
     template_name = 'admins/payment_form.html'
@@ -318,7 +387,7 @@ class PaymentCreateView(LoginRequiredMixin, CreateView):
         return redirect(self.success_url)
 
 
-class PaymentListView(LoginRequiredMixin, ListView):
+class PaymentListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = Payment
     template_name = 'admins/payment_list.html'
     context_object_name = 'object_list'
@@ -338,13 +407,13 @@ class PaymentListView(LoginRequiredMixin, ListView):
 
 
 
-class PaymentDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
+class PaymentDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
     model = Payment
     template_name = 'admins/payment_detail.html'
 
 
 
-class PaymentDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
+class PaymentDeleteView(OwnerManagerOrReceptionistRequiredMixin, DeleteView):
     model = Payment
     template_name = 'admins/payment_confirm_delete.html'
     success_url = reverse_lazy('admins:payment_list')
@@ -353,10 +422,9 @@ class PaymentDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
 
 
 
-from .forms import MembershipPlanForm, MembershipForm, MembershipPaymentForm
 
 # MembershipPlan Views
-class MembershipPlanListView(ListView):
+class MembershipPlanListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     model = MembershipPlan
     template_name = 'admins/membershipplan_list.html'
     context_object_name = 'membershipplans'
@@ -368,11 +436,11 @@ class MembershipPlanListView(ListView):
             return MembershipPlan.objects.filter(name__icontains=query)
         return MembershipPlan.objects.order_by('name')
 
-class MembershipPlanDetailView(LoginRequiredMixin, DetailView):
+class MembershipPlanDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
     model = MembershipPlan
     template_name = 'admins/membershipplan_detail.html'
 
-class MembershipPlanCreateView(LoginRequiredMixin, CreateView):
+class MembershipPlanCreateView(OwnerOrManagerRequiredMixin,  CreateView):
     model = MembershipPlan
     template_name = 'admins/membershipplan_form.html'
     form_class = MembershipPlanForm
@@ -383,7 +451,7 @@ class MembershipPlanCreateView(LoginRequiredMixin, CreateView):
         messages.success(self.request, 'Membership Plan created successfully.')
         return response
 
-class MembershipPlanUpdateView(LoginRequiredMixin, UpdateView):
+class MembershipPlanUpdateView(OwnerOrManagerRequiredMixin,  UpdateView):
     model = MembershipPlan
     template_name = 'admins/membershipplan_form.html'
     form_class = MembershipPlanForm
@@ -394,20 +462,20 @@ class MembershipPlanUpdateView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, 'Membership Plan updated successfully.')
         return response
 
-class MembershipPlanDeleteView(LoginRequiredMixin, DeleteView):
+class MembershipPlanDeleteView(OwnerOrManagerRequiredMixin,  DeleteView):
     model = MembershipPlan
     template_name = 'admins/membershipplan_confirm_delete.html'
     success_url = reverse_lazy('admins:membershipplan_list')
 
 # Membership Views
-class MembershipListView(ListView):
+class MembershipListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     model = Membership
     template_name = 'admins/membership_list.html'
     context_object_name = 'memberships'
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = Membership.objects.all().order_by('id')
+        queryset = Membership.objects.all().order_by('-id')
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
@@ -417,13 +485,13 @@ class MembershipListView(ListView):
             )
         return queryset
 
-class MembershipDetailView(LoginRequiredMixin, DetailView):
+class MembershipDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
     model = Membership
     template_name = 'admins/membership_detail.html'
 
 
 
-class MembershipDeleteView(LoginRequiredMixin, DeleteView):
+class MembershipDeleteView(OwnerManagerOrReceptionistRequiredMixin, DeleteView):
     model = Membership
     template_name = 'admins/membership_confirm_delete.html'
     success_url = reverse_lazy('admins:membership_list')
@@ -438,8 +506,71 @@ class MembershipDeleteView(LoginRequiredMixin, DeleteView):
             messages.error(self.request, f'Failed to delete membership: {str(e)}')
         return super().delete(request, *args, **kwargs)
 
+
+
+class MembershipCreateView(OwnerManagerOrReceptionistRequiredMixin,View):
+    form_class = MembershipCreateForm
+    template_name = 'admins/membership_form.html'
+
+    def get(self, request, *args, **kwargs):
+        form = self.form_class()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            plan = form.cleaned_data['plan']
+            payment_method = form.cleaned_data['payment_method']
+            first_name = form.cleaned_data['for_first_name']
+            last_name = form.cleaned_data['for_last_name']
+            phone_number = form.cleaned_data['for_phone_number']
+            email = form.cleaned_data['for_email']
+            status = form.cleaned_data['status']
+
+            # Create membership
+            membership = Membership.objects.create(
+                plan=plan,
+                for_first_name=first_name,
+                for_last_name=last_name,
+                for_phone_number=phone_number,
+                for_email=email,
+                start_date=form.cleaned_data['start_date'],
+                end_date=form.cleaned_data['start_date'] + relativedelta(months=plan.duration_months),
+                status=status
+            )
+
+            # Create payment instance
+            MembershipPayment.objects.create(
+                membership=membership,
+                transaction_id=self.generate_tx_ref(),
+                payment_method=payment_method,
+                amount=plan.price,
+                status='completed'
+            )
+
+            messages.success(request, 'Membership and payment created successfully.')
+            return redirect('admins:membership_list')
+        else:
+            return render(request, self.template_name, {'form': form})
+
+    def generate_tx_ref(self):
+        return f"membership-admin-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+
+
+
+class MembershipUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
+    model = Membership
+    template_name = 'admins/membership_update_form.html'
+    form_class = MembershipUpdateForm
+    success_url = reverse_lazy('admins:membership_list')
+    success_message = "Membership was updated successfully."
+
+
+
+
+
 # MembershipPayment Views
-class MembershipPaymentListView(LoginRequiredMixin, ListView):
+class MembershipPaymentListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = MembershipPayment
     template_name = 'admins/membershippayment_list.html'
     context_object_name = 'membershippayments'
@@ -456,23 +587,13 @@ class MembershipPaymentListView(LoginRequiredMixin, ListView):
             )
         return queryset
 
-class MembershipPaymentDetailView(LoginRequiredMixin, DetailView):
+class MembershipPaymentDetailView(OwnerOrManagerRequiredMixin, OwnerManagerOrReceptionistRequiredMixin, DetailView):
     model = MembershipPayment
     template_name = 'admins/membershippayment_detail.html'
 
-class MembershipPaymentCreateView(LoginRequiredMixin, CreateView):
-    model = MembershipPayment
-    template_name = 'admins/membershippayment_form.html'
-    form_class = MembershipPaymentForm
-    success_url = reverse_lazy('admins:membershippayment_list')
 
-class MembershipPaymentUpdateView(LoginRequiredMixin, UpdateView):
-    model = MembershipPayment
-    template_name = 'admins/membershippayment_form.html'
-    form_class = MembershipPaymentForm
-    success_url = reverse_lazy('admins:membershippayment_list')
 
-class MembershipPaymentDeleteView(LoginRequiredMixin, DeleteView):
+class MembershipPaymentDeleteView(OwnerManagerOrReceptionistRequiredMixin, DeleteView):
     model = MembershipPayment
     template_name = 'admins/membershippayment_confirm_delete.html'
     success_url = reverse_lazy('admins:membershippayment_list')
@@ -495,7 +616,7 @@ class MembershipPaymentDeleteView(LoginRequiredMixin, DeleteView):
 
 
 # RoomRating Views
-class RoomRatingListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
+class RoomRatingListView(OwnerOrManagerRequiredMixin,  ListView):
     model = RoomRating
     template_name = 'admins/room_rating_list.html'
     context_object_name = 'room_ratings'
@@ -503,23 +624,23 @@ class RoomRatingListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
         return Category.objects.order_by('name')
 
 
-class RoomRatingDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
+class RoomRatingDetailView(OwnerOrManagerRequiredMixin,  DetailView):
     model = RoomRating
     template_name = 'admins/room_rating_detail.html'
 
-class RoomRatingCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
+class RoomRatingCreateView(OwnerOrManagerRequiredMixin,  CreateView):
     model = RoomRating
     template_name = 'admins/room_rating_form.html'
     fields = '__all__'
     success_url = reverse_lazy('admins:room_rating_list')
 
-class RoomRatingUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+class RoomRatingUpdateView(OwnerOrManagerRequiredMixin,  UpdateView):
     model = RoomRating
     template_name = 'admins/room_rating_form.html'
     fields = '__all__'
     success_url = reverse_lazy('admins:room_rating_list')
 
-class RoomRatingDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
+class RoomRatingDeleteView(OwnerOrManagerRequiredMixin,  DeleteView):
     model = RoomRating
     template_name = 'admins/room_rating_confirm_delete.html'
     success_url = reverse_lazy('admins:room_rating_list')
@@ -533,27 +654,27 @@ from Hall.models import Hall, Hall_Booking, Hall_Payment
 from .forms import HallForm, HallBookingForm, HallPaymentForm
 
 # Hall Views
-class HallCreateView(CreateView):
+class HallCreateView(OwnerOrManagerRequiredMixin, CreateView):
     model = Hall
     form_class = HallForm
     template_name = 'admins/hall_form.html'
     success_url = reverse_lazy('admins:hall_list')
 
-class HallDetailView(DetailView):
+class HallDetailView(OwnerManagerOrReceptionistRequiredMixin,DetailView):
     model = Hall
     template_name = 'admins/hall_detail.html'
-class HallUpdateView(UpdateView):
+class HallUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
     model = Hall
     form_class = HallForm
     template_name = 'admins/hall_form.html'
     success_url = reverse_lazy('admins:hall_list')
 
-class HallDeleteView(DeleteView):
+class HallDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     model = Hall
     template_name = 'admins/hall_confirm_delete.html'
     success_url = reverse_lazy('admins:hall_list')
 
-class HallListView(ListView):
+class HallListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     model = Hall
     template_name = 'admins/hall_list.html'
     context_object_name = 'object_list'
@@ -570,7 +691,7 @@ class HallListView(ListView):
         return queryset
 
 # Hall Booking Views
-class HallAvailabilityView(FormView):
+class HallAvailabilityView(OwnerManagerOrReceptionistRequiredMixin,FormView):
     form_class = CheckAvailabilityForm
     template_name = 'admins/hall_availability.html'
 
@@ -608,12 +729,7 @@ class HallAvailabilityView(FormView):
 
         return self.render_to_response(context)
 
-
-# views.py (in HallBookingCreateView)
-
-from datetime import datetime
-
-class HallBookingCreateView(TemplateView):
+class HallBookingCreateView(OwnerManagerOrReceptionistRequiredMixin,TemplateView):
     template_name = 'admins/hall_booking_form.html'
 
     def get_context_data(self, **kwargs):
@@ -633,7 +749,7 @@ class HallBookingCreateView(TemplateView):
         # Calculate total cost
         start_time_dt = datetime.strptime(start_time, '%H:%M:%S').time()
         end_time_dt = datetime.strptime(end_time, '%H:%M:%S').time()
-        today = date.today()  # Correct usage of date.today()
+        today = date.today()
 
         duration_hours = Decimal((datetime.combine(today, end_time_dt) - datetime.combine(today, start_time_dt)).seconds) / Decimal(3600)
 
@@ -656,7 +772,6 @@ class HallBookingCreateView(TemplateView):
 
     def post(self, request, *args, **kwargs):
         hall = get_object_or_404(Hall, pk=self.kwargs['pk'])
-        user = request.user
         booking_data = self.request.session.get('booking_data')
 
         if not booking_data:
@@ -669,7 +784,7 @@ class HallBookingCreateView(TemplateView):
         end_time = booking_data['end_time']
         total_cost = self.get_context_data(**kwargs)['total_cost']
         full_name = request.POST.get('full_name')
-
+        tx_ref = f"booking-{full_name.replace(' ', '')}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
         # Create the booking
         booking = Hall_Booking.objects.create(
             hall=hall,
@@ -679,75 +794,72 @@ class HallBookingCreateView(TemplateView):
             end_time=end_time,
             amount_due=total_cost,
             status='pending',
-            full_name=full_name  # Save the full name to the booking
+            full_name=full_name,
+            tx_ref=tx_ref    # Save the full name to the booking
         )
 
         # Clear booking data from session
         del request.session['booking_data']
+        print(booking.id)
+        print(booking.pk)
+
 
         return redirect('admins:hall_payment_create', pk=booking.pk)
 
-
-
-class HallCreatePaymentView(TemplateView):
+class HallPaymentCreateView(OwnerManagerOrReceptionistRequiredMixin,TemplateView):
     template_name = 'admins/hall_payment_form.html'
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         booking = get_object_or_404(Hall_Booking, pk=self.kwargs['pk'])
-        context['booking'] = booking
-        context['payment_methods'] = Hall_Payment.PAYMENT_METHOD_CHOICES
+        context['hall_booking'] = booking
+        context['form'] = HallPaymentForm()
         return context
 
     def post(self, request, *args, **kwargs):
         booking = get_object_or_404(Hall_Booking, pk=self.kwargs['pk'])
-        payment_method = request.POST.get('payment_method')
+        form = HallPaymentForm(request.POST)
+        
+        if form.is_valid():
+            payment_method = form.cleaned_data['payment_method']
 
-        if payment_method not in dict(Hall_Payment.PAYMENT_METHOD_CHOICES).keys():
-            messages.error(request, 'Invalid payment method selected.')
-            return render(request, self.template_name, self.get_context_data())
-
-        # Create the payment instance
-        payment = Hall_Payment.objects.create(
-            booking=booking,
-            payment_method=payment_method,
-            transaction_id=self.generate_transaction_id(),
-        )
-
-        # For simplicity, let's assume cash payments are completed immediately
-        if payment_method == 'cash':
-            payment.status = 'completed'
+            # Create the payment instance
+            payment = Hall_Payment.objects.create(
+                booking=booking,
+                payment_method=payment_method,
+                transaction_id=booking.tx_ref,
+                status='completed'
+            )
+            
             payment.save()
-            messages.success(request, 'Cash payment has been successfully processed.')
+            booking.status = 'confirmed'
+            booking.save()
+
+            messages.success(request, f'{payment_method.capitalize()} payment method selected.')
             return redirect('admins:hall_booking_list')
+        else:
+            context = self.get_context_data(**kwargs)
+            context['form'] = form
+            return self.render_to_response(context)
 
-        # Redirect to a success page or update the booking status as needed
-        messages.success(request, f'{payment_method.capitalize()} payment method selected.')
-        return redirect('admins:hall_booking_list')
 
-    def generate_transaction_id(self):
-        """Generate a unique transaction ID."""
-        import random
-        import string
-        return ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-
-class HallBookingDetailView(DetailView):
+class HallBookingDetailView(OwnerManagerOrReceptionistRequiredMixin,DetailView):
     model = Hall_Booking
     template_name = 'admins/hall_booking_detail.html'
     context_object_name = 'object'
 
-class HallBookingUpdateView(UpdateView):
+class HallBookingUpdateView(OwnerManagerOrReceptionistRequiredMixin,UpdateView):
     model = Hall_Booking
     form_class = HallBookingUpdateForm
     template_name = 'admins/hall_booking_update_form.html'
     success_url = reverse_lazy('admins:hall_booking_list')
 
-class HallBookingDeleteView(DeleteView):
+class HallBookingDeleteView(OwnerManagerOrReceptionistRequiredMixin,DeleteView):
     model = Hall_Booking
     template_name = 'admins/hall_booking_confirm_delete.html'
     success_url = reverse_lazy('admins:hall_booking_list')
 
-class HallBookingListView(ListView):
+class HallBookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     model = Hall_Booking
     template_name = 'admins/hall_booking_list.html'
     context_object_name = 'object_list'
@@ -766,29 +878,19 @@ class HallBookingListView(ListView):
         return queryset
 
 # Hall Payment Views
-class HallPaymentCreateView(CreateView):
-    model = Hall_Payment
-    form_class = HallPaymentForm
-    template_name = 'admins/hall_payment_form.html'
-    success_url = reverse_lazy('admins:hall_payment_list')
 
-class HallPaymentUpdateView(UpdateView):
-    model = Hall_Payment
-    form_class = HallPaymentForm
-    template_name = 'admins/hall_payment_form.html'
-    success_url = reverse_lazy('admins:hall_payment_list')
 
-class HallPaymentDeleteView(DeleteView):
+class HallPaymentDeleteView(OwnerManagerOrReceptionistRequiredMixin,DeleteView):
     model = Hall_Payment
     template_name = 'admins/hall_payment_confirm_delete.html'
     success_url = reverse_lazy('admins:hall_payment_list')
 
-class HallPaymentDetailView(DetailView):
+class HallPaymentDetailView(OwnerManagerOrReceptionistRequiredMixin,DetailView):
     model = Hall_Payment
     template_name = 'admins/hall_payment_detail.html'
     context_object_name = 'payment'
 
-class HallPaymentListView(ListView):
+class HallPaymentListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     model = Hall_Payment
     template_name = 'admins/hall_payment_list.html'
     context_object_name = 'object_list'
@@ -825,7 +927,7 @@ class HallPaymentListView(ListView):
 
 
 # SocialMediaPost Views
-class SocialMediaPostListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
+class SocialMediaPostListView(OwnerOrManagerRequiredMixin, ListView):
     model = SocialMediaPost
     template_name = 'admins/social_media_post_list.html'
     context_object_name = 'social_media_posts'
@@ -833,29 +935,29 @@ class SocialMediaPostListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
         return Category.objects.order_by('name')
 
 
-class SocialMediaPostDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
+class SocialMediaPostDetailView(OwnerOrManagerRequiredMixin, DetailView):
     model = SocialMediaPost
     template_name = 'admins/social_media_post_detail.html'
 
-class SocialMediaPostCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
+class SocialMediaPostCreateView(OwnerOrManagerRequiredMixin, CreateView):
     model = SocialMediaPost
     template_name = 'admins/social_media_post_form.html'
     fields = '__all__'
     success_url = reverse_lazy('admins:social_media_post_list')
 
-class SocialMediaPostUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+class SocialMediaPostUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
     model = SocialMediaPost
     template_name = 'admins/social_media_post_form.html'
     fields = '__all__'
     success_url = reverse_lazy('admins:social_media_post_list')
 
-class SocialMediaPostDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
+class SocialMediaPostDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     model = SocialMediaPost
     template_name = 'admins/social_media_post_confirm_delete.html'
     success_url = reverse_lazy('admins:social_media_post_list')
 
 # ChatMessage Views
-class ChatMessageListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
+class ChatMessageListView(OwnerOrManagerRequiredMixin, ListView):
     model = ChatMessage
     template_name = 'admins/chat_message_list.html'
     context_object_name = 'chat_messages'
@@ -863,17 +965,17 @@ class ChatMessageListView(LoginRequiredMixin, OwnerRequiredMixin, ListView):
         return Category.objects.order_by('name')
 
 
-class ChatMessageDetailView(LoginRequiredMixin, OwnerRequiredMixin, DetailView):
+class ChatMessageDetailView(OwnerOrManagerRequiredMixin, DetailView):
     model = ChatMessage
     template_name = 'admins/chat_message_detail.html'
 
-class ChatMessageCreateView(LoginRequiredMixin, OwnerRequiredMixin, CreateView):
+class ChatMessageCreateView(OwnerOrManagerRequiredMixin, CreateView):
     model = ChatMessage
     template_name = 'admins/chat_message_form.html'
     fields = '__all__'
     success_url = reverse_lazy('admins:chat_message_list')
 
-class ChatMessageUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+class ChatMessageUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
     model = ChatMessage
     template_name = 'admins/chat_message_form.html'
     fields = '__all__'

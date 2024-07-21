@@ -1,11 +1,10 @@
-<!-- booking_form.html -->
 {% extends 'admins/base.html' %}
 {% load widget_tweaks %}
 
 {% block content %}
 <div class="d-flex justify-content-center">
-    <div class="card shadow-sm w-75 mt-4">
-        <h5 class="card-title text-center mb-3  mt-3"><strong>Create Booking</strong></h5>
+    <div class="card shadow-lg w-75 mt-4">
+        <h5 class="card-title text-center mb-3 mt-3"><strong>Create Membership</strong></h5>
         <div class="card-body">
             <form method="post" class="d-flex flex-column align-items-center">
                 {% csrf_token %}
@@ -19,7 +18,7 @@
                 {% endif %}
                 {% for field in form %}
                     <div class="mb-3 w-75">
-                        <label class="mb-1 font-weight-bold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        <label class="mb-1 font-weight-bold" for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
                         {{ field|add_class:"form-control rounded" }}
                         {% if field.errors %}
                             <div class="alert alert-danger mt-2">
@@ -30,7 +29,7 @@
                 {% endfor %}
                 <div class="d-flex justify-content-center w-50 mt-3 mb-5">
                     <button type="submit" class="btn btn-sm btn-primary w-25">Save</button>
-                    &ensp;<a href="{% url 'admins:booking_list' %}" class="btn btn-sm w-25 btn-secondary">Cancel</a>
+                    &ensp;<a href="{% url 'admins:membership_list' %}" class="btn btn-sm w-25 btn-secondary">Cancel</a>
                 </div>
             </form>
         </div>

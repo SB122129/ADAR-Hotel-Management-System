@@ -67,6 +67,19 @@
             <li>
                 <a href="{% url 'admins:hall_payment_list' %}" ><strong>Hall Payments</strong></a>
             </li>
+            {% if user.role == 'owner' %}
+            <li>
+                <a href="{% url 'admins:manager_list' %}" ><strong>Managers</strong></a>
+
+            </li>
+                <li>
+                    <a href="{% url 'admins:receptionist_list' %}" ><strong>Receptionists</strong></a>
+                </li>
+             {% elif user.role == 'manager' %} 
+             <li>
+                <a href="{% url 'admins:receptionist_list' %}" ><strong>Receptionists</strong></a>
+            </li>  
+            {% endif %}
             <li>
                 <a href="{% url 'chat' %}"><strong>Chat</strong></a>
             </li>

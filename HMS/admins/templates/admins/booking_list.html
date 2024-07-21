@@ -23,6 +23,7 @@
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
+        <a href="{% url 'admins:booking_create' %}" class="btn btn-primary btn-sm">Create Room Booking</a>
         <a href="{% url 'admins:booking_list' %}" class="btn btn-sm btn-success">Show All</a>
     </form>
 
@@ -157,8 +158,6 @@
             </ul>
         </nav>
     </div>
-    <div class="d-flex justify-content-center">
-        <a href="{% url 'admins:booking_create' %}" class="btn btn-warning w-25 mt-5">Create</a>
-    </div>
+    
 </div>
 {% endblock %}

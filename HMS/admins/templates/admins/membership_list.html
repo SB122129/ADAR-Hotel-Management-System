@@ -1,6 +1,18 @@
 {% extends 'admins/base.html' %}
 
 {% block content %}
+<div class="container mt-3">
+    {% if messages %}
+        <div class="container ">
+            {% for message in messages %}
+                <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
 <div class="container mt-5">
     <!-- Search Form -->
     <form method="get" action="" class="mb-4 d-flex justify-content-between">
@@ -10,6 +22,7 @@
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
+        <a href="{% url 'admins:membership_create' %}" class="btn btn-sm btn-primary">Create Membership</a>
         <a href="{% url 'admins:membership_list' %}" class="btn btn-sm btn-success">Show All</a>
     </form>
 
@@ -38,6 +51,10 @@
                     <td class="align-middle">{% if item.for_first_name %}{{ item.for_first_name }}{% else %} Self {% endif %}</td>
                     <td class="text-center">
                         <div class="btn-group" role="group">
+                            <!-- Edit button -->
+                            <a href="{% url 'admins:membership_update' item.id %}" class="btn btn-link text-primary">
+                                <span class="material-symbols-outlined">edit_note</span>
+                            </a>
                             
                             <a href="{% url 'admins:membership_detail' item.id %}" class="btn btn-link text-warning">
                                 <span class="material-symbols-outlined">info</span>

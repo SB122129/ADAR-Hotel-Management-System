@@ -9,7 +9,7 @@
         <div class="col-md-6 mt-5 mb-4">
             <div class="card shadow-lg rounded">
                 <div class="card-body">
-                    <h3 class="card-title font-weight-bold"><i class="bi bi-list-ol"></i>&ensp;{{ object.room_number }} &emsp; {{ object.room_type }} Suite</h3>
+                    <h5 class="card-title  text-center mb-3 mt-3"><i class="bi bi-list-ol"></i>&ensp;<strong>{{ object.room_number }}</strong> &emsp; <strong>{{ object.room_type }} Suite</strong></h5>
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <strong><i class="bi bi-tag"></i>&ensp;Price per night</strong>
@@ -36,7 +36,7 @@
                     </ul>
                     {% if object.description %}
                     <div class="mt-4">
-                        <h5 class="card-title font-weight-bold"><i class="bi bi-card-text"></i>&ensp;Description</h5>
+                        <h5 class="card-title"><strong><i class="bi bi-card-text"></i>&ensp;Description</strong></h5>
                         <p class="card-text small">{{ object.description }}</p>
                     </div>
                     {% endif %}
