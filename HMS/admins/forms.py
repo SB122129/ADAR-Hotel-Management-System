@@ -354,3 +354,14 @@ class HallPaymentForm(forms.ModelForm):
     class Meta:
         model = Hall_Payment
         fields = ['payment_method']
+
+
+from social_media.models import ChatBot
+
+class ChatBotForm(forms.ModelForm):
+    class Meta:
+        model = ChatBot
+        fields = ['message']
+        widgets = {
+            'message': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Type your message here...'}),
+        }

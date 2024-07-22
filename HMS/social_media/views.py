@@ -35,7 +35,7 @@ genai.configure(api_key="AIzaSyBfK-J0sAekVr5GMfof-QjyiDlcuFCPaO8")
 
 
 
-class ChatBotView(LoginRequiredMixin, FormView, ListView):
+class ChatBotViews(LoginRequiredMixin, FormView, ListView):
     model = ChatBot
     form_class = ChatBotForm
     template_name = 'social_media/chat.html'

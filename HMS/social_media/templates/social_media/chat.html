@@ -3,33 +3,33 @@
 {% load widget_tweaks %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'css/style5.css?v=1.0' %}">
-<h3 class="text-center text-danger mt-2">ADAR AI</h3>
-<div class="container mt-5">
-    <div class="chat-box" id="chat-box">
+<link rel="stylesheet" href="{% static 'css/style7.css?v=1.0' %}">
+<h3 class="text-center text-danger mt-2 ">ADAR AI</h3>
+<div class="container mt-2 card shadow-sm w-75">
+    <div class="chat-box" id="chat-box" class="pt-3">
         {% for chat in chats %}
             <div class="user-message m-3">
                 <strong>{{ chat.user.username }}</strong> <br> {{ chat.message }}
-                <button id="copy_button" class="btn btn-sm copy-button text-light" data-content="{{ chat.message }}"><i class="bi bi-clipboard"></i></button>
+                <button class="btn btn-sm copy-button text-light" data-content="{{ chat.message }}"><i class="bi bi-clipboard"></i></button>
             </div>
             <div class="bot-response">
                 <strong><i class="bi bi-robot"></i></strong><br>
                 {{ chat.response|safe }}
-                <button id="copy_button" class="btn btn-sm copy-button" data-content="{{ chat.response }}"><i class="bi bi-clipboard"></i></button>
+                <button class="btn btn-sm copy-button" data-content="{{ chat.response }}"><i class="bi bi-clipboard"></i></button>
             </div>
         {% endfor %}
     </div>
 
     <div class="commands mt-3 mb-3">
-        <div class="command-box btn btn-primary rounded-pill m-1" data-command="Available rooms">Available rooms</div>
-        <div class="command-box btn btn-success rounded-pill m-1" data-command="Pending bookings">Pending bookings</div>
-        <div class="command-box btn btn-warning rounded-pill m-1" data-command="Total bookings">Total bookings</div>
-        <div class="command-box btn btn-info rounded-pill m-1" data-command="Total revenue by room type">Total revenue by room type</div>
-        <div class="command-box btn btn-danger rounded-pill m-1" data-command="Total revenue by hall type">Total revenue by hall type</div>
-        <div class="command-box btn btn-secondary rounded-pill m-1" data-command="Total number of memberships">Total number of memberships</div>
-        <div class="command-box btn btn-dark rounded-pill m-1" data-command="Booking trends">Booking trends</div>
-        <div class="command-box btn btn-light rounded-pill m-1" data-command="Room booking trends">Room booking trends</div>
-        <div class="command-box btn btn-primary rounded-pill m-1" data-command="Hall booking trends">Hall booking trends</div>
+        <div class="command-box btn btn-warning btn-sm rounded-pill m-1" data-command="Available rooms">Available rooms</div>
+        <div class="command-box btn btn-warning btn-sm rounded-pill m-1" data-command="Pending bookings">Pending bookings</div>
+        <div class="command-box btn btn-warning btn-sm rounded-pill m-1" data-command="Total bookings">Total bookings</div>
+        <div class="command-box btn btn-warning btn-sm rounded-pill m-1" data-command="Total revenue by room type">Total revenue by room type</div>
+        <div class="command-box btn btn-warning btn-sm rounded-pill m-1" data-command="Total revenue by hall type">Total revenue by hall type</div>
+        <div class="command-box btn btn-warning btn-sm rounded-pill m-1" data-command="Total number of memberships">Total number of memberships</div>
+        <div class="command-box btn btn-warning btn-sm rounded-pill m-1" data-command="Booking trends">Booking trends</div>
+        <div class="command-box btn btn-warning btn-sm rounded-pill m-1" data-command="Room booking trends">Room booking trends</div>
+        <div class="command-box btn btn-warning btn-sm rounded-pill m-1" data-command="Hall booking trends">Hall booking trends</div>
     </div>
 
     <div class="d-flex justify-content-center">
@@ -46,7 +46,7 @@
                 </div>
             {% endfor %}
             <div class="d-flex justify-content-center">
-                <button type="submit" class="btn btn-success mt-2 rounded pr-5 pl-5">Send</button>
+                <button type="submit" class="btn btn-warning w-75 mx-auto btn-sm mt-2 rounded mb-4">Send</button>
             </div>
         </form>
     </div>
@@ -69,28 +69,30 @@
         return doc.body.textContent || "";
     }
 
-    // Add event listeners to copy buttons
-    document.querySelectorAll('.copy-button').forEach(button => {
-        let isCopied = false;  // Flag to keep track of copy state
+    // Function to add copy button event listeners
+    function addCopyButtonListeners() {
+        document.querySelectorAll('.copy-button').forEach(button => {
+            let isCopied = false;  // Flag to keep track of copy state
 
-        button.addEventListener('click', () => {
-            const content = button.getAttribute('data-content');
-            const strippedContent = stripHTMLTags(content);  // Strip HTML tags
-            
-            if (isCopied) {
-                // If already copied, clear clipboard and revert button
-                clearClipboard();
-                button.innerHTML = '<i class="bi bi-clipboard"></i>';
-            } else {
-                // If not copied, copy stripped content and change button to tick
-                copyToClipboard(strippedContent);
-                button.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
-            }
+            button.addEventListener('click', () => {
+                const content = button.getAttribute('data-content');
+                const strippedContent = stripHTMLTags(content);  // Strip HTML tags
 
-            // Toggle the copy state
-            isCopied = !isCopied;
+                if (isCopied) {
+                    // If already copied, clear clipboard and revert button
+                    clearClipboard();
+                    button.innerHTML = '<i class="bi bi-clipboard"></i>';
+                } else {
+                    // If not copied, copy stripped content and change button to tick
+                    copyToClipboard(strippedContent);
+                    button.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+                }
+
+                // Toggle the copy state
+                isCopied = !isCopied;
+            });
         });
-    });
+    }
 
     // Scroll chat box to the last response
     function scrollToLastResponse() {
@@ -106,9 +108,10 @@
     // Call the scrollToLastResponse function to scroll to the last response
     scrollToLastResponse();
 
-    // Optionally, you can also observe the chat box for new messages
+    // Observe the chat box for new messages
     const observer = new MutationObserver(() => {
         scrollToLastResponse();
+        addCopyButtonListeners(); // Add event listeners to new copy buttons
     });
     observer.observe(document.getElementById('chat-box'), { childList: true });
 
@@ -116,9 +119,89 @@
     document.querySelectorAll('.command-box').forEach(box => {
         box.addEventListener('click', () => {
             const command = box.getAttribute('data-command');
-            document.querySelector('textarea[name="message"]').value = command;
-            document.getElementById('chat-form').submit();
+            sendMessage(command);
         });
     });
+
+    // AJAX form submission for chat
+    document.getElementById('chat-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        console.log("Form submitted");
+
+        fetch("{% url 'chat' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            },
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Response received:", data);
+            if (data.data.text) {
+                const chatBox = document.getElementById('chat-box');
+                const userMessage = document.querySelector('textarea[name="message"]').value;
+                chatBox.innerHTML += `
+                    <div class="user-message m-3">
+                        <strong>{{ request.user.username }}</strong> <br> ${userMessage}
+                        <button class="btn btn-sm copy-button text-light" data-content="${userMessage}"><i class="bi bi-clipboard"></i></button>
+                    </div>
+                    <div class="bot-response">
+                        <strong><i class="bi bi-robot"></i></strong><br>
+                        ${data.data.text}
+                        <button class="btn btn-sm copy-button" data-content="${data.data.text}"><i class="bi bi-clipboard"></i></button>
+                    </div>
+                `;
+                document.querySelector('textarea[name="message"]').value = '';
+                scrollToLastResponse();
+                addCopyButtonListeners(); // Add event listeners to new copy buttons
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    });
+
+    // Function to send command as a message via AJAX
+    function sendMessage(command) {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('message', command);
+
+        fetch("{% url 'chat' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            },
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Command response received:", data);
+            if (data.data.text) {
+                const chatBox = document.getElementById('chat-box');
+                chatBox.innerHTML += `
+                    <div class="user-message m-3">
+                        <strong>{{ request.user.username }}</strong> <br> ${command}
+                        <button class="btn btn-sm copy-button text-light" data-content="${command}"><i class="bi bi-clipboard"></i></button>
+                    </div>
+                    <div class="bot-response">
+                        <strong><i class="bi bi-robot"></i></strong><br>
+                        ${data.data.text}
+                        <button class="btn btn-sm copy-button" data-content="${data.data.text}"><i class="bi bi-clipboard"></i></button>
+                    </div>
+                `;
+                scrollToLastResponse();
+                addCopyButtonListeners(); // Add event listeners to new copy buttons
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Initial call to add event listeners to existing copy buttons
+    addCopyButtonListeners();
 </script>
 {% endblock content %}
