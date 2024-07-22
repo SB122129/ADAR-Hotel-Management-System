@@ -1,6 +1,6 @@
 html, body {
     scrollbar-width: thin;
-    scrollbar-color: #506132 #f1f1f1;
+    scrollbar-color: #ffc107 #f1f1f1;
 }
 
 html::-webkit-scrollbar, body::-webkit-scrollbar {
@@ -13,20 +13,20 @@ html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
 }
 
 html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
-    background: #55e706;
+    background: #ffc107;
     border-radius: 10px;
     border: 3px solid #f1f1f1;
 }
 
 html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #ffc107;
 }
 
 .chat-box {
     max-height: 500px;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: #333030 #ffffff;
+    scrollbar-color: #ffc107 #ffffff;
     border-radius: 2px;
 }
 
@@ -35,7 +35,7 @@ html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
 }
 
 .chat-box::-webkit-scrollbar-thumb {
-    background-color: #6c757d;
+    background-color: #ffc107;
     border-radius: 20px;
 }
 
