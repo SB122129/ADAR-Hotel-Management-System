@@ -16,10 +16,10 @@ class Custom_user(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
     first_login = models.BooleanField(default=True)
     email = models.EmailField(unique=True)
-    last_login = models.DateTimeField()
+    last_login = models.DateTimeField(null=True, blank=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    telegram_username = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    telegram_user_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
     country = CountryField(blank_label='(select country)', default='ET')
     profile_picture = models.ImageField(upload_to='media',blank=True, null=True)
 

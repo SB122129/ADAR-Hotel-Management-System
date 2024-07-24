@@ -22,8 +22,12 @@ from django.contrib.messages.views import SuccessMessageMixin
 
 from datetime import datetime
 
-def admin_dashboard(request):
+import json
+from django.shortcuts import render
+from django.db.models import Count, Sum
+from django.core.serializers.json import DjangoJSONEncoder
 
+def admin_dashboard(request):
     # Room Type Popularity
     room_type_popularity = list(Booking.objects.values('room__room_type__name').annotate(count=Count('id')))
     room_type_popularity_data = [{'name': item['room__room_type__name'], 'y': item['count']} for item in room_type_popularity]
@@ -35,9 +39,65 @@ def admin_dashboard(request):
         for item in revenue_by_room_type
     ]
 
+    # Membership Plan Popularity
+    membership_plan_popularity = list(Membership.objects.values('plan__name').annotate(count=Count('id')))
+    membership_plan_popularity_data = [{'name': item['plan__name'], 'y': item['count']} for item in membership_plan_popularity]
+
+    # Revenue by Membership Plan
+    revenue_by_membership_plan = list(MembershipPayment.objects.filter(status='completed').values('membership__plan__name').annotate(total_revenue=Sum('amount')))
+    revenue_by_membership_plan_data = [
+        {'name': item['membership__plan__name'], 'y': float(item['total_revenue'])}
+        for item in revenue_by_membership_plan
+    ]
+
+    # Membership Status Distribution
+    membership_status_distribution = list(Membership.objects.values('status').annotate(count=Count('id')))
+    membership_status_distribution_data = [{'name': item['status'], 'y': item['count']} for item in membership_status_distribution]
+
+    # Payment Method Usage
+    payment_method_usage = list(MembershipPayment.objects.values('payment_method').annotate(count=Count('id')))
+    payment_method_usage_data = [{'name': item['payment_method'], 'y': item['count']} for item in payment_method_usage]
+
+    # Hall Category Popularity
+    hall_category_popularity = list(Hall_Booking.objects.values('hall__hall_type__name').annotate(count=Count('id')))
+    hall_category_popularity_data = [{'name': item['hall__hall_type__name'], 'y': item['count']} for item in hall_category_popularity]
+
+    # Revenue by Hall Category
+    revenue_by_hall_category = list(Hall_Booking.objects.filter(is_paid=True).values('hall__hall_type__name').annotate(total_revenue=Sum('amount_due')))
+    revenue_by_hall_category_data = [
+        {'name': item['hall__hall_type__name'], 'y': float(item['total_revenue'])}
+        for item in revenue_by_hall_category
+    ]
+
+    # Hall Booking Status Distribution
+    hall_booking_status_distribution = list(Hall_Booking.objects.values('status').annotate(count=Count('id')))
+    hall_booking_status_distribution_data = [{'name': item['status'], 'y': item['count']} for item in hall_booking_status_distribution]
+
+    # Payment Method Usage for Halls
+    hall_payment_method_usage = list(Hall_Payment.objects.values('payment_method').annotate(count=Count('id')))
+    hall_payment_method_usage_data = [{'name': item['payment_method'], 'y': item['count']} for item in hall_payment_method_usage]
+
+    # User Stats
+    user_roles_distribution = list(Custom_user.objects.values('role').annotate(count=Count('id')))
+    user_roles_distribution_data = [{'name': item['role'], 'y': item['count']} for item in user_roles_distribution]
+
+    # User Activity Stats
+    recent_users = list(Custom_user.objects.filter(last_login__isnull=False).order_by('-last_login')[:10].values('username', 'last_login'))
+    recent_users_data = [{'name': item['username'], 'y': item['last_login'].timestamp() * 1000} for item in recent_users]
+
     context = {
         'room_type_popularity_data': json.dumps(room_type_popularity_data, cls=DjangoJSONEncoder),
         'revenue_by_room_type_data': json.dumps(revenue_by_room_type_data, cls=DjangoJSONEncoder),
+        'membership_plan_popularity_data': json.dumps(membership_plan_popularity_data, cls=DjangoJSONEncoder),
+        'revenue_by_membership_plan_data': json.dumps(revenue_by_membership_plan_data, cls=DjangoJSONEncoder),
+        'membership_status_distribution_data': json.dumps(membership_status_distribution_data, cls=DjangoJSONEncoder),
+        'payment_method_usage_data': json.dumps(payment_method_usage_data, cls=DjangoJSONEncoder),
+        'hall_category_popularity_data': json.dumps(hall_category_popularity_data, cls=DjangoJSONEncoder),
+        'revenue_by_hall_category_data': json.dumps(revenue_by_hall_category_data, cls=DjangoJSONEncoder),
+        'hall_booking_status_distribution_data': json.dumps(hall_booking_status_distribution_data, cls=DjangoJSONEncoder),
+        'hall_payment_method_usage_data': json.dumps(hall_payment_method_usage_data, cls=DjangoJSONEncoder),
+        'user_roles_distribution_data': json.dumps(user_roles_distribution_data, cls=DjangoJSONEncoder),
+        'recent_users_data': json.dumps(recent_users_data, cls=DjangoJSONEncoder),
     }
 
     return render(request, 'admins/admin_dashboard.html', context)
@@ -380,6 +440,7 @@ class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
         payment.booking = booking
         payment.transaction_id = booking.tx_ref
         payment.payment_date = datetime.now()
+        payment.status = 'completed'
         payment.save()
         booking.status = 'confirmed'
         booking.save()
@@ -910,12 +971,109 @@ class HallPaymentListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
 
 
 
+from django.http import JsonResponse
+from django.utils.dateparse import parse_datetime
+class ChatListView(ListView):
+    model = Custom_user
+    template_name = 'admins/chat_list.html'
+    context_object_name = 'users'
+
+    def get_queryset(self):
+        return Custom_user.objects.filter(chatmessage__isnull=False).distinct()
+
+
+
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+class ChatDetailView(DetailView):
+    model = Custom_user
+    template_name = 'admins/chat_detail.html'
+    context_object_name = 'user'
+    pk_url_kwarg = 'user_id'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        recipient = self.get_object()
+        messages = ChatMessage.objects.filter(
+            models.Q(user=self.request.user) | models.Q(user=recipient)
+        ).order_by('timestamp')
+        context['messages'] = messages
+        context['logged_in_user'] = self.request.user
+        return context
+
+
+from django.utils.dateparse import parse_datetime
+
+def fetch_new_messages(request, user_id):
+    user = get_object_or_404(Custom_user, pk=user_id)
+    last_timestamp = request.GET.get('last_timestamp')
+    
+    if last_timestamp:
+        try:
+            last_timestamp = parse_datetime(last_timestamp)
+        except ValueError:
+            return JsonResponse({'error': 'Invalid timestamp format'}, status=400)
+
+    if last_timestamp:
+        messages = ChatMessage.objects.filter(timestamp__gt=last_timestamp).order_by('timestamp')
+    else:
+        messages = ChatMessage.objects.all().order_by('timestamp')
+
+    message_list = [{
+        'id': message.id,
+        'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+        'message': message.message,
+        'role': message.user.role
+    } for message in messages]
+
+    return JsonResponse({'messages': message_list})
 
 
 
 
 
 
+
+import asyncio
+from django.conf import settings
+from telegram import Bot
+
+# Create a Bot instance with your token
+bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+
+async def send_telegram_message_async(telegram_user_id, message):
+    try:
+        await bot.send_message(chat_id=telegram_user_id, text=message)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+def send_telegram_message(telegram_user_id, message):
+    bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+    try:
+        asyncio.run(bot.send_message(chat_id=telegram_user_id, text=message))
+    except Exception as e:
+        print(f"An error occurred: {e}")
+class SendMessageView(View):
+    def post(self, request, user_id):
+        recipient = get_object_or_404(Custom_user, pk=user_id)
+        message_text = request.POST.get('message')
+
+        # Create the message with the sender being the logged-in user
+        new_message = ChatMessage.objects.create(user=request.user, message=message_text)
+
+        # Send the message to the recipient via Telegram bot if the sender is staff
+        if request.user.role != 'customer':
+            send_telegram_message(recipient.telegram_user_id, message_text)
+
+        return JsonResponse({
+            'id': new_message.id,
+            'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'message': new_message.message,
+            'role': request.user.role  # Include the role to determine message type on client side
+        })
 
 
 

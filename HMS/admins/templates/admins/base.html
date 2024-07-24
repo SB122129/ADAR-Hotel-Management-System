@@ -67,6 +67,11 @@
             <li>
                 <a href="{% url 'admins:hall_payment_list' %}" ><strong>Hall Payments</strong></a>
             </li>
+            <li>
+                <a href="{% url 'admins:chat_list' %}" ><strong>Chat List</strong></a>
+
+            </li>
+
             {% if user.role == 'owner' %}
             <li>
                 <a href="{% url 'admins:manager_list' %}" ><strong>Managers</strong></a>
@@ -81,7 +86,7 @@
             </li>  
             {% endif %}
             <li>
-                <a href="{% url 'chat' %}"><strong>Chat</strong></a>
+                <a href="{% url 'chat' %}"><strong>ADAR AI</strong></a>
             </li>
         </ul>
     </div>

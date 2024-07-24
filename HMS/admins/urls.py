@@ -109,6 +109,13 @@ urlpatterns = [
     path('chat_messages/add/', ChatMessageCreateView.as_view(), name='chat_message_add'),
     path('chat_messages/<int:pk>/update/', ChatMessageUpdateView.as_view(), name='chat_message_update'),
     # path('chat_messages/<int:pk>/delete/', ChatMessageDeleteView.as_view(), name='chat_message_delete'),
+    
+    path('chats/', ChatListView.as_view(), name='chat_list'),
+    path('chats/<int:user_id>/', ChatDetailView.as_view(), name='chat_detail'),
+    path('chats/<int:user_id>/send/', SendMessageView.as_view(), name='send_message'),
+    path('fetch_new_messages/<int:user_id>/', fetch_new_messages, name='fetch_new_messages'),
+]
+
 
     
-]
+

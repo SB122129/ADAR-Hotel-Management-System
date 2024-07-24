@@ -27,6 +27,7 @@ from django.http import JsonResponse
 from telegram import Update
 import json
 from config import BASE_URL
+from social_media.models import *
 import random,string
 from django.conf import settings
 from django.http import HttpResponse
@@ -48,17 +49,13 @@ from accountss.models import Custom_user
 logger = logging.getLogger(__name__)
 
 # Define states
-EMAIL, MENU, ROOM_SELECTION, CHECK_IN_DATE, CHECK_OUT_DATE, GUESTS, PAYMENT_METHOD, MY_BOOKINGS, PENDING_PAYMENT_PROCESS, PENDING_PAYMENTS, CANCEL_BOOKING = range(11)
-
+EMAIL, MENU, ROOM_SELECTION, CHECK_IN_DATE, CHECK_OUT_DATE, GUESTS, PAYMENT_METHOD, MY_BOOKINGS, PENDING_PAYMENT_PROCESS, PENDING_PAYMENTS, CANCEL_BOOKING, CHAT_STATE = range(12)
 
 # Helper function to generate the main menu buttons
 # Helper function to generate the main menu buttons
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 def get_main_menu_buttons():
-
-
-    # Define the buttons in the desired structure with colors and effects
     buttons = [
         [
             InlineKeyboardButton("Start Booking", callback_data='start_booking'),
@@ -69,11 +66,10 @@ def get_main_menu_buttons():
             InlineKeyboardButton("Cancel Booking", callback_data='cancel_booking')
         ],
         [
+            InlineKeyboardButton("Chat with Staff", callback_data='start_chat'),
             InlineKeyboardButton("Restart", callback_data='restart')
         ]
     ]
-
-    # Create InlineKeyboardMarkup with the styled buttons
     return InlineKeyboardMarkup(buttons)
 
 
@@ -121,7 +117,6 @@ async def email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 # Handle menu selection
-# Handle menu selection
 async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
@@ -135,8 +130,35 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         return await pending_payments(update, context)
     elif action == 'cancel_booking':
         return await cancel_booking(update, context)
+    elif action == 'start_chat':
+        return await start_chat(update, context)
     elif action == 'restart':
         return await restart_bot(update, context)
+
+
+# Start chat command
+async def start_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.callback_query.message.reply_text('You are now connected to staff. Type your message:')
+    return CHAT_STATE
+
+# Handle chat messages
+# Handle chat messages
+async def handle_chat_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    user = await sync_to_async(Custom_user.objects.filter(telegram_user_id=user_id).first)()
+
+    if user:
+        message_text = update.message.text
+
+        # Save message to database
+        await sync_to_async(ChatMessage.objects.create)(user=user, message=message_text)
+
+        # Notify the user
+        await update.message.reply_text('Your message has been sent to staff.', reply_markup=get_main_menu_buttons())
+        return MENU
+    else:
+        await update.message.reply_text('User not found. Please restart the bot and provide your email.', reply_markup=get_main_menu_buttons())
+        return MENU
 
 
 
@@ -666,7 +688,8 @@ def main():
             MY_BOOKINGS: [CallbackQueryHandler(my_bookings)],
             PENDING_PAYMENTS: [CallbackQueryHandler(pending_payments)],
             PENDING_PAYMENT_PROCESS: [CallbackQueryHandler(pay_pending)],
-            CANCEL_BOOKING: [CallbackQueryHandler(confirm_cancellation)]
+            CANCEL_BOOKING: [CallbackQueryHandler(confirm_cancellation)],
+            CHAT_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_chat_message)]
         },
         fallbacks=[CommandHandler('start', start)]
     )

@@ -23,7 +23,7 @@ class CustomUserCreationForm(UserCreationForm):
 
     class Meta:
         model = Custom_user
-        fields = ['username', 'first_name', 'last_name', 'email', 'country', 'telegram_username', 'profile_picture', 'phone_number']
+        fields = ['username', 'first_name', 'last_name', 'email', 'country', 'profile_picture', 'phone_number']
 
     def __init__(self, *args, **kwargs):
         super(CustomUserCreationForm, self).__init__(*args, **kwargs)
@@ -59,7 +59,7 @@ class CustomUserUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Custom_user
-        fields = ['username', 'first_name', 'last_name', 'email', 'country', 'telegram_username', 'profile_picture', 'phone_number']
+        fields = ['username', 'first_name', 'last_name', 'email', 'country',  'profile_picture', 'phone_number']
 
     def clean_email(self):
         email = self.cleaned_data.get('email')

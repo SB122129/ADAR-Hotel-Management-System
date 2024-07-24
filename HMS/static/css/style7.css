@@ -81,9 +81,7 @@ html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
     border-radius: 10px;
     padding: 10px 20px;
     resize: none;
-    
 }
-
 
 .commands {
     display: flex;
@@ -92,4 +90,104 @@ html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
 
 .command-box {
     cursor: pointer;
+}
+
+.chat-list-box {
+    padding: 15px;
+}
+
+.list-group-item {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.list-group-item:hover {
+    background-color: #e9ecef;
+}
+
+.list-group-item a {
+    color: #000;
+    text-decoration: none;
+}
+
+.list-group-item a:hover {
+    text-decoration: underline;
+}
+
+.badge {
+    font-size: 0.9rem;
+}
+
+.chat-detail-box {
+    max-height: 500px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.message-box {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timestamp {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.message-content {
+    margin: 0;
+}
+
+.message-form {
+    margin-top: 20px;
+}
+
+.form-control {
+    border-radius: 10px;
+    padding: 10px;
+    resize: none;
+}
+
+button {
+    border-radius: 10px;
+}
+
+.message-box {
+    padding: 10px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    width: 70%;
+    height: 50%;
+}
+
+/* .customer-message {
+    background-color: #ffc107;
+    color: #000000;
+    margin-right: auto;
+    width: 50%; 
+}
+
+.staff-message {
+    background-color: rgb(245, 243, 239);
+    color: #171717;
+    margin-left: auto; 
+    width: 50%;
+} */
+
+.timestamp {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.message-content {
+    font-size: 1rem;
 }
