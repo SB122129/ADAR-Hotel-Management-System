@@ -43,7 +43,7 @@ class MyMembershipsView(LoginRequiredMixin, ListView):
             membership.save()
 
 
-class MembershipPlanListView(LoginRequiredMixin, ListView):
+class MembershipPlanListView(ListView):
     model = MembershipPlan
     template_name = 'gym/membership_plans.html'
     context_object_name = 'plans'

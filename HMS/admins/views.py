@@ -22,10 +22,12 @@ from django.contrib.messages.views import SuccessMessageMixin
 
 from datetime import datetime
 
-import json
+
 from django.shortcuts import render
 from django.db.models import Count, Sum
 from django.core.serializers.json import DjangoJSONEncoder
+import json
+
 
 def admin_dashboard(request):
     # Room Type Popularity
@@ -34,10 +36,7 @@ def admin_dashboard(request):
 
     # Revenue by Room Type
     revenue_by_room_type = list(Booking.objects.filter(is_paid=True).values('room__room_type__name').annotate(total_revenue=Sum('total_amount')))
-    revenue_by_room_type_data = [
-        {'name': item['room__room_type__name'], 'y': float(item['total_revenue'])}
-        for item in revenue_by_room_type
-    ]
+    revenue_by_room_type_data = [{'name': item['room__room_type__name'], 'y': float(item['total_revenue'])} for item in revenue_by_room_type]
 
     # Membership Plan Popularity
     membership_plan_popularity = list(Membership.objects.values('plan__name').annotate(count=Count('id')))
@@ -45,10 +44,7 @@ def admin_dashboard(request):
 
     # Revenue by Membership Plan
     revenue_by_membership_plan = list(MembershipPayment.objects.filter(status='completed').values('membership__plan__name').annotate(total_revenue=Sum('amount')))
-    revenue_by_membership_plan_data = [
-        {'name': item['membership__plan__name'], 'y': float(item['total_revenue'])}
-        for item in revenue_by_membership_plan
-    ]
+    revenue_by_membership_plan_data = [{'name': item['membership__plan__name'], 'y': float(item['total_revenue'])} for item in revenue_by_membership_plan]
 
     # Membership Status Distribution
     membership_status_distribution = list(Membership.objects.values('status').annotate(count=Count('id')))
@@ -64,10 +60,7 @@ def admin_dashboard(request):
 
     # Revenue by Hall Category
     revenue_by_hall_category = list(Hall_Booking.objects.filter(is_paid=True).values('hall__hall_type__name').annotate(total_revenue=Sum('amount_due')))
-    revenue_by_hall_category_data = [
-        {'name': item['hall__hall_type__name'], 'y': float(item['total_revenue'])}
-        for item in revenue_by_hall_category
-    ]
+    revenue_by_hall_category_data = [{'name': item['hall__hall_type__name'], 'y': float(item['total_revenue'])} for item in revenue_by_hall_category]
 
     # Hall Booking Status Distribution
     hall_booking_status_distribution = list(Hall_Booking.objects.values('status').annotate(count=Count('id')))
@@ -85,6 +78,37 @@ def admin_dashboard(request):
     recent_users = list(Custom_user.objects.filter(last_login__isnull=False).order_by('-last_login')[:10].values('username', 'last_login'))
     recent_users_data = [{'name': item['username'], 'y': item['last_login'].timestamp() * 1000} for item in recent_users]
 
+   # Monthly Revenue
+    monthly_revenue = list(
+        Booking.objects.filter(is_paid=True)
+        .annotate(month=TruncMonth('created_at'))
+        .values('month')
+        .annotate(total_revenue=Sum('total_amount'))
+        .order_by('month')
+    )
+    monthly_revenue_data = [{'name': item['month'].strftime('%B %Y'), 'y': float(item['total_revenue'])} for item in monthly_revenue]
+    
+    # Extract categories and data values separately
+    monthly_revenue_categories = [item['month'].strftime('%B %Y') for item in monthly_revenue]
+    monthly_revenue_values = [float(item['total_revenue']) for item in monthly_revenue]
+
+    
+    # Extract categories and data values separately
+    monthly_revenue_categories = [item['month'].strftime('%B %Y') for item in monthly_revenue]
+    monthly_revenue_values = [float(item['total_revenue']) for item in monthly_revenue]
+
+
+    # User Registration Trends
+    user_registration_trends = list(
+        Custom_user.objects.annotate(month=TruncMonth('date_joined')).values('month').annotate(count=Count('id')).order_by('month')
+    )
+    user_registration_trends_data = [{'name': item['month'].strftime('%B %Y'), 'y': item['count']} for item in user_registration_trends]
+
+    # Extract categories and data values separately
+    user_registration_categories = [item['month'].strftime('%B %Y') for item in user_registration_trends]
+    user_registration_values = [item['count'] for item in user_registration_trends]
+
+
     context = {
         'room_type_popularity_data': json.dumps(room_type_popularity_data, cls=DjangoJSONEncoder),
         'revenue_by_room_type_data': json.dumps(revenue_by_room_type_data, cls=DjangoJSONEncoder),
@@ -98,9 +122,14 @@ def admin_dashboard(request):
         'hall_payment_method_usage_data': json.dumps(hall_payment_method_usage_data, cls=DjangoJSONEncoder),
         'user_roles_distribution_data': json.dumps(user_roles_distribution_data, cls=DjangoJSONEncoder),
         'recent_users_data': json.dumps(recent_users_data, cls=DjangoJSONEncoder),
+        'monthly_revenue_categories': json.dumps(monthly_revenue_categories),
+        'monthly_revenue_values': json.dumps(monthly_revenue_values),
+        'user_registration_categories': json.dumps(user_registration_categories),
+        'user_registration_values': json.dumps(user_registration_values)
     }
 
     return render(request, 'admins/admin_dashboard.html', context)
+
 
 
     

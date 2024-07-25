@@ -34,7 +34,10 @@ class CheckAvailabilityForm(forms.Form):
         if end_date and end_date < start_date:
             raise ValidationError("End date cannot be before start date.")
 
-        if end_date == start_date and end_time < start_time:
-            raise ValidationError("End time cannot be before start time when start and end dates are the same.")
+        if end_date == start_date:
+            if end_time < start_time:
+                raise ValidationError("End time cannot be before start time when start and end dates are the same.")
+            if end_time == start_time:
+                raise ValidationError("End time cannot be the same as start time.")
 
         return cleaned_data

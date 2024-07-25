@@ -68,6 +68,7 @@
                         <a href="{% url 'admins:hall_booking_detail' booking.pk %}" class="btn btn-link text-warning">
                             <span class="material-symbols-outlined">info</span>
                         </a>
+                        {% if user.role == 'owner' %}
                         <!-- Delete button with modal trigger -->
                         <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ booking.id }}">
                             <span class="material-symbols-outlined">delete_forever</span>
@@ -94,6 +95,7 @@
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

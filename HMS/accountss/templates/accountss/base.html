@@ -156,7 +156,9 @@ body {
               id="dropdownMenuButton" aria-haspopup="true" aria-expanded="false">Fitness</a>
             <div class="dropdown-menu transparent-dropdown" aria-labelledby="dropdownMenuButton">
               <a class="dropdown-item nav-link text-warning" href="{% url 'membership_plans' %}">Gym</a>
+              {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
               <a class="dropdown-item nav-link text-warning" href="{% url 'my_memberships' %}">My Memberships</a>
+              {% endif %}
             </div>
           </div>
 

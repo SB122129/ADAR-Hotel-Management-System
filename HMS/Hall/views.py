@@ -75,7 +75,7 @@ class HallDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['form'] = CheckAvailabilityForm()
         return context
-class CheckAvailabilityView(FormView):
+class CheckAvailabilityView(LoginRequiredMixin,FormView):
     form_class = CheckAvailabilityForm
     template_name = 'hall/hall_details.html'
 
@@ -119,7 +119,7 @@ class CheckAvailabilityView(FormView):
 # views.py
 from decimal import Decimal
 
-class BookingView(TemplateView):
+class BookingView(LoginRequiredMixin,TemplateView):
     template_name = 'hall/booking_create.html'
 
     def get_context_data(self, **kwargs):
@@ -145,13 +145,27 @@ class BookingView(TemplateView):
         })
 
         # Calculate total cost
-        start_time_dt = datetime.datetime.strptime(start_time, '%H:%M:%S').time()
-        end_time_dt = datetime.datetime.strptime(end_time, '%H:%M:%S').time()
-        duration_hours = Decimal((datetime.datetime.combine(datetime.date.today(), end_time_dt) - datetime.datetime.combine(datetime.date.today(), start_time_dt)).seconds) / Decimal(3600)
+        if isinstance(start_time, str):
+            start_time = datetime.datetime.strptime(start_time, '%H:%M:%S').time()
+        if isinstance(end_time, str):
+            end_time = datetime.datetime.strptime(end_time, '%H:%M:%S').time()
 
-        if end_date:
-            days = (datetime.datetime.strptime(end_date, '%Y-%m-%d').date() - datetime.datetime.strptime(start_date, '%Y-%m-%d').date()).days + 1
-            total_cost = duration_hours * hall.price_per_hour * Decimal(days)
+        start_time_dt = datetime.datetime.combine(datetime.date.today(), start_time)
+        end_time_dt = datetime.datetime.combine(datetime.date.today(), end_time)
+        duration_hours = Decimal((end_time_dt - start_time_dt).seconds) / Decimal(3600)
+
+        # Ensure start_date and end_date are datetime.date objects
+        if isinstance(start_date, str):
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+        if isinstance(end_date, str):
+            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+
+
+        if end_date and end_date != start_date:
+            days = (end_date - start_date).days + 1
+            total_cost = 0
+            for i in range(days):
+                total_cost += duration_hours * hall.price_per_hour
         else:
             total_cost = duration_hours * hall.price_per_hour
 
@@ -196,7 +210,7 @@ class BookingView(TemplateView):
     
 
 
-class PaymentView(TemplateView):
+class PaymentView(LoginRequiredMixin,TemplateView):
     template_name = 'hall/payment_create.html'
 
     def get_context_data(self, **kwargs):
@@ -363,7 +377,7 @@ class PayPalCancelView(View):
         return redirect('payment_page', booking_id=booking_id)
 
 
-class BookingListView(ListView):
+class BookingListView(LoginRequiredMixin,ListView):
     model = Hall_Booking
     template_name = 'hall/my_bookings.html'
     context_object_name = 'bookings'

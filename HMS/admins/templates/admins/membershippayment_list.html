@@ -56,6 +56,7 @@
                             <a href="{% url 'admins:membershippayment_detail' item.id %}" class="btn btn-link text-warning">
                                 <span class="material-symbols-outlined">info</span>
                             </a>
+                            {% if user.role == 'owner' %}
                             <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-id="{{ item.id }}">
                                 <span class="material-symbols-outlined">delete_forever</span>
                             </button>
@@ -82,6 +83,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
                 {% endfor %}
                 {% else %}
                 <tr>

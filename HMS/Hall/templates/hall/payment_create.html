@@ -96,8 +96,9 @@
                     </label>
                 </div>
             </div>
-            <div class="d-flex justify-content-center mt-4">
-                <button class="btn btn-sm btn-success w-75 rounded" type="submit">Proceed to Payment</button>
+            <div class="d-flex flex-column align-items-center mt-4">
+                <button id="proceedToPayment" class="btn btn-sm btn-success w-75 rounded" type="submit">Proceed to Payment</button>
+                <button id="myBookingButton" class="btn btn-sm btn-primary w-75 rounded mt-2" type="button" style="display: none;" onclick="window.location.href='{% url 'hall_bookings' %}'">My Bookings</button>
             </div>
         </div>
     </div>
@@ -112,6 +113,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const options = document.querySelectorAll('.payment-option');
+        const proceedToPaymentButton = document.getElementById('proceedToPayment');
+        const myBookingButton = document.getElementById('myBookingButton');
         
         options.forEach(option => {
             option.addEventListener('click', function() {
@@ -120,15 +123,19 @@
                 this.querySelector('input').checked = true;
             });
         });
-    });
 
-    document.getElementById('paymentForm').addEventListener('submit', function(event) {
-        var chapaRadio = document.getElementById('chapaRadio');
-        if (chapaRadio.checked) {
-            this.target = '_blank';
-        } else {
-            this.target = '_self';
-        }
+        document.getElementById('paymentForm').addEventListener('submit', function(event) {
+            var chapaRadio = document.getElementById('chapaRadio');
+            if (chapaRadio.checked) {
+                this.target = '_blank';
+            } else {
+                this.target = '_self';
+            }
+
+            proceedToPaymentButton.disabled = true;
+            proceedToPaymentButton.classList.add('disabled');
+            myBookingButton.style.display = 'block';
+        });
     });
 </script>
 
@@ -148,6 +155,10 @@
     }
     .payment-option.selected .custom-radio {
         background-color: #007bff;
+    }
+    .disabled {
+        pointer-events: none;
+        opacity: 0.65;
     }
 </style>
 
