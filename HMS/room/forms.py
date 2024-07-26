@@ -54,7 +54,19 @@ class BookingForm(forms.ModelForm):
             if check_out_date <= check_in_date:
                 raise ValidationError('Check-out date must be after the check-in date.')
 
+            # Check for room availability
+            existing_bookings = Booking.objects.filter(
+                room=self.room,
+                status__in=['pending', 'confirmed'],
+                check_in_date__lt=check_out_date,
+                check_out_date__gt=check_in_date
+            )
+
+            if existing_bookings.exists():
+                raise ValidationError('The room is booked for the selected dates. Please choose different dates.')
+
         return cleaned_data
+
         
 
 class RoomRatingForm(forms.ModelForm):

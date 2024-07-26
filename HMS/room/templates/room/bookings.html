@@ -7,7 +7,7 @@
     <div class="container" style="margin-top: 1rem;">
         {% if messages %}
               {% for message in messages %}
-                  <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }}">
+                  <div class="alert alert-dismissible text-center font-weight-bold mt-5 alert-{{ message.tags }}">
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                       <span aria-hidden="true">&times;</span>
                     </button>
@@ -19,7 +19,7 @@
     <div class="row">
         {% for booking in bookings %}
             <div class="col-md-6">
-                <div class="card h-100 mb-5 rounded shadow">
+                <div class="card h-100 mb-2 mt-2 rounded shadow">
                     <div class="card-body">
                         <h5 class="card-title"><strong><i class="bi bi-list-ol"></i>&ensp;Room number</strong>  {{ booking.room.room_number }}</h5>
                         <img src="{{booking.room.room_image.url}}" style="width: 400;height: 270px;" class="card-img-top rounded">
@@ -79,12 +79,15 @@
                                 Upload Receipt
                             </a>&ensp;
                         {% endif %}
+                        
+                        {% if not booking.status == 'cancelled' %}
                         <a href="{% url 'booking_extend' booking_id=booking.id%}" class="btn btn-sm btn-warning rounded">
                             Extend booking
                         </a>&ensp;
                         <button type="button" class="btn btn-sm btn-danger rounded" data-toggle="modal" data-target="#deleteModal{{booking.id}}">
                             Cancel booking
                         </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>

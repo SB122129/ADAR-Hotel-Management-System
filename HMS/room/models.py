@@ -14,26 +14,11 @@ class Category(models.Model):
 
 
 
-class RoomManager(models.Manager):
-    def available(self):
-        now = timezone.now().date()
-        print(f"Fetching available rooms at {now}")
-
-        available_rooms = self.filter(
-            Q(room_status='vacant') | (
-                ~Q(booking__status__in=['pending', 'confirmed'], booking__check_in_date__lte=now, booking__check_out_date__gte=now)
-            )
-        ).distinct()
-
-        print(f"Available rooms: {[room.room_number for room in available_rooms]}")
-        return available_rooms
-
 
 
 class Room(models.Model):
     ROOM_STATUS_CHOICES = (
         ('vacant', 'Vacant'),
-        ('reserved', 'Reserved'),
         ('occupied', 'Occupied'),
     )
 
@@ -46,26 +31,11 @@ class Room(models.Model):
     capacity = models.IntegerField()
     description = models.TextField(blank=True)
     floor = models.IntegerField()
-    objects = RoomManager()
 
     def __str__(self):
         return self.room_number
 
-    def update_room_status(self):
-        now = timezone.now().date()
-        print(f"Updating room status for room {self.room_number}")
-        
-        if self.booking_set.filter(status='pending', check_out_date__gte=now).exists():
-            self.room_status = 'reserved'
-        elif self.booking_set.filter(status='confirmed', check_out_date__gte=now).exists():
-            self.room_status = 'occupied'
-        elif not self.booking_set.exclude(status='cancelled').exists():
-            self.room_status = 'vacant'
-        else:
-            self.room_status = 'vacant'
-        
-        print(f"Room {self.room_number} status updated to {self.room_status}")
-        self.save()
+    
 
 
 
@@ -116,6 +86,39 @@ class Booking(models.Model):
         super().delete(*args, **kwargs)
         room.update_room_status()
 
+    def update_room_and_booking__status(self):
+        now = timezone.now().date()
+        print(f"Updating room status for room {self.room.room_number}")
+
+        # Check if any booking has check_out_date or extended_check_out_date less than today
+        bookings_to_cancel = self.room.booking_set.filter(
+            checked_in=True,
+            check_out_date__lt=now
+        ) | self.room.booking_set.filter(
+            checked_in=True,
+            extended_check_out_date__lt=now
+        )
+
+        if bookings_to_cancel.exists():
+            for booking in bookings_to_cancel:
+                booking.checked_in = False
+                booking.checked_out = True
+                booking.status = 'cancelled'
+                booking.save()
+            self.room.room_status = 'vacant'
+        else:
+            # Check if any booking has checked_in as True
+            if self.room.booking_set.filter(checked_in=True).exists():
+                self.room.room_status = 'occupied'
+            # Check if any booking has checked_out as True
+            elif self.room.booking_set.filter(checked_out=True).exists():
+                self.room.room_status = 'vacant'
+            else:
+                self.room.room_status = 'vacant'
+
+        print(f"Room {self.room.room_number} status updated to {self.room.room_status}")
+        self.room.save()
+    
     def has_receipt(self):
         return Receipt.objects.filter(booking=self).exists()
 
@@ -168,5 +171,5 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 @receiver(post_save, sender=Booking)
-def update_room_status(sender, instance, **kwargs):
-    instance.room.update_room_status()
+def update_room_and_booking__status(sender, instance, **kwargs):
+    instance.update_room_and_booking__status()

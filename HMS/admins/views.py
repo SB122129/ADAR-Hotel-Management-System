@@ -317,7 +317,9 @@ class BookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
                 Q(room__room_number__icontains=search_query) |
                 Q(room__room_type__name__icontains=search_query) |
                 Q(user__username__icontains=search_query) |
-                Q(tx_ref__icontains=search_query)
+                Q(tx_ref__icontains=search_query) |
+                Q(status__icontains=search_query)
+
             )
         return queryset
 
@@ -342,6 +344,7 @@ class BookingCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
             duration = (booking.check_out_date - booking.check_in_date).days
             booking.original_booking_amount = booking.room.price_per_night * duration
             booking.total_amount = booking.original_booking_amount
+        booking.update_room_and_booking__status()
         booking.save()
         return redirect('admins:payment_create',booking_id=booking.id)
 
@@ -352,6 +355,12 @@ class BookingUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
     template_name = 'admins/booking_update.html'
     form_class = BookingUpdateForm
     success_url = reverse_lazy('admins:booking_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        booking = form.instance
+        booking.update_room_and_booking__status()
+        return response
 
 
 

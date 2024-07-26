@@ -35,6 +35,8 @@ from django.views.generic.base import View
 from django.db.models.signals import post_save
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
+from .forms import BookingExtendForm
+from django.utils.safestring import mark_safe
 from django.views import View
 from .forms import BookingExtendForm
 from .models import Booking
@@ -57,7 +59,7 @@ from Hall.models import *
 
 
 def home(request):
-    rooms = Room.objects.available().filter(room_status='vacant').order_by('room_type', 'id').distinct('room_type')
+    rooms = Room.objects.all().order_by('room_type', 'id').distinct('room_type')
     print(rooms)
     return render(request, 'room/home.html', {'rooms': rooms})
 
@@ -67,7 +69,7 @@ class RoomListView(ListView):
     context_object_name = 'rooms'
 
     def get_queryset(self):
-        queryset = Room.objects.available().filter(room_status='vacant')
+        queryset = Room.objects.all()
         price = self.request.GET.get('price')
         room_type = self.request.GET.get('room_type')
         
@@ -79,11 +81,9 @@ class RoomListView(ListView):
         return queryset
 
     def cancel_past_bookings(self):
-        past_bookings = Booking.objects.filter(
-                        Q(check_out_date__lt=timezone.now().date()) | Q(extended_check_out_date__lt=timezone.now().date()),
-                        user=self.request.user).exclude(status='cancelled')
-        for booking in past_bookings:
-            booking.status = 'cancelled'
+        bookings = Booking.objects.all()
+        for booking in bookings:
+            booking.update_room_and_booking__status()
             booking.save()
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -114,7 +114,7 @@ class RoomDetailView(DetailView):
     context_object_name = 'room'
 
 
-
+from django.db.models import Case, When, Value, IntegerField
 
 class BookingListView(LoginRequiredMixin, ListView):
     model = Booking
@@ -123,7 +123,16 @@ class BookingListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         self.cancel_past_bookings() 
-        return Booking.objects.filter(user=self.request.user).exclude(status__in=['cancelled'])
+        bookings_lists = Booking.objects.filter(user=self.request.user).annotate(
+                status_order=Case(
+                    When(status='confirmed', then=Value(1)),
+                    When(status='pending', then=Value(2)),
+                    When(status='cancelled', then=Value(3)),
+                    default=Value(4),
+                    output_field=IntegerField(),
+                )
+            ).order_by('status_order')
+        return bookings_lists
     def cancel_past_bookings(self):
         past_bookings = Booking.objects.filter(
                         Q(check_out_date__lt=timezone.now().date()) | Q(extended_check_out_date__lt=timezone.now().date()),
@@ -160,7 +169,7 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         form.instance.room = room
         form.instance.status = 'pending'
         form.instance.tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
-
+        form.instance.update_room_and_booking__status()
         self.object = form.save()
         return redirect('payment_create', booking_id=self.object.id)
 
@@ -172,13 +181,20 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
 
 
 
-from .forms import BookingExtendForm
+from django.middleware.csrf import get_token
 
 class BookingExtendView(View):
     template_name = 'room/booking_extend.html'
 
     def get(self, request, *args, **kwargs):
         booking = self.get_booking()
+        today = timezone.now().date()
+
+        # # Check if today is the last day of the booking
+        # if not (booking.check_out_date == today or (booking.extended_check_out_date and booking.extended_check_out_date == today)):
+        #     messages.error(request, "It must be your last day before extending the booking.")
+        #     return redirect('my_bookings')  # Redirect to your booking list view
+
         form = BookingExtendForm(instance=booking)
         context = self.get_context_data(booking, form)
         return render(request, self.template_name, context)
@@ -186,9 +202,25 @@ class BookingExtendView(View):
     def post(self, request, *args, **kwargs):
         booking = self.get_booking()
         form = BookingExtendForm(request.POST, instance=booking)
-
+        
         if form.is_valid():
             extended_check_out_date = form.cleaned_data['extended_check_out_date']
+
+            # Check room availability for the new date range
+            if not self.is_room_available(booking.room, booking.check_out_date, extended_check_out_date):
+                cancel_url = reverse('booking_cancel', kwargs={'pk': booking.id}) + '?next=rooms'
+                csrf_token = get_token(request)
+                messages.error(request, mark_safe(
+                    "The room is booked for the selected dates and the booking cannot be extended. "
+                    "You can cancel your existing booking and create a new booking by choosing one of the rooms by clicking "
+                    "<a href='#' onclick=\"event.preventDefault(); document.getElementById('cancel-form').submit();\">this link</a>."
+                    "<form id='cancel-form' action='{}' method='post' style='display:none;'>"
+                    "<input type='hidden' name='csrfmiddlewaretoken' value='{}' /></form>".format(
+                        cancel_url, csrf_token
+                    )
+                ))
+                return self.form_invalid(form)
+
             if extended_check_out_date <= booking.check_out_date:
                 form.add_error('extended_check_out_date', 'Extended check-out date must be after the current check-out date.')
                 return self.form_invalid(form)
@@ -198,6 +230,7 @@ class BookingExtendView(View):
             else:
                 booking.extended_check_out_date = extended_check_out_date
                 booking.status = 'pending'
+                booking.update_room_and_booking__status()
                 booking.save()
                 return redirect('payment_extend', booking_id=booking.id)
         else:
@@ -217,6 +250,19 @@ class BookingExtendView(View):
             'form': form
         }
         return context
+
+    def is_room_available(self, room, check_out_date, extended_check_out_date):
+        # Check if the room is available between the check_out_date and extended_check_out_date
+        overlapping_bookings = Booking.objects.filter(
+            room=room,
+            status__in=['pending', 'confirmed'],
+            check_in_date__range=(check_out_date, extended_check_out_date)
+        ).exclude(id=self.kwargs.get('booking_id'))
+        return not overlapping_bookings.exists()
+
+
+
+
 
     
 
@@ -748,23 +794,28 @@ logger = logging.getLogger(__name__)
 
 
 
-class BookingCancelView(LoginRequiredMixin, UpdateView):
-    model = Booking
+class BookingCancelView(LoginRequiredMixin, View):
     fields = []  # No fields to update through the form
-    success_url = reverse_lazy('bookings')
 
     def get_queryset(self):
         owner_queryset = super().get_queryset()
         return owner_queryset.filter(user=self.request.user)
 
+
+    def get_success_url(self):
+        next_url = self.request.GET.get('next', 'bookings')  # Default to 'bookings' if 'next' is not provided
+        if 'next' in self.request.GET:
+            messages.success(self.request, 'You have successfully cancelled your previous booking, please create a new booking with the new date you want. ')
+        return reverse(next_url)
+
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         try:
-            booking = self.get_object()
+            booking_id = kwargs.get('pk')
+            booking = get_object_or_404(Booking, id=booking_id)
             booking.status = 'cancelled'
             booking.save()
-            booking.room.update_room_status()
-            # Update the room status after cancellation
+            booking.update_room_and_booking__status()
             booking_url = f"{BASE_URL}/room/my-bookings/"
             html_content = render_to_string('room/cancellation_email_template.html', {'booking': booking, 'booking_url': booking_url})
             
@@ -782,14 +833,11 @@ class BookingCancelView(LoginRequiredMixin, UpdateView):
             
             # Send the email
             email.send()
-            return HttpResponseRedirect(self.success_url)
+            return HttpResponseRedirect(self.get_success_url())
         except Exception as e:
             print(f"Exception when canceling booking: {e}")
             return HttpResponseBadRequest("Error occurred while canceling the booking.")
 
-
-    def form_invalid(self, form):
-        return HttpResponseRedirect(self.success_url)
 
 
 
@@ -876,11 +924,11 @@ class UserRoomRatingsListView(LoginRequiredMixin, ListView):
 
 @receiver(post_save, sender=Booking)
 @receiver(post_delete, sender=Booking)
-def update_room_status(sender, instance, **kwargs):
-    instance.room.update_room_status()
+def update_room_and_booking__status(sender, instance, **kwargs):
+    instance.update_room_and_booking__status()
 
-def update_room_statuses():
+def update_room_and_booking__statuses():
     now = timezone.now().date()
-    rooms = Room.objects.all()
-    for room in rooms:
-        room.update_room_status()
+    bookings = Booking.objects.all()
+    for booking in bookings:
+        booking.update_room_and_booking__status()
