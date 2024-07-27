@@ -6,6 +6,7 @@ from .models import Room, Booking, Payment, RoomRating,Receipt
 from .forms import BookingForm, RoomRatingForm
 import requests
 import random
+from reportlab.pdfgen import canvas
 from django.db.models import Q
 from django.utils import timezone
 from django.template.loader import render_to_string
@@ -508,7 +509,8 @@ class PaymentView(View):
     
     
 
-
+from xhtml2pdf import pisa
+from io import BytesIO
 
 
 
@@ -526,33 +528,39 @@ class PayPalReturnView(View):
                 booking.is_paid = True
                 booking.status = 'confirmed'
                 booking.tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
-                # booking.room.status='occupied'
-                # Check if booking.total_amount is None and use 0 if it is, otherwise use its value
+
                 if booking.booking_extend_amount is None:
                     booking.total_amount = booking.original_booking_amount
                 booking.save()
+
                 if booking.extended_check_out_date:
-                    booking.check_out_date=booking.extended_check_out_date
+                    booking.check_out_date = booking.extended_check_out_date
                     if booking.booking_extend_amount is not None:
                         booking.total_amount += booking.booking_extend_amount 
                     booking.save()
+
                 payment, created = Payment.objects.get_or_create(
-                            booking=booking,
-                            defaults={
-                                'status': 'completed',
-                                'transaction_id': booking.tx_ref,
-                                'payment_method': 'paypal'
-                                }
-                                )
+                    booking=booking,
+                    defaults={
+                        'status': 'completed',
+                        'transaction_id': booking.tx_ref,
+                        'payment_method': 'paypal'
+                    }
+                )
+
                 messages.success(request, 'Payment completed successfully.')
-                
-                booking_url = f"{BASE_URL}/room/my-bookings/"
+
+                # Generate receipt PDF
+                pdf_response = self.generate_pdf(booking)
+
+                booking_url = f"{settings.BASE_URL}/room/my-bookings/"
                 if booking.extended_check_out_date:
                     subject = 'Room Booking Extension Confirmation'
                     html_content = render_to_string('room/checkout_date_extenstion_email_template.html', {'booking': booking, 'booking_url': booking_url})
                 else:
                     subject = 'Room Booking Confirmation'
                     html_content = render_to_string('room/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
+
                 # Inline CSS
                 html_content = transform(html_content)
 
@@ -564,10 +572,12 @@ class PayPalReturnView(View):
                 )
                 # Attach the HTML content
                 email.attach_alternative(html_content, "text/html")
+                # Attach the PDF receipt
+                email.attach(f'receipt_{booking.id}.pdf', pdf_response, 'application/pdf')
 
                 # Send the email
                 email.send()
-                
+
                 return redirect('bookings')
             else:
                 messages.error(request, 'Payment was not successful.')
@@ -575,6 +585,17 @@ class PayPalReturnView(View):
         else:
             messages.error(request, 'There was an issue with your PayPal payment.')
             return redirect('payment_create', booking_id=booking.id)
+
+    def generate_pdf(self, booking):
+        buffer = BytesIO()
+        if booking.extended_check_out_date:
+            html_string = render_to_string('room/booking_extentsion_receipt.html', {'booking': booking})  
+        else:
+            html_string = render_to_string('room/receipt.html', {'booking': booking})
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
 
 class PayPalCancelView(View):
     def get(self, request, *args, **kwargs):
@@ -918,6 +939,11 @@ class UserRoomRatingsListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return RoomRating.objects.filter(user=self.request.user)
+
+
+
+
+
 
 
 
