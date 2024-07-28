@@ -511,8 +511,8 @@ class PaymentView(View):
 
 from xhtml2pdf import pisa
 from io import BytesIO
-
-
+import qrcode
+import base64
 
 class PayPalReturnView(View):
     def get(self, request, *args, **kwargs):
@@ -553,7 +553,7 @@ class PayPalReturnView(View):
                 # Generate receipt PDF
                 pdf_response = self.generate_pdf(booking)
 
-                booking_url = f"{settings.BASE_URL}/room/my-bookings/"
+                booking_url = f"{BASE_URL}/room/my-bookings/"
                 if booking.extended_check_out_date:
                     subject = 'Room Booking Extension Confirmation'
                     html_content = render_to_string('room/checkout_date_extenstion_email_template.html', {'booking': booking, 'booking_url': booking_url})
@@ -573,7 +573,7 @@ class PayPalReturnView(View):
                 # Attach the HTML content
                 email.attach_alternative(html_content, "text/html")
                 # Attach the PDF receipt
-                email.attach(f'receipt_{booking.id}.pdf', pdf_response, 'application/pdf')
+                email.attach(f'receipt_{booking.id}_{booking.user.username}.pdf', pdf_response, 'application/pdf')
 
                 # Send the email
                 email.send()
@@ -588,14 +588,39 @@ class PayPalReturnView(View):
 
     def generate_pdf(self, booking):
         buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify/{booking.id}')
+        
+        context = {
+            'booking': booking,
+            'qr_code_data': qr_code_data,
+        }
+        
         if booking.extended_check_out_date:
-            html_string = render_to_string('room/booking_extentsion_receipt.html', {'booking': booking})  
+            html_string = render_to_string('room/booking_extentsion_receipt.html', context)
         else:
-            html_string = render_to_string('room/receipt.html', {'booking': booking})
+            html_string = render_to_string('room/receipt.html', context)
         
         pisa_status = pisa.CreatePDF(html_string, dest=buffer)
         buffer.seek(0)
         return buffer.read()
+
+    def generate_qr_code(self, data):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return mark_safe(f'data:image/png;base64,{img_str}')
+
 
 class PayPalCancelView(View):
     def get(self, request, *args, **kwargs):
@@ -678,6 +703,9 @@ class ChapaWebhookView(View):
             booking.save()
 
         
+        # Generate receipt PDF
+        pdf_response = self.generate_pdf(booking)
+
         booking_url = f"{BASE_URL}/room/my-bookings/"
         if booking.extended_check_out_date:
             subject = 'Room Booking Extension Confirmation'
@@ -685,6 +713,7 @@ class ChapaWebhookView(View):
         else:
             subject = 'Room Booking Confirmation'
             html_content = render_to_string('room/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
+
         # Inline CSS
         html_content = transform(html_content)
 
@@ -696,12 +725,48 @@ class ChapaWebhookView(View):
         )
         # Attach the HTML content
         email.attach_alternative(html_content, "text/html")
+        # Attach the PDF receipt
+        email.attach(f'receipt_{booking.id}_{booking.user.username}.pdf', pdf_response, 'application/pdf')
 
         # Send the email
         email.send()
             
         print("Booking and room updated")
         return HttpResponse("Booking webhook processed successfully")
+    def generate_pdf(self, booking):
+        buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify/{booking.id}')
+        
+        context = {
+            'booking': booking,
+            'qr_code_data': qr_code_data,
+        }
+        
+        if booking.extended_check_out_date:
+            html_string = render_to_string('room/booking_extentsion_receipt.html', context)
+        else:
+            html_string = render_to_string('room/receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
+    def generate_qr_code(self, data):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return mark_safe(f'data:image/png;base64,{img_str}')
 
     def process_hall_booking_payment(self, tx_ref, payload):
         try:

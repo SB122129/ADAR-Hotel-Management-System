@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-3">
     {% if messages %}
-        <div class="container ">
+        <div class="container">
             {% for message in messages %}
                 <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -17,20 +17,22 @@
 
 <div class="container mt-5">
     <!-- Search Form -->
-    <form method="get" action="" class="mb-4 d-flex justify-content-between">
-        <div class="input-group w-75">
+    <form method="get" action="" class="mb-4 d-flex flex-wrap justify-content-between">
+        <div class="input-group mb-2 mb-md-0 w-100 w-md-75">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by user, hall number, or booking reference" value="{{ request.GET.search }}">
             <div class="input-group-append">
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
-        <a href="{% url 'admins:hall_availability' %}" class="btn btn-sm btn-primary">Create Hall Booking</a>
-        <a href="{% url 'admins:hall_booking_list' %}" class="btn btn-sm btn-success">Show All</a>
+        <div class="d-flex flex-wrap w-100 w-md-50 justify-content-center justify-content-md-end mt-2">
+            <a href="{% url 'admins:hall_availability' %}" class="btn btn-primary btn-sm mb-2 mb-md-0">Create Hall Booking</a>
+            <a href="{% url 'admins:hall_booking_list' %}" class="btn btn-sm btn-success ms-md-2">Show All</a>
+        </div>
     </form>
 
-    <div class="d-flex justify-content-center">
+    <div class="table-responsive">
         <table class="table">
-            <thead>
+            <thead class="table-light">
                 <tr>
                     <th>User</th>
                     <th>Hall Number</th>
@@ -49,7 +51,7 @@
                 {% if object_list %}
                 {% for booking in object_list %}
                 <tr>
-                    <td>{% if booking.full_name %}{{booking.full_name}}{% else %}{{ booking.user.username }}{% endif %}</td>
+                    <td>{% if booking.full_name %}{{ booking.full_name }}{% else %}{{ booking.user.username }}{% endif %}</td>
                     <td>{{ booking.hall.hall_number }}</td>
                     <td>{{ booking.hall.hall_type }}</td>
                     <td>{{ booking.start_date }}</td>
@@ -59,18 +61,18 @@
                     <td>{{ booking.amount_due }}</td>
                     <td>{{ booking.get_status_display }}</td>
                     <td>{{ booking.occupied }}</td>
-                    <td>
+                    <td class="text-center">
                         <!-- Edit button -->
-                        <a href="{% url 'admins:hall_booking_update' booking.pk %}" class="btn btn-link text-primary">
+                        <a href="{% url 'admins:hall_booking_update' booking.pk %}" class="btn btn-link text-primary p-0">
                             <span class="material-symbols-outlined">edit_note</span>
                         </a>
                         <!-- View button -->
-                        <a href="{% url 'admins:hall_booking_detail' booking.pk %}" class="btn btn-link text-warning">
+                        <a href="{% url 'admins:hall_booking_detail' booking.pk %}" class="btn btn-link text-warning p-0">
                             <span class="material-symbols-outlined">info</span>
                         </a>
                         {% if user.role == 'owner' %}
                         <!-- Delete button with modal trigger -->
-                        <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ booking.id }}">
+                        <button type="button" class="btn btn-link text-danger p-0" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ booking.id }}">
                             <span class="material-symbols-outlined">delete_forever</span>
                         </button>
 

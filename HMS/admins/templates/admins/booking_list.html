@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-3">
     {% if messages %}
-        <div class="container ">
+        <div class="container">
             {% for message in messages %}
                 <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -13,24 +13,26 @@
         </div>
     {% endif %}
 </div>
-<div class="container mt-5">
-    <h4 class="text-center mb-4 m"><strong>Booking List</strong></h4>
+<div class="container-fluid mt-5">
+    <h4 class="text-center mb-4"><strong>Booking List</strong></h4>
+    
     <!-- Search Form -->
-    <form method="get" action="" class="mb-4 d-flex justify-content-between">
-        <div class="input-group w-75">
+    <form method="get" action="" class="mb-4 d-flex flex-wrap justify-content-between">
+        <div class="input-group mb-3 w-100 w-md-50">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by room number, type, user, or transaction reference" value="{{ request.GET.search }}">
             <div class="input-group-append">
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
-        <a href="{% url 'admins:booking_create' %}" class="btn btn-primary btn-sm">Create Room Booking</a>
-        <a href="{% url 'admins:booking_list' %}" class="btn btn-sm btn-success">Show All</a>
+        <div class="d-flex flex-wrap w-100 w-md-50 justify-content-center justify-content-md-end">
+            <a href="{% url 'admins:booking_create' %}" class="btn btn-primary btn-sm mb-2 mb-md-0">Create Room Booking</a>&ensp;
+            <a href="{% url 'admins:booking_list' %}" class="btn btn-sm btn-success ms-md-2">Show All</a>
+        </div>
     </form>
 
-    <div class="d-flex justify-content-center">
-        
-        <table class="table">
-            <thead>
+    <div class="table-responsive">
+        <table class="table  table-hover">
+            <thead class="thead-light">
                 <tr>
                     <th scope="col">Room Number</th>
                     <th scope="col">Room Type</th>
@@ -51,7 +53,7 @@
                 <tr>
                     <td class="align-middle">{{ item.room.room_number }}</td>
                     <td class="align-middle">{{ item.room.room_type.name }}</td>
-                    <td class="align-middle">{% if item.full_name %}{{item.full_name}}{% else %}{{ item.user.username }}{% endif %}</td>
+                    <td class="align-middle">{% if item.full_name %}{{ item.full_name }}{% else %}{{ item.user.username }}{% endif %}</td>
                     <td class="align-middle">{{ item.check_in_date }}</td>
                     <td class="align-middle">{{ item.check_out_date }}</td>
                     <td class="align-middle">{{ item.extended_check_out_date|default:"-" }}</td>
@@ -107,7 +109,7 @@
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="9" class="text-center text-danger">No data available</td>  
+                    <td colspan="11" class="text-center text-danger">No data available</td>  
                 </tr>
                 {% endif %}
             </tbody>
@@ -120,18 +122,18 @@
             <ul class="pagination">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link " href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="First">
+                    <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="First">
                         <span aria-hidden="true">&laquo;&laquo;</span>
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link " href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Previous">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
                 {% else %}
                 <li class="page-item disabled"><span class="page-link">&laquo;&laquo;</span></li>
-                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                <li class="page-item disabled"><span class="page-link">&laquo;</span></span></li>
                 {% endif %}
 
                 {% for num in page_obj.paginator.page_range %}
@@ -143,23 +145,22 @@
                 {% endfor %}
 
                 {% if page_obj.has_next %}
-                <li class="page-item ">
+                <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link  " href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Last">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Last">
                         <span aria-hidden="true">&raquo;&raquo;</span>
                     </a>
                 </li>
                 {% else %}
-                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
-                <li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></li>
+                <li class="page-item disabled"><span class="page-link">&raquo;</span></span></li>
+                <li class="page-item disabled"><span class="page-link">&raquo;&raquo;</span></span></li>
                 {% endif %}
             </ul>
         </nav>
     </div>
-    
 </div>
 {% endblock %}

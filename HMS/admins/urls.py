@@ -37,7 +37,7 @@ urlpatterns = [
     path('bookings/<int:pk>/update/', BookingUpdateView.as_view(), name='booking_update'),
     path('bookings/<int:pk>/delete/', BookingDeleteView.as_view(), name='booking_delete'),
     path('booking/<int:pk>/extend/', BookingExtendView.as_view(), name='booking_extend'),
-    
+    path('verify/<int:booking_id>/', BookingVerifyView.as_view(), name='booking_verify'),
 
     
     # Payment URLs

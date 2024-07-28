@@ -324,7 +324,14 @@ class BookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
         return queryset
 
 
-
+class BookingVerifyView(View):
+    def get(self, request, booking_id, *args, **kwargs):
+        try:
+            booking = Booking.objects.get(id=booking_id)
+        except Booking.DoesNotExist:
+            return render(request, 'admins/booking_not_found.html')
+        
+        return render(request, 'admins/booking_verify.html', {'booking': booking})
 class BookingDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
     model = Booking
     template_name = 'admins/booking_detail.html'
