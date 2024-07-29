@@ -59,7 +59,7 @@ urlpatterns = [
     path('memberships/<int:pk>/', MembershipDetailView.as_view(), name='membership_detail'),
     path('memberships/<int:pk>/update/', MembershipUpdateView.as_view(), name='membership_update'),
     path('memberships/<int:pk>/delete/', MembershipDeleteView.as_view(), name='membership_delete'),
-
+    path('verify_membership/<int:membership_id>/', MembershipVerifyView.as_view(), name='booking_verify'),
     # MembershipPayment URLs
     path('membershippayments/', MembershipPaymentListView.as_view(), name='membershippayment_list'),
     path('membershippayments/<int:pk>/', MembershipPaymentDetailView.as_view(), name='membershippayment_detail'),
@@ -89,7 +89,7 @@ urlpatterns = [
     path('hall_booking/<int:pk>/delete/', HallBookingDeleteView.as_view(), name='hall_booking_delete'),
     path('hall_booking/', HallBookingListView.as_view(), name='hall_booking_list'),
     path('hall_booking/<int:pk>/', HallBookingDetailView.as_view(), name='hall_booking_detail'),
-
+    path('verify_hall_booking/<int:booking_id>/', HallBookingVerifyView.as_view(), name='booking_verify'),
     # Hall Payment URLs
     path('hall_payment/<int:pk>/delete/', HallPaymentDeleteView.as_view(), name='hall_payment_delete'),
     path('hall_payment/', HallPaymentListView.as_view(), name='hall_payment_list'),

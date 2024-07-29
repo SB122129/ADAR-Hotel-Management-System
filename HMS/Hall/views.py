@@ -34,6 +34,11 @@ from config import BASE_URL
 from django.utils import timezone
 from django.db.models import Min, Max
 from django.db.models import Q
+from xhtml2pdf import pisa
+from io import BytesIO
+import qrcode
+import base64
+from django.utils.safestring import mark_safe
 
 class HallListView(ListView):
     model = Hall
@@ -278,7 +283,7 @@ class PaymentView(LoginRequiredMixin,TemplateView):
             "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
             "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
         })
-        amount_in_dollars = booking.amount_due / 50
+        amount_in_dollars = "{:.2f}".format(booking.amount_due / 50)
         payment = paypalrestsdk.Payment({
             "intent": "sale",
             "payer": {
@@ -315,7 +320,7 @@ class PaymentView(LoginRequiredMixin,TemplateView):
                 return HttpResponse("No approval URL returned by PayPal")
             return HttpResponseRedirect(approval_url)
         else:
-            return HttpResponse("Error: " + payment.error)
+            return HttpResponse("Error: " + str(payment.error))
     
 
 class PayPalReturnView(View):
@@ -334,7 +339,6 @@ class PayPalReturnView(View):
                 booking.tx_ref = f"hall_booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
                 booking.save()
 
-
                 payment_record, created = Hall_Payment.objects.get_or_create(
                     booking=booking,
                     defaults={
@@ -345,10 +349,13 @@ class PayPalReturnView(View):
                 )
 
                 messages.success(request, 'Payment completed successfully.')
-                # # Prepare the booking URL and render the cancellation email template
+                
+                # Generate receipt PDF
+                pdf_response = self.generate_pdf(booking)
+
+                # Prepare the booking URL and render the confirmation email template
                 booking_url = f"{BASE_URL}/hall/my-bookings/"
                 html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
-
                 
                 # Create the email message with only HTML content
                 email = EmailMultiAlternatives(
@@ -358,6 +365,8 @@ class PayPalReturnView(View):
                 )
                 # Attach the HTML content
                 email.attach_alternative(html_content, "text/html")
+                # Attach the PDF receipt
+                email.attach(f'receipt_{booking.id}_{booking.user.username}.pdf', pdf_response, 'application/pdf')
 
                 # Send the email
                 email.send()
@@ -369,6 +378,39 @@ class PayPalReturnView(View):
         else:
             messages.error(request, 'There was an issue with your PayPal payment.')
             return redirect('payment_page', booking_id=booking.id)
+
+    def generate_pdf(self, booking):
+        buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_hall_booking/{booking.id}')
+        
+        context = {
+            'booking': booking,
+            'qr_code_data': qr_code_data,
+        }
+        
+        html_string = render_to_string('hall/booking_confirmation_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
+    def generate_qr_code(self, data):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return mark_safe(f'data:image/png;base64,{img_str}')
+
 
 class PayPalCancelView(View):
     def get(self, request, *args, **kwargs):

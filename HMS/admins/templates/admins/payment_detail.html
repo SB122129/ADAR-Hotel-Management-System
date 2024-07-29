@@ -13,7 +13,7 @@
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <strong><i class="bi bi-person"></i>&ensp;Customer Name</strong>
-                            <span>{{ object.booking.user.first_name }}</span>
+                            <span>{% if object.booking.user.first_name %}{{ object.booking.user.first_name }}{% else %}{{object.booking.full_name}}{% endif %}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             <strong><i class="bi bi-tag"></i>&ensp;Total Amount</strong>

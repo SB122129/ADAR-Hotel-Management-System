@@ -58,7 +58,7 @@
                 {% for item in object_list %}
                 <tr>
                     <td class="align-middle"><a href="{% url 'admins:booking_detail' item.booking.pk %}" class="text-decoration-none text-primary">{{ item.booking }}</td>
-                    <td class="align-middle">{{ item.booking.user.username }}</td>
+                    <td class="align-middle">{% if item.booking.user.username %}{{ item.booking.user.username }}{% else %}{{ item.booking.full_name}}{% endif %}</td>
                     <td class="align-middle">{{ item.transaction_id|default:"-" }}</td>
                     <td class="align-middle">{{ item.payment_date }}</td>
                     <td class="align-middle">ETB {{ item.booking.total_amount }}</td>

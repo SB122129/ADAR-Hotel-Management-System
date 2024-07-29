@@ -123,7 +123,8 @@ class Booking(models.Model):
         return Receipt.objects.filter(booking=self).exists()
 
     def __str__(self):
-        return f"Booking for {self.user} in {self.room} from {self.check_in_date} to {self.check_out_date}"
+        user_display = self.user.username if self.user else self.full_name
+        return f"Booking for {user_display} in {self.room} from {self.check_in_date} to {self.check_out_date}"
 
 
 

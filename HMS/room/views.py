@@ -56,6 +56,10 @@ from django.http import HttpResponseServerError
 from django.core.mail import EmailMultiAlternatives
 from premailer import transform
 from Hall.models import *
+from xhtml2pdf import pisa
+from io import BytesIO
+import qrcode
+import base64
 
 
 
@@ -509,10 +513,7 @@ class PaymentView(View):
     
     
 
-from xhtml2pdf import pisa
-from io import BytesIO
-import qrcode
-import base64
+
 
 class PayPalReturnView(View):
     def get(self, request, *args, **kwargs):
@@ -598,9 +599,9 @@ class PayPalReturnView(View):
         }
         
         if booking.extended_check_out_date:
-            html_string = render_to_string('room/booking_extentsion_receipt.html', context)
+            html_string = render_to_string('room/checkout_date_extenstion_email_template_receipt.html', context)
         else:
-            html_string = render_to_string('room/receipt.html', context)
+            html_string = render_to_string('room/booking_confirmation_template_receipt.html', context)
         
         pisa_status = pisa.CreatePDF(html_string, dest=buffer)
         buffer.seek(0)
@@ -630,9 +631,9 @@ class PayPalCancelView(View):
 
 
 
-
 @method_decorator(csrf_exempt, name='dispatch')
 class ChapaWebhookView(View):
+    
     def post(self, request, *args, **kwargs):
         print("Webhook received")
         payload = json.loads(request.body)
@@ -702,10 +703,6 @@ class ChapaWebhookView(View):
                 booking.total_amount += booking.booking_extend_amount
             booking.save()
 
-        
-        # Generate receipt PDF
-        pdf_response = self.generate_pdf(booking)
-
         booking_url = f"{BASE_URL}/room/my-bookings/"
         if booking.extended_check_out_date:
             subject = 'Room Booking Extension Confirmation'
@@ -725,6 +722,9 @@ class ChapaWebhookView(View):
         )
         # Attach the HTML content
         email.attach_alternative(html_content, "text/html")
+
+        # Generate receipt PDF
+        pdf_response = self.generate_pdf(booking)
         # Attach the PDF receipt
         email.attach(f'receipt_{booking.id}_{booking.user.username}.pdf', pdf_response, 'application/pdf')
 
@@ -733,6 +733,7 @@ class ChapaWebhookView(View):
             
         print("Booking and room updated")
         return HttpResponse("Booking webhook processed successfully")
+
     def generate_pdf(self, booking):
         buffer = BytesIO()
         
@@ -745,9 +746,9 @@ class ChapaWebhookView(View):
         }
         
         if booking.extended_check_out_date:
-            html_string = render_to_string('room/booking_extentsion_receipt.html', context)
+            html_string = render_to_string('room/checkout_date_extenstion_email_template_receipt.html', context)
         else:
-            html_string = render_to_string('room/receipt.html', context)
+            html_string = render_to_string('room/booking_confirmation_template_receipt.html', context)
         
         pisa_status = pisa.CreatePDF(html_string, dest=buffer)
         buffer.seek(0)
@@ -797,7 +798,6 @@ class ChapaWebhookView(View):
 
         print("Payment record created or updated:", payment)
 
-        
         booking.status = 'confirmed'
         booking.is_paid = True
         booking.save()
@@ -805,8 +805,10 @@ class ChapaWebhookView(View):
         booking_url = f"{BASE_URL}/hall/my-bookings/"
         html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
 
-        
-        # Create the email message with only HTML content
+        # Inline CSS
+        html_content = transform(html_content)
+
+        # Create the email message
         email = EmailMultiAlternatives(
             subject='Hall Booking Confirmation',
             from_email='adarhotel33@gmail.com',
@@ -815,12 +817,34 @@ class ChapaWebhookView(View):
         # Attach the HTML content
         email.attach_alternative(html_content, "text/html")
 
+        # Generate receipt PDF
+        pdf_response = self.generate_hall_pdf(booking)
+        # Attach the PDF receipt
+        email.attach(f'receipt_{booking.id}_{booking.user.username}.pdf', pdf_response, 'application/pdf')
+
         # Send the email
         email.send()
 
         print("Hall booking updated")
         return HttpResponse("Hall booking webhook processed successfully")
-   
+    
+    def generate_hall_pdf(self, booking):
+        buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_hall_booking/{booking.id}')
+        
+        context = {
+            'booking': booking,
+            'qr_code_data': qr_code_data,
+        }
+        
+        html_string = render_to_string('hall/booking_confirmation_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
     def process_membership_payment(self, tx_ref, payload):
         try:
             membership = Membership.objects.get(tx_ref=tx_ref)
@@ -847,18 +871,21 @@ class ChapaWebhookView(View):
             print("Payment already exists for this membership.")
             membership_payment.status = 'completed'
             membership_payment.transaction_id = tx_ref
-            membership_payment.payment_method ='chapa'
+            membership_payment.payment_method = 'chapa'
             membership_payment.save()
 
         print("Payment record created or updated:", membership_payment)
 
         membership.status = 'active'
         membership.save()
+
         membership_url = f"{BASE_URL}/gym/my-memberships/"
         html_content = render_to_string('gym/membership_confirmation_template.html', {'membership': membership, 'membership_url': membership_url})
 
-        
-        # Create the email message with only HTML content
+        # Inline CSS
+        html_content = transform(html_content)
+
+        # Create the email message
         email = EmailMultiAlternatives(
             subject='Gym Membership Confirmation',
             from_email='adarhotel33@gmail.com',
@@ -867,11 +894,46 @@ class ChapaWebhookView(View):
         # Attach the HTML content
         email.attach_alternative(html_content, "text/html")
 
+        # Generate receipt PDF
+        pdf_response = self.generate_membership_pdf(membership)
+        # Attach the PDF receipt
+        email.attach(f'receipt_{membership.id}_{membership.user.username}.pdf', pdf_response, 'application/pdf')
+
         # Send the email
         email.send()
+        # Send the email to the "for" email if it exists
+        if membership.for_email:
+            for_email = EmailMultiAlternatives(
+                subject='Gym Membership Confirmation',
+                from_email='adarhotel33@gmail.com',
+                to=[membership.for_email]
+            )
+            for_email.attach_alternative(html_content, "text/html")
+            # Generate receipt PDF
+            pdf_response = self.generate_membership_pdf(membership)
+            for_email.attach(f'receipt_{membership.id}_{membership.user.username}.pdf', pdf_response, 'application/pdf')
+            for_email.send()
         print("Membership updated")
 
         return HttpResponse("Membership webhook processed successfully")
+    
+    def generate_membership_pdf(self, membership):
+        buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_membership/{membership.id}')
+        
+        context = {
+            'membership': membership,
+            'qr_code_data': qr_code_data,
+        }
+        
+        html_string = render_to_string('gym/membership_confirmation_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
 
 
         

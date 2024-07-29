@@ -19,14 +19,17 @@ from datetime import timedelta
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.messages.views import SuccessMessageMixin
-
+from django.template.loader import render_to_string
 from datetime import datetime
-
-
+import qrcode
+import base64
+from xhtml2pdf import pisa
+from io import BytesIO
 from django.shortcuts import render
 from django.db.models import Count, Sum
 from django.core.serializers.json import DjangoJSONEncoder
 import json
+from config import BASE_URL
 
 
 def admin_dashboard(request):
@@ -461,6 +464,8 @@ class PaymentExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
         messages.success(self.request, 'Booking and Payment for Extentsion completed')
         return redirect('admins:booking_list')
 
+from django.utils.safestring import mark_safe
+
 class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
     model = Payment
     form_class = PaymentCreateForm
@@ -472,6 +477,7 @@ class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
         booking_id = self.kwargs.get('booking_id')  
         context['booking'] = get_object_or_404(Booking, pk=booking_id)
         return context
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         booking_id = self.kwargs.get('booking_id')
@@ -489,8 +495,51 @@ class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
         payment.save()
         booking.status = 'confirmed'
         booking.save()
+
+        # Generate receipt PDF
+        pdf_response = self.generate_pdf(booking)
+
+        # Automatically download the PDF receipt
+        response = HttpResponse(pdf_response, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="receipt_{booking.id}_{booking.full_name}.pdf"'
+
         messages.success(self.request, 'Booking and Payment completed')
-        return redirect(self.success_url)
+        return response
+
+    def generate_pdf(self, booking):
+        buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify/{booking.id}')
+        
+        context = {
+            'booking': booking,
+            'qr_code_data': qr_code_data,
+        }
+        
+        if booking.extended_check_out_date:
+            html_string = render_to_string('room/checkout_date_extenstion_email_template_receipt.html', context)
+        else:
+            html_string = render_to_string('room/booking_confirmation_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
+    def generate_qr_code(self, data):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return mark_safe(f'data:image/png;base64,{img_str}')
 
 
 class PaymentListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
@@ -672,7 +721,14 @@ class MembershipUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
     success_message = "Membership was updated successfully."
 
 
-
+class MembershipVerifyView(View):
+    def get(self, request, membership_id, *args, **kwargs):
+        try:
+            membership = Membership.objects.get(id=membership_id)
+        except Booking.DoesNotExist:
+            return render(request, 'admins/membership_not_found.html')
+        
+        return render(request, 'admins/membership_verify.html', {'membership': membership})
 
 
 # MembershipPayment Views
@@ -949,6 +1005,14 @@ class HallPaymentCreateView(OwnerManagerOrReceptionistRequiredMixin,TemplateView
             return self.render_to_response(context)
 
 
+class HallBookingVerifyView(View):
+    def get(self, request, booking_id, *args, **kwargs):
+        try:
+            booking = Hall_Booking.objects.get(id=booking_id)
+        except Booking.DoesNotExist:
+            return render(request, 'admins/hall_booking_not_found.html')
+        
+        return render(request, 'admins/hall_booking_verify.html', {'booking': booking})
 class HallBookingDetailView(OwnerManagerOrReceptionistRequiredMixin,DetailView):
     model = Hall_Booking
     template_name = 'admins/hall_booking_detail.html'

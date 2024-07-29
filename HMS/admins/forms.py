@@ -145,7 +145,16 @@ class BookingCreateForm(forms.ModelForm):
                 raise forms.ValidationError("Check-out date must be after check-in date.")
             if guests > room.capacity:
                 self.add_error('guests', f"Number of guests cannot exceed room capacity -> {room.capacity}.")
+            existing_bookings = Booking.objects.filter(
+                room=room,
+                status__in=['pending', 'confirmed'],
+                check_in_date__lt=check_out_date,
+                check_out_date__gt=check_in_date
+            )
 
+            if existing_bookings.exists():
+                raise ValidationError('The room is booked for the selected dates. Please choose different dates.')
+        
         return cleaned_data
 
     def validate_full_name(self, full_name):
@@ -166,11 +175,25 @@ class BookingExtendForm(forms.ModelForm):
         widgets = {
             'extended_check_out_date': forms.DateInput(attrs={'type': 'date'})
         }
-    
+
     def clean_extended_check_out_date(self):
         extended_check_out_date = self.cleaned_data.get('extended_check_out_date')
-        if extended_check_out_date and extended_check_out_date <= self.instance.check_out_date:
-            raise forms.ValidationError("Extended checkout date must be after the current checkout date.")
+
+        if extended_check_out_date:
+            # Ensure the extended checkout date is after the current checkout date
+            if extended_check_out_date <= self.instance.check_out_date:
+                raise forms.ValidationError("Extended checkout date must be after the current checkout date.")
+
+            # Check for overlapping bookings
+            overlapping_bookings = Booking.objects.filter(
+                room=self.instance.room,
+                status__in=['pending', 'confirmed'],
+                check_in_date__range=(self.instance.check_out_date, extended_check_out_date)
+            ).exclude(id=self.instance.id)
+
+            if overlapping_bookings.exists():
+                raise forms.ValidationError("The selected extended checkout date overlaps with an existing booking for the same room.")
+
         return extended_check_out_date
 
 

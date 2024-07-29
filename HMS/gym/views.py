@@ -24,6 +24,11 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 import requests
 import paypalrestsdk
+from xhtml2pdf import pisa
+from io import BytesIO
+import qrcode
+import base64
+from django.utils.safestring import mark_safe
 from django.utils import timezone
 
 
@@ -136,10 +141,10 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
                 end_date=start_date + relativedelta(months=plan.duration_months),
                 status='pending',
                 tx_ref=tx_ref,
-                for_first_name=first_name if subscription_for == 'others' else user.first_name,
-                for_last_name=last_name if subscription_for == 'others' else user.last_name,
-                for_phone_number=phone_number if subscription_for == 'others' else user.phone_number,
-                for_email= email if subscription_for == 'others' else user.email                   
+                for_first_name=first_name if subscription_for == 'others' else '',
+                for_last_name=last_name if subscription_for == 'others' else '',
+                for_phone_number=phone_number if subscription_for == 'others' else '',
+                for_email= email if subscription_for == 'others' else ''                  
             )
 
         payment_method = form.cleaned_data['payment_method']
@@ -296,9 +301,12 @@ class PayPalReturnView(View):
             )
             membership.status = 'active'
             membership.save()
+            
+            # Generate receipt PDF
+            pdf_response = self.generate_pdf(membership)
+            
             membership_url = f"{BASE_URL}/gym/my-memberships/"
             html_content = render_to_string('gym/membership_confirmation_template.html', {'membership': membership, 'membership_url': membership_url})
-
             
             # Create the email message with only HTML content
             email = EmailMultiAlternatives(
@@ -308,14 +316,61 @@ class PayPalReturnView(View):
             )
             # Attach the HTML content
             email.attach_alternative(html_content, "text/html")
+            # Attach the PDF receipt
+            email.attach(f'receipt_{membership.id}_{membership.user.username}.pdf', pdf_response, 'application/pdf')
 
             # Send the email
             email.send()
+            if membership.for_email:
+                for_email = EmailMultiAlternatives(
+                    subject='Gym Membership Confirmation',
+                    from_email='adarhotel33@gmail.com',
+                    to=[membership.for_email]
+                )
+                for_email.attach_alternative(html_content, "text/html")
+                # Generate receipt PDF
+                pdf_response = self.generate_pdf(membership)
+                for_email.attach(f'receipt_{membership.id}_{membership.user.username}.pdf', pdf_response, 'application/pdf')
+                for_email.send()
+            
             messages.success(request, 'Payment successful and membership activated.')
         else:
             messages.error(request, 'Payment failed. Please try again.')
 
         return redirect('my_memberships')
+
+    def generate_pdf(self, membership):
+        buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_membership/{membership.id}')
+        
+        context = {
+            'membership': membership,
+            'qr_code_data': qr_code_data,
+        }
+        
+        html_string = render_to_string('gym/membership_confirmation_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
+    def generate_qr_code(self, data):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return mark_safe(f'data:image/png;base64,{img_str}')
+
 
 class PayPalCancelView(View):
     def get(self, request, *args, **kwargs):
