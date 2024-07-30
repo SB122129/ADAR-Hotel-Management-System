@@ -1,49 +1,54 @@
-<!-- templates/admins/hall_booking_details.html -->
-
 {% extends 'admins/base.html' %}
 
 {% block content %}
-<br>
-<div class="container mt-5">
-    <div class="card shadow-lg rounded w-75 mx-auto">
-        <div class="card-body">
-            <h5 class="card-title text-center mb-3 mt-3 "><i class="bi bi-calendar-check-fill"></i>&ensp;<strong>Book {{ hall.hall_type }}</strong></h5>
-            <ul class="list-group list-group-flush mt-3">
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-calendar-plus-fill"></i>&ensp;Hall Number</strong>
-                    <span>{{ hall.hall_number }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-calendar-plus-fill"></i>&ensp;Start Date</strong>
-                    <span>{{ start_date }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-calendar-minus-fill"></i>&ensp;End Date</strong>
-                    <span>{{ end_date }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-clock-fill"></i>&ensp;Start Time</strong>
-                    <span>{{ start_time|date:"g:i A" }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-clock-fill"></i>&ensp;End Time</strong>
-                    <span>{{ end_time|date:"g:i A" }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-cash-stack"></i>&ensp;Total Cost</strong>
-                    <span>{{ total_cost|floatformat:2 }} ETB</span>
-                </li>
-            </ul>
-            <form method="post" class="mt-4" action="{% url 'admins:hall_booking_create' hall.pk %}">
-                {% csrf_token %}
-                <div class="mb-3 w-50 mx-auto">
-                    <label for="full_name" class="form-label"><strong>Full Name</strong></label>
-                    <input type="text" class="form-control form-control-sm" id="full_name" name="full_name" required>
+<div class="container mt-4 mb-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card shadow-lg rounded">
+                <div class="card-body">
+                    <h5 class="card-title text-center mb-3 mt-3">
+                        <i class="bi bi-calendar-check-fill"></i>&ensp;<strong>Book {{ hall.hall_type }}</strong>
+                    </h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong><i class="bi bi-number"></i>&ensp;Hall Number</strong>
+                            <span>{{ hall.hall_number }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong><i class="bi bi-calendar-plus-fill"></i>&ensp;Start Date</strong>
+                            <span>{{ start_date }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong><i class="bi bi-calendar-minus-fill"></i>&ensp;End Date</strong>
+                            <span>{{ end_date }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong><i class="bi bi-clock-fill"></i>&ensp;Start Time</strong>
+                            <span>{{ start_time|date:"g:i A" }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong><i class="bi bi-clock-fill"></i>&ensp;End Time</strong>
+                            <span>{{ end_time|date:"g:i A" }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <strong><i class="bi bi-cash-stack"></i>&ensp;Total Cost</strong>
+                            <span>{{ total_cost|floatformat:2 }} ETB</span>
+                        </li>
+                    </ul>
+                    <form method="post" class="mt-4" action="{% url 'admins:hall_booking_create' hall.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label"><strong>Full Name</strong></label>
+                            <input type="text" class="form-control form-control-sm" id="full_name" name="full_name" required>
+                        </div>
+                        <div class="d-flex justify-content-center mt-3">
+                            <button type="submit" class="btn btn-success rounded w-100">
+                                Proceed to Payment
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <div class="d-flex justify-content-center mb-2 mt-4">
-                    <button type="submit" class="btn btn_sm rounded btn-success w-25">Proceed to Payment</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>

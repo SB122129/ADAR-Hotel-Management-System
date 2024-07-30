@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-3">
     {% if messages %}
-        <div class="container ">
+        <div class="container">
             {% for message in messages %}
                 <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -13,22 +13,25 @@
         </div>
     {% endif %}
 </div>
-<div class="container mt-5">
+
+<div class="container-fluid mt-5">
     <!-- Search Form -->
-    <form method="get" action="" class="mb-4 d-flex justify-content-between">
-        <div class="input-group w-75">
+    <form method="get" action="" class="mb-4 d-flex flex-wrap justify-content-between">
+        <div class="input-group mb-3 w-100 w-md-75">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by hall number or type" value="{{ request.GET.search }}">
             <div class="input-group-append">
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
-        <a href="{% url 'admins:hall_create' %}" class="btn btn-primary btn-sm">Create Hall</a>
-        <a href="{% url 'admins:hall_list' %}" class="btn btn-sm btn-success">Show All</a>
+        <div class="d-flex flex-wrap w-100 w-md-25 justify-content-center justify-content-md-end">
+            <a href="{% url 'admins:hall_create' %}" class="btn btn-primary btn-sm mb-2 mb-md-0">Create Hall</a>&ensp;
+            <a href="{% url 'admins:hall_list' %}" class="btn btn-sm btn-success">Show All</a>
+        </div>
     </form>
 
-    <div class="d-flex justify-content-center">
-        <table class="table">
-            <thead>
+    <div class="table-responsive">
+        <table class="table ">
+            <thead class="thead-light">
                 <tr>
                     <th scope="col">Hall Number</th>
                     <th scope="col">Hall Type</th>

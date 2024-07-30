@@ -374,20 +374,7 @@ class BookingUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
 
 
 
-class BookingDeleteView(OwnerManagerOrReceptionistRequiredMixin, DeleteView):
-    model = Booking
-    template_name = 'admins/booking_confirm_delete.html'
-    success_url = reverse_lazy('admins:booking_list')
 
-    def delete(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        success_url = self.get_success_url()
-        try:
-            self.object.delete()
-            messages.success(self.request, 'Booking successfully deleted.')
-        except Exception as e:
-            messages.error(self.request, f'Failed to delete booking: {str(e)}')
-        return super().delete(request, *args, **kwargs)
 
 
 
@@ -413,12 +400,11 @@ class BookingExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
         # Create or update the Payment object
         payment, created = Payment.objects.get_or_create(
             booking=booking,
-            defaults={'amount': additional_amount}
+            
         )
         
         if not created:
             # If the payment already exists, update it
-            payment.amount = additional_amount
             payment.save()
         
         # Generate a new tx_ref for the payment
@@ -432,6 +418,9 @@ class BookingExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
 
 # Room Payment Views
 
+
+from django.utils.safestring import mark_safe
+
 class PaymentExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
     model = Payment
     form_class = PaymentExtendForm
@@ -444,11 +433,9 @@ class PaymentExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
         return context
 
     def get_object(self):
-        # Get the payment object based on the booking_id and the payment id
         booking_id = self.kwargs.get('booking_id')
-        payment_id = self.kwargs.get('pk')  # 'pk' is used to get the payment instance
+        payment_id = self.kwargs.get('pk')
         booking = get_object_or_404(Booking, pk=booking_id)
-        # Fetch or create a payment related to the booking if needed
         return get_object_or_404(Payment, id=payment_id, booking=booking)
 
     def form_valid(self, form):
@@ -456,15 +443,58 @@ class PaymentExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
         booking_id = self.kwargs.get('booking_id')
         booking = get_object_or_404(Booking, pk=booking_id)
         payment.booking = booking
-        payment.amount = booking.booking_extend_amount  # Set amount manually
+        payment.transaction_id = booking.tx_ref
+        payment.payment_date = datetime.now()
+        payment.status = 'completed'
         payment.save()
         booking.status = 'confirmed'
         booking.check_out_date = booking.extended_check_out_date
         booking.save()
-        messages.success(self.request, 'Booking and Payment for Extentsion completed')
-        return redirect('admins:booking_list')
 
-from django.utils.safestring import mark_safe
+        # Generate receipt PDF
+        pdf_response = self.generate_pdf(booking)
+
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return HttpResponse(pdf_response, content_type='application/pdf')
+
+        # Automatically download the PDF receipt
+        response = HttpResponse(pdf_response, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="receipt_{booking.id}_{booking.full_name}.pdf"'
+
+        messages.success(self.request, 'Booking and Payment for Extension completed')
+        return response
+
+    def generate_pdf(self, booking):
+        buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify/{booking.id}')
+        
+        context = {
+            'booking': booking,
+            'qr_code_data': qr_code_data,
+        }
+        
+        html_string = render_to_string('room/checkout_date_extenstion_email_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
+    def generate_qr_code(self, data):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return mark_safe(f'data:image/png;base64,{img_str}')
 
 class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
     model = Payment
@@ -499,6 +529,9 @@ class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
         # Generate receipt PDF
         pdf_response = self.generate_pdf(booking)
 
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return HttpResponse(pdf_response, content_type='application/pdf')
+        
         # Automatically download the PDF receipt
         response = HttpResponse(pdf_response, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="receipt_{booking.id}_{booking.full_name}.pdf"'
@@ -517,10 +550,8 @@ class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
             'qr_code_data': qr_code_data,
         }
         
-        if booking.extended_check_out_date:
-            html_string = render_to_string('room/checkout_date_extenstion_email_template_receipt.html', context)
-        else:
-            html_string = render_to_string('room/booking_confirmation_template_receipt.html', context)
+        
+        html_string = render_to_string('room/booking_confirmation_template_receipt.html', context)
         
         pisa_status = pisa.CreatePDF(html_string, dest=buffer)
         buffer.seek(0)
@@ -542,6 +573,7 @@ class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
         return mark_safe(f'data:image/png;base64,{img_str}')
 
 
+
 class PaymentListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = Payment
     template_name = 'admins/payment_list.html'
@@ -549,7 +581,7 @@ class PaymentListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = Payment.objects.all().order_by('id')
+        queryset = Payment.objects.all().order_by('-payment_date')
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
@@ -567,11 +599,20 @@ class PaymentDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
     template_name = 'admins/payment_detail.html'
 
 
-
-class PaymentDeleteView(OwnerManagerOrReceptionistRequiredMixin, DeleteView):
+from django.http import HttpResponseRedirect
+class PaymentDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     model = Payment
     template_name = 'admins/payment_confirm_delete.html'
     success_url = reverse_lazy('admins:payment_list')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        booking = self.object.booking  # Get the associated booking instance
+        success_url = self.get_success_url()
+        self.object.delete()
+        booking.delete()  # Delete the associated booking instance
+        return HttpResponseRedirect(success_url)
+
 
 
 
@@ -646,24 +687,12 @@ class MembershipDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
 
 
 
-class MembershipDeleteView(OwnerManagerOrReceptionistRequiredMixin, DeleteView):
-    model = Membership
-    template_name = 'admins/membership_confirm_delete.html'
-    success_url = reverse_lazy('admins:membership_list')
-
-    def delete(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        success_url = self.get_success_url()
-        try:
-            self.object.delete()
-            messages.success(self.request, 'Membership successfully deleted.')
-        except Exception as e:
-            messages.error(self.request, f'Failed to delete membership: {str(e)}')
-        return super().delete(request, *args, **kwargs)
 
 
 
-class MembershipCreateView(OwnerManagerOrReceptionistRequiredMixin,View):
+from django.http import JsonResponse
+
+class MembershipCreateView(OwnerManagerOrReceptionistRequiredMixin, View):
     form_class = MembershipCreateForm
     template_name = 'admins/membership_form.html'
 
@@ -695,7 +724,7 @@ class MembershipCreateView(OwnerManagerOrReceptionistRequiredMixin,View):
             )
 
             # Create payment instance
-            MembershipPayment.objects.create(
+            payment = MembershipPayment.objects.create(
                 membership=membership,
                 transaction_id=self.generate_tx_ref(),
                 payment_method=payment_method,
@@ -703,13 +732,61 @@ class MembershipCreateView(OwnerManagerOrReceptionistRequiredMixin,View):
                 status='completed'
             )
 
-            messages.success(request, 'Membership and payment created successfully.')
-            return redirect('admins:membership_list')
-        else:
-            return render(request, self.template_name, {'form': form})
+            # Generate receipt PDF
+            pdf_response = self.generate_pdf(membership)
+
+            # Save and send the PDF response
+            if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return HttpResponse(pdf_response, content_type='application/pdf')
+            
+            # Automatically download the PDF receipt
+            response = HttpResponse(pdf_response, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="membership_receipt_{membership.id}_{membership.for_first_name}.pdf"'
+
+            messages.success(request, 'Membership and Payment created successfully.')
+            return response
+
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return form errors as JSON for AJAX requests
+            return JsonResponse({'errors': form.errors}, status=400)
+
+        return render(request, self.template_name, {'form': form})
+
+    def generate_pdf(self, membership):
+        buffer = BytesIO()
+
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_membership/{membership.id}')
+        
+        context = {
+            'membership': membership,
+            'qr_code_data': qr_code_data,
+        }
+
+        html_string = render_to_string('gym/membership_confirmation_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
+    def generate_qr_code(self, data):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return mark_safe(f'data:image/png;base64,{img_str}')
 
     def generate_tx_ref(self):
         return f"membership-admin-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+
 
 
 
@@ -755,20 +832,22 @@ class MembershipPaymentDetailView(OwnerOrManagerRequiredMixin, OwnerManagerOrRec
 
 
 
-class MembershipPaymentDeleteView(OwnerManagerOrReceptionistRequiredMixin, DeleteView):
+class MembershipPaymentDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     model = MembershipPayment
-    template_name = 'admins/membershippayment_confirm_delete.html'
     success_url = reverse_lazy('admins:membershippayment_list')
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
+        membership = self.object.membership  # Get the associated membership instance
         success_url = self.get_success_url()
         try:
             self.object.delete()
-            messages.success(self.request, 'Membership Payment successfully deleted.')
+            membership.delete()  # Delete the associated membership instance
+            messages.success(self.request, 'Membership Payment and associated Membership successfully deleted.')
         except Exception as e:
             messages.error(self.request, f'Failed to delete membership payment: {str(e)}')
-        return super().delete(request, *args, **kwargs)
+        return HttpResponseRedirect(success_url)
+
 
 
 
@@ -968,7 +1047,7 @@ class HallBookingCreateView(OwnerManagerOrReceptionistRequiredMixin,TemplateView
 
         return redirect('admins:hall_payment_create', pk=booking.pk)
 
-class HallPaymentCreateView(OwnerManagerOrReceptionistRequiredMixin,TemplateView):
+class HallPaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, TemplateView):
     template_name = 'admins/hall_payment_form.html'
     
     def get_context_data(self, **kwargs):
@@ -997,12 +1076,54 @@ class HallPaymentCreateView(OwnerManagerOrReceptionistRequiredMixin,TemplateView
             booking.status = 'confirmed'
             booking.save()
 
+            # Generate receipt PDF
+            pdf_response = self.generate_pdf(booking)
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return HttpResponse(pdf_response, content_type='application/pdf')
+            
+            # Automatically download the PDF receipt
+            response = HttpResponse(pdf_response, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="receipt_{booking.id}_{booking.full_name}.pdf"'
+
             messages.success(request, f'{payment_method.capitalize()} payment method selected.')
-            return redirect('admins:hall_booking_list')
+            return response
         else:
             context = self.get_context_data(**kwargs)
             context['form'] = form
             return self.render_to_response(context)
+
+    def generate_pdf(self, booking):
+        buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_hall_booking/{booking.id}')
+        
+        context = {
+            'booking': booking,
+            'qr_code_data': qr_code_data,
+        }
+        
+        html_string = render_to_string('hall/booking_confirmation_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
+    def generate_qr_code(self, data):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return mark_safe(f'data:image/png;base64,{img_str}')
 
 
 class HallBookingVerifyView(View):
@@ -1024,10 +1145,6 @@ class HallBookingUpdateView(OwnerManagerOrReceptionistRequiredMixin,UpdateView):
     template_name = 'admins/hall_booking_update_form.html'
     success_url = reverse_lazy('admins:hall_booking_list')
 
-class HallBookingDeleteView(OwnerManagerOrReceptionistRequiredMixin,DeleteView):
-    model = Hall_Booking
-    template_name = 'admins/hall_booking_confirm_delete.html'
-    success_url = reverse_lazy('admins:hall_booking_list')
 
 class HallBookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     model = Hall_Booking
@@ -1050,10 +1167,21 @@ class HallBookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
 # Hall Payment Views
 
 
-class HallPaymentDeleteView(OwnerManagerOrReceptionistRequiredMixin,DeleteView):
+class HallPaymentDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     model = Hall_Payment
-    template_name = 'admins/hall_payment_confirm_delete.html'
     success_url = reverse_lazy('admins:hall_payment_list')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        hall_booking = self.object.booking  # Get the associated hall booking instance
+        success_url = self.get_success_url()
+        try:
+            self.object.delete()
+            hall_booking.delete()  # Delete the associated hall booking instance
+            messages.success(self.request, 'Hall Payment and associated Hall Booking successfully deleted.')
+        except Exception as e:
+            messages.error(self.request, f'Failed to delete hall payment: {str(e)}')
+        return HttpResponseRedirect(success_url)
 
 class HallPaymentDetailView(OwnerManagerOrReceptionistRequiredMixin,DetailView):
     model = Hall_Payment

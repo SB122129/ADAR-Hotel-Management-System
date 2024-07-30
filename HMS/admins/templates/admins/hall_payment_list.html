@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container mt-3">
     {% if messages %}
-        <div class="container ">
+        <div class="container">
             {% for message in messages %}
                 <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -14,21 +14,23 @@
 </div>
 <h4 class="text-center mt-4 mb-4"><strong>Hall Payment List</strong></h4>
 
-<div class="container mt-5">
+<div class="container-fluid mt-5">
     <!-- Search Form -->
-    <form method="get" action="" class="mb-4 d-flex justify-content-between">
-        <div class="input-group w-75">
+    <form method="get" action="" class="mb-4 d-flex flex-wrap justify-content-between">
+        <div class="input-group mb-3 w-100 w-md-75">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by transaction ID or status" value="{{ request.GET.search }}">
             <div class="input-group-append">
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
-        <a href="{% url 'admins:hall_payment_list' %}" class="btn btn-sm btn-success">Show All</a>
+        <div class="d-flex flex-wrap w-100 w-md-25 justify-content-center justify-content-md-end">&ensp;
+            <a href="{% url 'admins:hall_payment_list' %}" class="btn btn-sm btn-success">Show All</a>
+        </div>
     </form>
 
-    <div class="d-flex justify-content-center">
-        <table class="table">
-            <thead>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-light">
                 <tr>
                     <th>ID</th>
                     <th>Booking</th>
@@ -55,7 +57,7 @@
                         </a>
                         {% if user.role == 'owner' %}
                         <!-- Delete button with modal trigger -->
-                        <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ payment.id }}">
+                        <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ payment.id }}" data-id="{{ payment.id }}">
                             <span class="material-symbols-outlined">delete_forever</span>
                         </button>
 
@@ -140,18 +142,4 @@
         </nav>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var confirmDeleteModal = document.querySelectorAll('.modal');
-    confirmDeleteModal.forEach(function (modal) {
-        modal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var paymentId = button.getAttribute('data-id');
-            var deleteForm = modal.querySelector('form');
-            deleteForm.action = '{% url "admins:hall_payment_delete" 0 %}'.replace('0', paymentId);
-        });
-    });
-});
-</script>
 {% endblock %}

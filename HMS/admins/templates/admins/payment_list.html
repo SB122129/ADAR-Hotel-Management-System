@@ -13,35 +13,24 @@
         </div>
     {% endif %}
 </div>
-<div class="container mt-3">
-    {% if messages %}
-        <div class="container">
-            {% for message in messages %}
-                <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-</div>
-<div class="container mt-5">
-    <h4 class="text-center mb-4 mt-2"><strong>Payment List</strong></h4>
+
+<div class="container-fluid mt-5">
+    <h4 class="text-center mb-4"><strong>Payment List</strong></h4>
+
     <!-- Search Form -->
-    <form method="get" action="" class="mb-4 d-flex justify-content-between">
-        <div class="input-group w-75">
+    <form method="get" action="" class="mb-4 d-flex flex-wrap justify-content-between">
+        <div class="input-group mb-3 w-100 w-md-75">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by room number, type, user, or transaction reference" value="{{ request.GET.search }}">
             <div class="input-group-append">
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
-        <a href="{% url 'admins:payment_list' %}" class="btn btn-sm btn-success">Show All</a>
+        <a href="{% url 'admins:payment_list' %}" class="btn btn-sm btn-success mb-3 ms-auto">Show All</a>
     </form>
-
-    <div class="d-flex justify-content-center">
-        
-        <table class="table">
-            <thead>
+    
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-light">
                 <tr>
                     <th scope="col">Booking</th>
                     <th scope="col">User</th>
@@ -57,7 +46,7 @@
                 {% if object_list %}
                 {% for item in object_list %}
                 <tr>
-                    <td class="align-middle"><a href="{% url 'admins:booking_detail' item.booking.pk %}" class="text-decoration-none text-primary">{{ item.booking }}</td>
+                    <td class="align-middle"><a href="{% url 'admins:booking_detail' item.booking.pk %}" class="text-decoration-none text-primary">{{ item.booking }}</a></td>
                     <td class="align-middle">{% if item.booking.user.username %}{{ item.booking.user.username }}{% else %}{{ item.booking.full_name}}{% endif %}</td>
                     <td class="align-middle">{{ item.transaction_id|default:"-" }}</td>
                     <td class="align-middle">{{ item.payment_date }}</td>

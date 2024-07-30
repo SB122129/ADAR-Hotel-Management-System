@@ -1,22 +1,20 @@
-<!-- templates/admins/booking_extend_form.html -->
-
 {% extends "admins/base.html" %}
 {% load widget_tweaks %}
 
 {% block content %}
 <div class="d-flex justify-content-center">
-    <div class="card shadow-lg w-75 mt-5">
-        <h5 class="card-title text-center mb-2  mt-4 mb-4"><strong>Extend Booking</strong></h5>
+    <div class="card shadow-lg w-100 w-md-75 mt-4 mb-5">
+        <h5 class="card-title text-center mb-4 mt-4"><strong>Extend Booking</strong></h5>
         <div class="card-body">
             <div class="row mb-2">
-                <div class="col-6 d-flex justify-content-center"><i class="bi bi-calendar-fill"></i>&ensp;<strong>Previous Checkout Date</strong></div>
-                <div class="col-6 d-flex justify-content-center">{{ booking.check_out_date }}</div>
-        </div>
-            <form method="post" class="d-flex flex-column align-items-center">
+                <div class="col-12 col-md-6 d-flex justify-content-center"><i class="bi bi-calendar-fill"></i>&ensp;<strong>Previous Checkout Date</strong></div>
+                <div class="col-12 col-md-6 d-flex justify-content-center">{{ booking.check_out_date }}</div>
+            </div>
+            <form method="post" class="d-flex flex-column align-items-center" id="booking-extend-form">
                 {% csrf_token %}
                 
                 {% if form.non_field_errors %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="alert alert-danger alert-dismissible fade show w-100" role="alert">
                     {% for error in form.non_field_errors %}
                         {{ error }}<br>
                     {% endfor %}
@@ -24,8 +22,8 @@
                 </div>
                 {% endif %}
                 {% for field in form %}
-                    <div class="mb-3 w-75">
-                        <label class="mb-2 mt-4" for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
+                    <div class="mb-3 w-100 w-md-75">
+                        <label class="mb-2" for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
                         {{ field|add_class:"form-control rounded" }}
                         {% if field.errors %}
                             <div class="alert alert-danger mt-2">
@@ -34,9 +32,9 @@
                         {% endif %}
                     </div>
                 {% endfor %}
-                <div class="d-flex justify-content-center w-50 mt-3 mb-5">
-                    <button type="submit" class="btn btn-sm btn-primary w-25">Extend Booking</button>
-                    &ensp;<a href="{% url 'admins:booking_list' %}" class="btn btn-sm w-25 btn-secondary">Cancel</a>
+                <div class="d-flex flex-column flex-md-row justify-content-center w-100 mt-3 mb-5">
+                    <button type="submit" class="btn btn-primary w-100 w-md-45 mb-2 mb-md-0" id="submit-button">Extend Booking</button>
+                    <a href="{% url 'admins:booking_list' %}" class="btn btn-secondary w-100 w-md-45">Cancel</a>
                 </div>
             </form>
         </div>

@@ -6,7 +6,7 @@
     <style>
         body { font-family: Calibri,Arial, sans-serif; }
         .header {
-            background-color: #d1cb1a;
+            background-color: #f0e909;
             color: rgb(0, 0, 0);
             text-align: center;
             padding: 15px 0;
@@ -28,7 +28,7 @@
     </div>
     <div class="details">
         <p><strong>Booking ID <br> </strong> {{ booking.id }}</p>
-        <p><strong>User <br> </strong> {{ booking.user.get_full_name }}</p>
+        <p><strong>User <br> </strong> {% if booking.user%} {{ booking.user.get_full_name }}{% else %}{{ booking.full_name}}{% endif %}</p>
         <p><strong>Room <br> </strong> {{ booking.room.room_type }} Suite</p>
         <p><strong>Room Number <br> </strong> {{ booking.room.room_number }}</p>
         <p><strong>Check-in Date  <br> </strong> {{ booking.check_in_date }}</p>

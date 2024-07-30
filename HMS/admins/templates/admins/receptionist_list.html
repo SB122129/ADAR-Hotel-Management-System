@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container mt-3">
     {% if messages %}
-        <div class="container ">
+        <div class="container">
             {% for message in messages %}
                 <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -16,22 +16,24 @@
     {% endif %}
 </div>
 
-<div class="container mt-5">
+<div class="container-fluid mt-5">
     <!-- Search Form -->
-    <form method="get" action="" class="mb-4 d-flex justify-content-between">
-        <div class="input-group w-75">
+    <form method="get" action="" class="mb-4 d-flex flex-wrap justify-content-between">
+        <div class="input-group mb-3 w-100 w-md-75">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by first name" value="{{ request.GET.search }}">
             <div class="input-group-append">
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
-        <a href="{% url 'admins:receptionist_create' %}" class="btn btn-primary btn-sm">Add New Receptionist</a>
-        <a href="{% url 'admins:receptionist_list' %}" class="btn btn-sm btn-success">Show All</a>
+        <div class="d-flex flex-wrap w-100 w-md-25 justify-content-center justify-content-md-end">
+            <a href="{% url 'admins:receptionist_create' %}" class="btn btn-primary btn-sm mb-2 mb-md-0">Add New Receptionist</a> &ensp;
+            <a href="{% url 'admins:receptionist_list' %}" class="btn btn-sm btn-success">Show All</a>
+        </div>
     </form>
 
-    <div class="d-flex justify-content-center">
+    <div class="table-responsive">
         <table class="table table-striped">
-            <thead>
+            <thead class="thead-light">
                 <tr>
                     <th scope="col">ID</th>
                     <th scope="col">Username</th>
@@ -57,38 +59,37 @@
                             <span class="material-symbols-outlined">edit_note</span>
                         </a>
                         <!-- Delete button with modal trigger -->
-<button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ receptionist.id }}">
-    <span class="material-symbols-outlined">delete_forever</span>
-</button>
+                        <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ receptionist.id }}">
+                            <span class="material-symbols-outlined">delete_forever</span>
+                        </button>
 
-<!-- Confirm Delete Modal -->
-<div class="modal fade" id="confirmDeleteModal{{ receptionist.id }}" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteLabel{{ receptionist.id }}" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="confirmDeleteLabel{{ receptionist.id }}">Confirm Deletion</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to delete this receptionist?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="{% url 'admins:receptionist_delete' receptionist.id %}" method="post">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
+                        <!-- Confirm Delete Modal -->
+                        <div class="modal fade" id="confirmDeleteModal{{ receptionist.id }}" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteLabel{{ receptionist.id }}" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="confirmDeleteLabel{{ receptionist.id }}">Confirm Deletion</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        Are you sure you want to delete this receptionist?
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <form action="{% url 'admins:receptionist_delete' receptionist.id %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center text-danger">No receptionists available</td>
+                    <td colspan="7" class="text-center text-danger">No receptionists available</td>
                 </tr>
                 {% endif %}
             </tbody>
@@ -119,7 +120,7 @@
                 {% if page_obj.number == num %}
                 <li class="page-item active"><span class="page-link bg-warning text-dark">{{ num }}</span></li>
                 {% elif num > page_obj.number|add:-5 and num < page_obj.number|add:5 %}
-                <li class="page-item"><a class="page-link bg-warning text-dark" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a></li>
                 {% endif %}
                 {% endfor %}
 

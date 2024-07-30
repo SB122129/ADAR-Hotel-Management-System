@@ -6,7 +6,7 @@
     <style>
         body { font-family: Calibri, Arial, sans-serif; }
         .header {
-            background-color: #cbb017;
+            background-color: #fad500;
             color: rgb(0, 0, 0);
             text-align: center;
             padding: 15px 0;
@@ -25,7 +25,7 @@
     </div>
     <div class="details">
         <p><strong>Membership ID:</strong> {{ membership.id }}</p>
-        <p><strong>User:</strong> {{ membership.user.get_full_name }}</p>
+        <p><strong>User:</strong> {% if membership.user.get_full_name %}{{ membership.user.get_full_name }}{% else %}{{membership.for_first_name}}{% endif %}</p>
         <p><strong>Plan:</strong> {{ membership.plan.name }}</p>
         <p><strong>Start Date:</strong> {{ membership.start_date }}</p>
         <p><strong>End Date:</strong> {{ membership.end_date }}</p>

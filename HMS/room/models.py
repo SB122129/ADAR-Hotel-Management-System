@@ -84,7 +84,6 @@ class Booking(models.Model):
     def delete(self, *args, **kwargs):
         room = self.room
         super().delete(*args, **kwargs)
-        room.update_room_status()
 
     def update_room_and_booking__status(self):
         now = timezone.now().date()

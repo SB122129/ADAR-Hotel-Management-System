@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-3">
     {% if messages %}
-        <div class="container ">
+        <div class="container">
             {% for message in messages %}
                 <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }} rounded">
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -13,21 +13,25 @@
         </div>
     {% endif %}
 </div>
-<div class="container mt-5">
+
+<div class="container-fluid mt-5">
     <!-- Search Form -->
-    <form method="get" action="" class="mb-4 d-flex justify-content-between">
-        <div class="input-group w-75">
+    <form method="get" action="" class="mb-4 d-flex flex-wrap justify-content-between">
+        <div class="input-group mb-3 w-100 w-md-75">
             <input type="text" name="search" class="form-control form-control-sm" placeholder="Search by name" value="{{ request.GET.search }}">
             <div class="input-group-append">
                 <button class="btn btn-sm btn-warning pb-3" type="submit">Search</button>
             </div>
         </div>
-        <a href="{% url 'admins:membershipplan_list' %}" class="btn btn-sm btn-success">Show All</a>
+        <div class="d-flex flex-wrap w-100 w-md-25 justify-content-center justify-content-md-end">
+            <a href="{% url 'admins:membershipplan_create' %}" class="btn btn-sm btn-primary  ">Create Plan</a> &ensp;
+            <a href="{% url 'admins:membershipplan_list' %}" class="btn btn-sm btn-success">Show All</a>
+        </div>
     </form>
 
-    <div class="d-flex justify-content-center">
-        <table class="table">
-            <thead>
+    <div class="table-responsive">
+        <table class="table table">
+            <thead class="thead-light">
                 <tr>
                     <th scope="col">Name</th>
                     <th scope="col">Price</th>
@@ -56,36 +60,39 @@
                         </div>
                     </td>
                 </tr>
-                <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Deletion</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                Are you sure you want to delete this membership plan?
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <form id="deleteForm" method="post" action="">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-danger">Delete</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Confirm Delete Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this membership plan?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center text-danger">No data available</td>  
+                    <td colspan="4" class="text-center text-danger">No data available</td>  
                 </tr>
                 {% endif %}
             </tbody>
         </table>
     </div>
 
+    <!-- Pagination Controls -->
     <div class="d-flex justify-content-center">
         <nav>
             <ul class="pagination">
@@ -132,9 +139,7 @@
         </nav>
     </div>
 
-    <div class="d-flex justify-content-center">
-        <a href="{% url 'admins:membershipplan_create' %}" class="btn btn-warning w-25 mt-5">Create</a>
-    </div>
+   
 </div>
 
 <script>
