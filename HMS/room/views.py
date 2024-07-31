@@ -68,6 +68,8 @@ def home(request):
     print(rooms)
     return render(request, 'room/home.html', {'rooms': rooms})
 
+from django.db.models import Avg
+
 class RoomListView(ListView):
     model = Room
     template_name = 'room/rooms.html'
@@ -83,13 +85,11 @@ class RoomListView(ListView):
         if room_type:
             queryset = queryset.filter(room_type__id=room_type)
         
+        # Annotate each room with the average rating
+        queryset = queryset.annotate(average_rating=Avg('roomrating__rating'))
+        
         return queryset
 
-    def cancel_past_bookings(self):
-        bookings = Booking.objects.all()
-        for booking in bookings:
-            booking.update_room_and_booking__status()
-            booking.save()
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['today'] = timezone.now().date()
@@ -987,17 +987,23 @@ class BookingCancelView(LoginRequiredMixin, View):
             return HttpResponseBadRequest("Error occurred while canceling the booking.")
 
 
-
+def test_view(request, pk):
+    room = get_object_or_404(Room, pk=pk)
+    ratings = list(RoomRating.objects.filter(room=room).order_by('-rating_date'))
+    return HttpResponse(f"Ratings fetched: {ratings}")
 
 class RoomRatingListView(ListView):
     model = RoomRating
     template_name = 'room/room_ratings.html'
     context_object_name = 'ratings'
+    paginate_by = 10  # Adjust the number of items per page as needed
 
     def get_queryset(self):
         self.room = get_object_or_404(Room, pk=self.kwargs['pk'])
-        return RoomRating.objects.filter(room=self.room)
-
+        ratings = RoomRating.objects.filter(room=self.room).order_by('-rating_date')
+        print(f"Ratings fetched: {ratings}")  # Add this line to check the fetched ratings
+        return ratings
+        
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['room'] = self.room

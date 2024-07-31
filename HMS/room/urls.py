@@ -23,4 +23,6 @@ urlpatterns = [
     path('rating/edit/<int:rating_id>/', EditRoomRatingView.as_view(), name='edit_room_rating'),
     path('rating/delete/<int:rating_id>/', DeleteRoomRatingView.as_view(), name='delete_room_rating'),
     path('my-ratings/', UserRoomRatingsListView.as_view(), name='my_room_ratings'),
+     path('rating/test/ratings/<int:pk>/', test_view, name='test_view'),
+
 ]
