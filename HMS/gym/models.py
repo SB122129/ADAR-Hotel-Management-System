@@ -38,7 +38,11 @@ class Membership(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.user.username} - {self.plan.name}"
+        if self.user:
+            user_display = self.user.username
+        else:
+            user_display = f"{self.for_first_name} {self.for_last_name}"
+        return f"{user_display} - {self.plan.name}"
 
 class MembershipPayment(models.Model):
     PAYMENT_METHOD_CHOICES = (
@@ -54,7 +58,11 @@ class MembershipPayment(models.Model):
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending')
 
     def __str__(self):
-        return f"Payment for {self.membership.user.username} - {self.membership.plan.name}"
+        if self.membership.user:
+            user_display = self.membership.user.username
+        else:
+            user_display = f"{self.membership.for_first_name} {self.membership.for_last_name}"
+        return f"Payment for {user_display} - {self.membership.plan.name}"
     
 
     

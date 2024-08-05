@@ -154,6 +154,13 @@ class Payment(models.Model):
         elif self.status == 'failed':
             self.booking.delete()
 
+    def __str__(self):
+        if self.booking.user:
+            user_display = self.booking.user.username
+        else:
+            user_display = f"{self.booking.full_name}"
+        return f"Payment for {user_display} - {self.payment_method}"
+
 class Receipt(models.Model):
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE)
     file = models.FileField(upload_to='media/receipts/')

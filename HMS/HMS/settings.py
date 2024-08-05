@@ -160,6 +160,7 @@ INSTALLED_APPS = [
      "huey.contrib.djhuey",
     "hueymail",
     'telegram_bot',
+    'Spa',
 ]
 
 import environ
