@@ -1,18 +1,89 @@
-{% extends 'accountss/base.html' %}
+{% extends "accountss/base.html" %}
+
+{% block title %}Your Spa Bookings{% endblock %}
 
 {% block content %}
-<h2>Your Spa Bookings</h2>
-<ul>
-    {% for booking in bookings %}
-    <li>
-        {{ booking.service or booking.package }} on {{ booking.appointment_date }} at {{ booking.appointment_time }} - {{ booking.status }}
-        {% if booking.status == 'pending' %}
-        <form method="post" action="{% url 'spa:cancel_booking' booking.id %}">
-            {% csrf_token %}
-            <button type="submit">Cancel</button>
-        </form>
+<br>
+<div class="container mt-5">
+    <h3 class="text-center mb-3 font-weight-bold">Your Spa Bookings</h3>
+    
+    <div class="container" style="margin-top: 1rem;">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-dismissible text-center mt-5 alert-{{ message.tags }}">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    {{ message }}
+                </div>
+            {% endfor %}
         {% endif %}
-    </li>
-    {% endfor %}
-</ul>
+    </div>
+    
+    <div class="row">
+        {% if bookings %}
+            {% for booking in bookings %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 rounded shadow">
+                        <div class="card-body">
+                            <h5 class="card-title"><strong><i class="bi bi-list-ol"></i>&ensp; {% if booking.service %}{{ booking.service.name }}  {% else %} {{ booking.package.name }} {% endif %}</strong></h5>
+                            <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-calendar-plus"></i>&ensp;Appointment Date</strong></div>
+                                <div class="col-sm-6 text-center">{{ booking.appointment_date }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-clock"></i>&ensp;Time</strong></div>
+                                <div class="col-sm-6 text-center">{{ booking.appointment_time }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-sm-6 text-left"><strong><i class="bi bi-info-circle"></i>&ensp;Status</strong></div>
+                                <div class="col-sm-6 text-center">{{ booking.get_status_display }}</div>
+                            </div>
+                            {% if booking.status == 'pending' %}
+                            <div class="d-flex justify-content-center m-3">
+                                <a href="{% url 'spa:spa_booking_create' 'service' booking.service.id %}" class="btn btn-sm btn-primary rounded">Pay Now</a>
+                            </div>
+                            {% endif %}
+                            <div class="d-flex justify-content-center m-3">
+                                <button type="button" class="btn btn-sm btn-danger rounded" data-toggle="modal" data-target="#cancelModal{{ booking.pk }}">
+                                    Cancel Booking
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cancel Modal -->
+                <div class="modal fade" id="cancelModal{{ booking.pk }}" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel{{ booking.pk }}" aria-hidden="true">
+                    <div class="modal-dialog rounded" role="document">
+                        <div class="modal-content border-0">
+                            <div class="modal-header border-0">
+                                <h5 class="modal-title font-weight-bold" id="cancelModalLabel{{ booking.pk }}">Cancel Booking</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body font-weight-bold">
+                                Are you sure you want to cancel your booking for {% if booking.service %}{{ booking.service.name }}  {% else %} {{ booking.package.name }} {% endif %}?
+                            </div>
+                            <div class="modal-footer border-0">
+                                <form method="post" action="{% url 'spa:cancel_booking' booking.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm rounded btn-danger">Confirm</button>
+                                </form>
+                                <button type="button" class="btn btn-sm rounded btn-secondary" data-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="container d-flex justify-content-center">
+                <div class="alert alert-warning rounded mt-3" role="alert">
+                    <h6 class="text-center"><i class="bi bi-info-circle"></i>&ensp;No bookings found</h6>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
