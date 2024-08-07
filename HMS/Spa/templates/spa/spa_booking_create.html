@@ -20,6 +20,9 @@
     <div class="row">
         <div class="col-md-6">
             <div class="card shadow flex-fill rounded">
+                {% if item.image.url %}
+                <img src="{{ item.image.url }}" alt="{{ item.name }}" class="card-img-top">
+                {% endif %}
                 <div class="card-body">
                     <h5 class="card-title font-weight-bold">{{ item.name }}</h5>
                     <p class="card-text mb-2">{{ item.description }}</p>
@@ -31,7 +34,6 @@
                             <p class="card-text">{{ item.price }} ETB</p>
                         </div>
                     </div>
-                    
                 </div>
             </div>
         </div>
@@ -57,65 +59,63 @@
                             </div>
                         </div>
 
-                        <div id="forSelfFields" class="booking-fields">
-                            <div class="mb-3">
-                                <label for="{{ form.appointment_date.id_for_label }}"><p class="text-center mb-2 font-weight-bold">{{ form.appointment_date.label }}</p></label>
-                                {{ form.appointment_date|add_class:"form-control" }}
-                                {% if form.appointment_date.errors %}
-                                    <div class="alert alert-danger mt-2 rounded">
-                                        {{ form.appointment_date.errors }}
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="{{ form.appointment_time.id_for_label }}"><p class="text-center mb-2 font-weight-bold">{{ form.appointment_time.label }}</p></label>
-                                {{ form.appointment_time|add_class:"form-control" }}
-                                {% if form.appointment_time.errors %}
-                                    <div class="alert alert-danger mt-2 rounded">
-                                        {{ form.appointment_time.errors }}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
                         <div id="forOthersFields" class="booking-fields" style="display: none;">
                             <div class="mb-3">
                                 <label for="{{ form.first_name.id_for_label }}" class="font-weight-bold">First Name</label>
-                                {{ form.first_name|add_class:"form-control rounded w-75" }}
-                                {% if form.first_name.errors %}
+                                {{ form.for_first_name|add_class:"form-control rounded w-75" }}
+                                {% if form.for_first_name.errors %}
                                     <div class="alert alert-danger mt-2 rounded">
-                                        {{ form.first_name.errors }}
+                                        {{ form.for_first_name.errors }}
                                     </div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
                                 <label for="{{ form.last_name.id_for_label }}" class="font-weight-bold">Last Name</label>
-                                {{ form.last_name|add_class:"form-control rounded w-75" }}
-                                {% if form.last_name.errors %}
+                                {{ form.for_last_name|add_class:"form-control rounded w-75" }}
+                                {% if form.for_last_name.errors %}
                                     <div class="alert alert-danger mt-2 rounded">
-                                        {{ form.last_name.errors }}
+                                        {{ form.for_last_name.errors }}
                                     </div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
                                 <label for="{{ form.email.id_for_label }}" class="font-weight-bold">Email</label>
-                                {{ form.email|add_class:"form-control rounded w-75" }}
-                                {% if form.email.errors %}
+                                {{ form.for_email|add_class:"form-control rounded w-75" }}
+                                {% if form.for_email.errors %}
                                     <div class="alert alert-danger mt-2 rounded">
-                                        {{ form.email.errors }}
+                                        {{ form.for_email.errors }}
                                     </div>
                                 {% endif %}
                             </div>
                             <div class="mb-3">
                                 <label for="{{ form.phone_number.id_for_label }}" class="font-weight-bold">Phone Number</label>
-                                {{ form.phone_number|add_class:"form-control rounded w-75" }}
-                                {% if form.phone_number.errors %}
+                                {{ form.for_phone_number|add_class:"form-control rounded w-75" }}
+                                {% if form.for_phone_number.errors %}
                                     <div class="alert alert-danger mt-2 rounded">
-                                        {{ form.phone_number.errors }}
+                                        {{ form.for_phone_number.errors }}
                                     </div>
                                 {% endif %}
                             </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.appointment_date.id_for_label }}"><p class="text-center mb-2 font-weight-bold">{{ form.appointment_date.label }}</p></label>
+                            {{ form.appointment_date|add_class:"form-control" }}
+                            {% if form.appointment_date.errors %}
+                                <div class="alert alert-danger mt-2 rounded">
+                                    {{ form.appointment_date.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.appointment_time.id_for_label }}"><p class="text-center mb-2 font-weight-bold">{{ form.appointment_time.label }}</p></label>
+                            {{ form.appointment_time|add_class:"form-control" }}
+                            {% if form.appointment_time.errors %}
+                                <div class="alert alert-danger mt-2 rounded">
+                                    {{ form.appointment_time.errors }}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-3">
@@ -145,7 +145,7 @@
                             <button type="submit" class="btn btn-sm btn-success w-75 rounded mt-2" id="submitBtn">Book Now</button>
                         </div>
                         <div class="d-flex justify-content-center mt-3">
-                            <a href="" class="btn btn-sm btn-primary w-75 rounded mt-2" id="goToBookingsBtn" style="display: none;">Go to Bookings</a>
+                            <a href="{% url 'spa:booking_list' %}" class="btn btn-sm btn-primary w-75 rounded mt-2" id="goToBookingsBtn" style="display: none;">Go to Bookings</a>
                         </div>
                     </form>
                 </div>
@@ -192,16 +192,13 @@
     document.addEventListener('DOMContentLoaded', function() {
         const bookingOptions = document.querySelectorAll('.booking-option');
         const bookingFor = document.getElementsByName('booking_for');
-        const forSelfFields = document.getElementById('forSelfFields');
         const forOthersFields = document.getElementById('forOthersFields');
 
         bookingFor.forEach(radio => {
             radio.addEventListener('change', function() {
                 if (this.value === 'others') {
-                    forSelfFields.style.display = 'none';
                     forOthersFields.style.display = 'block';
                 } else {
-                    forSelfFields.style.display = 'block';
                     forOthersFields.style.display = 'none';
                 }
             });
@@ -228,18 +225,21 @@
         const goToBookingsBtn = document.getElementById('goToBookingsBtn');
 
         spaBookingForm.addEventListener('submit', function(event) {
-            if (!formIsValid()) {
-                event.preventDefault();
-            } else {
-                submitBtn.style.display = 'none';
-                goToBookingsBtn.style.display = 'block';
-            }
+            event.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Please wait...';
+            spaBookingForm.submit();
         });
 
-        function formIsValid() {
-            // Add your custom form validation logic here
-            return true;
-        }
+        spaBookingForm.addEventListener('ajax:success', function() {
+            submitBtn.style.display = 'none';
+            goToBookingsBtn.style.display = 'block';
+        });
+
+        spaBookingForm.addEventListener('ajax:error', function() {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Book Now';
+        });
     });
 </script>
 {% endblock %}

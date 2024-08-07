@@ -27,6 +27,7 @@ from xhtml2pdf import pisa
 import paypalrestsdk
 from .models import SpaBooking, SpaPayment
 from django.utils.safestring import mark_safe
+from django.db.models import Q
 
 
 
@@ -43,6 +44,15 @@ class ServiceListView(ListView):
 
 
 
+
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.urls import reverse
+import random
+import string
+import requests
+from paypalrestsdk import Payment, configure
+
 class SpaBookingCreateView(LoginRequiredMixin, FormView):
     form_class = SpaBookingForm
     template_name = 'spa/spa_booking_create.html'
@@ -52,13 +62,11 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
         item_type = self.kwargs.get('item_type')
         item_id = self.kwargs.get('item_id')
 
-        # Retrieve the existing booking if it exists
+        selected_item = None
         if item_type == 'service':
             selected_item = SpaService.objects.filter(id=item_id).first()
         elif item_type == 'package':
             selected_item = SpaPackage.objects.filter(id=item_id).first()
-        else:
-            selected_item = None
 
         if selected_item:
             # Find an existing booking with a pending status for the user
@@ -75,8 +83,18 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
                     'package': existing_booking.package,
                     'appointment_date': existing_booking.appointment_date,
                     'appointment_time': existing_booking.appointment_time,
-                    # Add other fields as necessary
+                    'for_first_name': existing_booking.for_first_name,
+                    'for_last_name': existing_booking.for_last_name,
+                    'for_email': existing_booking.for_email,
+                    'for_phone_number': existing_booking.for_phone_number,
+                    'payment_method': 'chapa' if existing_booking.tx_ref.startswith('spa-booking') else 'paypal'
                 })
+
+                # Determine if the booking is for self or others based on existing data
+                if existing_booking.for_first_name or existing_booking.for_last_name or existing_booking.for_email or existing_booking.for_phone_number:
+                    initial['booking_for'] = 'others'
+                else:
+                    initial['booking_for'] = 'self'
 
         return initial
 
@@ -109,31 +127,39 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
 
         appointment_date = form.cleaned_data['appointment_date']
         appointment_time = form.cleaned_data['appointment_time']
-        payment_method = form.cleaned_data['payment_method']
+        booking_for = form.cleaned_data.get('booking_for')
 
-        # Check for existing booking
+        # Check for existing booking with the same date and time for the selected item
         existing_booking = SpaBooking.objects.filter(
             user=self.request.user,
-            service=selected_item if item_type == 'service' else None,
-            package=selected_item if item_type == 'package' else None,
             appointment_date=appointment_date,
             appointment_time=appointment_time,
-            status='pending'
+            service=selected_item if item_type == 'service' else None,
+            package=selected_item if item_type == 'package' else None,
+            status='pending',
         ).first()
 
         if existing_booking:
-            # Redirect to payment if a pending booking exists
-            return self.redirect_to_payment(existing_booking, payment_method)
+            if existing_booking.for_first_name == form.cleaned_data.get('for_first_name') and \
+                existing_booking.for_last_name == form.cleaned_data.get('for_last_name') and \
+                existing_booking.for_email == form.cleaned_data.get('for_email') and \
+                existing_booking.for_phone_number == form.cleaned_data.get('for_phone_number'):
+                # If the existing booking matches the current form data, proceed to payment
+                return self.redirect_to_payment(existing_booking, form.cleaned_data['payment_method'])
+            else:
+                # Otherwise, it is a double booking attempt
+                messages.error(self.request, 'You have an identical booking.')
+                return self.form_invalid(form)
 
         # Create new booking
         spa_booking = self.create_booking(form, selected_item, item_type)
 
         # Handle payment
-        return self.redirect_to_payment(spa_booking, payment_method)
+        return self.redirect_to_payment(spa_booking, form.cleaned_data['payment_method'])
 
     def create_booking(self, form, selected_item, item_type):
-        booking_for = form.cleaned_data.get('booking_for', 'self')  # Default to 'self' if not found
-        
+        booking_for = form.cleaned_data.get('booking_for')
+
         spa_booking = SpaBooking.objects.create(
             user=self.request.user,
             service=selected_item if item_type == 'service' else None,
@@ -141,10 +167,10 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
             appointment_date=form.cleaned_data['appointment_date'],
             appointment_time=form.cleaned_data['appointment_time'],
             amount_due=selected_item.price,
-            for_first_name=form.cleaned_data['first_name'] if booking_for == 'others' else '',
-            for_last_name=form.cleaned_data['last_name'] if booking_for == 'others' else '',
-            for_phone_number=form.cleaned_data['phone_number'] if booking_for == 'others' else '',
-            for_email=form.cleaned_data['email'] if booking_for == 'others' else '',
+            for_first_name=form.cleaned_data['for_first_name'] if booking_for == 'others' else '',
+            for_last_name=form.cleaned_data['for_last_name'] if booking_for == 'others' else '',
+            for_phone_number=form.cleaned_data['for_phone_number'] if booking_for == 'others' else '',
+            for_email=form.cleaned_data['for_email'] if booking_for == 'others' else '',
             status='pending',
             tx_ref=self.generate_tx_ref(),
         )
@@ -230,11 +256,13 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
             spa_booking.tx_ref = payment.id
             spa_booking.save()
             for link in payment.links:
-                if link.rel == "approval_url":
-                    return redirect(link.href)
+                if link.method == "REDIRECT":
+                    redirect_url = link.href
+                    return redirect(redirect_url)
         else:
-            messages.error(self.request, 'Error initializing PayPal payment.')
+            messages.error(self.request, 'Error creating PayPal payment.')
             return redirect('spa:booking_list')
+
 
 
 

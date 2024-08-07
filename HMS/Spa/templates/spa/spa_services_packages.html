@@ -7,12 +7,77 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="preload" href="{% static 'images/spa1.jpg' %}" as="image">
     <link rel="preload" href="{% static 'images/spa2.jpg' %}" as="image">
-    <link rel="preload" href="{% static 'images/spa3.jpg' %}" as="image">
+    <link rel="preload" href="{% static 'images/spa2.jpg' %}" as="image">
 </head>
 
 {% block content %}
-<div class="carousel slide carousel-fade carousel-fullscreen" id="featured" data-ride="carousel">
-    <!-- Carousel Content -->
+<div class="carousel slide carousel-fade carousel-fullscreen" id="hotelSpa" data-ride="carousel">
+    <ul class="carousel-indicators">
+        <li data-target="#hotelSpa" data-slide-to="0" class="active"></li>
+        <li data-target="#hotelSpa" data-slide-to="1"></li>
+        <li data-target="#hotelSpa" data-slide-to="2"></li>
+    </ul>
+
+    <div class="carousel-inner">
+        <div class="carousel-item active slide-1">
+            <div class="overlay"></div>
+            <img src="{% static 'images/spa2.jpg' %}" class="img-fluid" alt="First slide">
+            <div class="carousel-caption">
+                <h2>Welcome to Our Luxurious Spa</h2>
+                <p class="pt-3">Indulge in a world of relaxation and rejuvenation with our exclusive treatments and serene ambiance.</p>
+            </div>
+        </div>
+
+        <div class="carousel-item slide-2">
+            <div class="overlay"></div>
+            <img src="{% static 'images/spa1.jpg' %}" class="img-fluid" alt="Second slide">
+            <div class="carousel-caption">
+                <h2>Experience Ultimate Relaxation</h2>
+                <p class="pt-3">Escape the stress of daily life with our soothing massages and therapeutic services.</p>
+            </div>
+        </div>
+
+        <div class="carousel-item slide-3">
+            <div class="overlay"></div>
+            <img src="{% static 'images/spa2.jpg' %}" class="img-fluid" alt="Third slide">
+            <div class="carousel-caption">
+                <h2>Revitalize Your Body and Mind</h2>
+                <p class="pt-3">Immerse yourself in a tranquil environment and enjoy our tailored spa treatments.</p>
+            </div>
+        </div>
+    </div><!-- carousel-inner -->
+</div>
+<div class="container mt-5">
+    <div class="row d-flex align-items-stretch">
+        <!-- Spa Hours Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm rounded h-100">
+                <div class="card-body">
+                    <h6 class="card-title font-weight-bold"><i class="bi bi-clock"></i> Spa Hours</h6>
+                    <div class="row mb-2">
+                        <div class="col-6"><strong>Monday - Sunday</strong></div>
+                        <div class="col-6">7:00 AM - 9:00 PM</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Location Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm rounded h-100">
+                <div class="card-body">
+                    <h6 class="card-title font-weight-bold"><i class="bi bi-geo-alt"></i> Location</h6>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Address</strong></div>
+                        <div class="col-7">ADAR Hotel, Second Floor</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-5"><strong>Location</strong></div>
+                        <div class="col-7">Near the wellness center</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="container mt-5">
@@ -23,8 +88,9 @@
             {% for service in services %}
                 <div class="col-sm-3 d-flex">
                     <div class="card shadow rounded service-card flex-fill d-flex flex-column" data-item-id="{{ service.id }}" data-item-type="service">
+                        <img src="{{ service.image.url }}" alt="{{ service.name }}" class="card-img-top">
                         <div class="card-body flex-fill d-flex flex-column">
-                            <h2 class="card-title">{{ service.name }}</h2>
+                            <h2 class="card-title"><strong>{{ service.name }}</strong></h2>
                             <p class="card-text small">{{ service.description }}</p>
                             <div class="mt-auto">
                                 <p class="card-text">Price {{ service.price }} ETB</p>
@@ -53,7 +119,7 @@
                 <div class="col-sm-3 d-flex">
                     <div class="card shadow rounded package-card flex-fill d-flex flex-column" data-item-id="{{ package.id }}" data-item-type="package">
                         <div class="card-body flex-fill d-flex flex-column">
-                            <h2 class="card-title">{{ package.name }}</h2>
+                            <h2 class="card-title"><strong>{{ package.name }}</strong></h2>
                             <p class="card-text small">{{ package.description }}</p>
                             <div class="mt-auto">
                                 <p class="card-text">Price {{ package.price }} ETB</p>
