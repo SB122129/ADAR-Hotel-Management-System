@@ -60,6 +60,7 @@ from xhtml2pdf import pisa
 from io import BytesIO
 import qrcode
 import base64
+from Spa.models import *
 
 
 
@@ -650,6 +651,8 @@ class ChapaWebhookView(View):
             return self.process_booking_payment(tx_ref, payload)
         elif tx_ref.startswith('hall_booking'):
             return self.process_hall_booking_payment(tx_ref, payload)
+        elif tx_ref.startswith('spa_booking'):
+            return self.process_spa_booking_payment(tx_ref, payload)
         elif tx_ref.startswith('membership'):
             return self.process_membership_payment(tx_ref, payload)
         else:
@@ -929,6 +932,88 @@ class ChapaWebhookView(View):
         }
         
         html_string = render_to_string('gym/membership_confirmation_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+    def process_spa_booking_payment(self, tx_ref, payload):
+        try:
+            spa_booking = SpaBooking.objects.get(tx_ref=tx_ref)
+        except SpaBooking.DoesNotExist:
+            print("Spa booking not found")
+            return HttpResponseNotFound("Spa booking not found")
+        except SpaBooking.MultipleObjectsReturned:
+            print("Multiple spa bookings found")
+            return HttpResponseServerError("Multiple spa bookings found")
+
+        print("Spa booking found:", spa_booking)
+
+        payment, created = SpaPayment.objects.get_or_create(
+            spa_booking=spa_booking,
+            defaults={
+                'status': 'completed',
+                'transaction_id': tx_ref,
+                'amount': payload.get('amount'),
+                'payment_method': 'chapa'
+            }
+        )
+
+        if not created:
+            print("Payment already exists for this spa booking.")
+            payment.status = 'completed'
+            payment.transaction_id = tx_ref
+            payment.save()
+
+        print("Payment record created or updated:", payment)
+
+        spa_booking.status = 'confirmed'
+        spa_booking.save()
+
+        # Generate receipt PDF
+        pdf_response = self.generate_spa_pdf(spa_booking)
+
+        booking_url = f"{BASE_URL}/spa/my-bookings/"
+        html_content = render_to_string('spa/booking_confirmation_template.html', {'spa_booking': spa_booking, 'booking_url': booking_url})
+
+        # Create the email message
+        email = EmailMultiAlternatives(
+            subject='Spa Booking Confirmation',
+            from_email='adarhotel33@gmail.com',
+            to=[spa_booking.user.email]
+        )
+        # Attach the HTML content
+        email.attach_alternative(html_content, "text/html")
+        # Attach the PDF receipt
+        email.attach(f'receipt_{spa_booking.id}_{spa_booking.user.username}.pdf', pdf_response, 'application/pdf')
+
+        # Send the email
+        email.send()
+        
+        if spa_booking.for_email not in [None, '']:
+            for_email = EmailMultiAlternatives(
+                subject='Spa Booking Confirmation',
+                from_email='adarhotel33@gmail.com',
+                to=[spa_booking.for_email]
+            )
+            for_email.attach_alternative(html_content, "text/html")
+            for_email.attach(f'receipt_{spa_booking.id}_{spa_booking.user.username}.pdf', pdf_response, 'application/pdf')
+            for_email.send()
+
+        print("Spa booking updated")
+        return HttpResponse("Spa booking webhook processed successfully")
+
+    def generate_spa_pdf(self, spa_booking):
+        buffer = BytesIO()
+        
+        # Generate QR code data
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_booking/{spa_booking.id}')
+        
+        context = {
+            'spa_booking': spa_booking,
+            'qr_code_data': qr_code_data,
+        }
+        
+        html_string = render_to_string('spa/booking_confirmation_template_receipt.html', context)
         
         pisa_status = pisa.CreatePDF(html_string, dest=buffer)
         buffer.seek(0)

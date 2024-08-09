@@ -151,6 +151,20 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
                 messages.error(self.request, 'You have an identical booking.')
                 return self.form_invalid(form)
 
+        # Check if there are already 5 bookings for the same service/package, date, and time
+        total_bookings = SpaBooking.objects.filter(
+            appointment_date=appointment_date,
+            appointment_time=appointment_time,
+            service=selected_item if item_type == 'service' else None,
+            package=selected_item if item_type == 'package' else None,
+            status='pending',
+        ).count()
+
+        if total_bookings >= 5:
+            # If there are already 5 bookings for the same service/package, date, and time
+            messages.error(self.request, 'This time slot is fully booked. Please select a different time.')
+            return self.form_invalid(form)
+        
         # Create new booking
         spa_booking = self.create_booking(form, selected_item, item_type)
 
@@ -177,7 +191,7 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
         return spa_booking
 
     def generate_tx_ref(self):
-        return f"spa-booking-{self.request.user.username}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+        return f"spa_booking-{self.request.user.username}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
 
     def redirect_to_payment(self, booking, payment_method):
         if payment_method == 'chapa':
@@ -190,10 +204,14 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
 
     def initiate_chapa_payment(self, spa_booking):
         amount = str(spa_booking.amount_due)
-        tx_ref = spa_booking.tx_ref
+        print(amount)
+        tx_ref = self.generate_tx_ref()
+        spa_booking.tx_ref=tx_ref
+        spa_booking.save()
+
         url = "https://api.chapa.co/v1/transaction/initialize"
         redirect_url = f'{BASE_URL}/spa/bookings'
-        webhook_url = f'{BASE_URL}/spa/chapa-webhook/'
+        webhook_url = f'{BASE_URL}/room/chapa-webhook/'
 
         payload = {
             "amount": amount,
@@ -213,10 +231,12 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
 
         response = requests.post(url, json=payload, headers=headers)
         data = response.json()
+        print(data)
         if response.status_code == 200 and data['status'] == 'success':
             return redirect(data['data']['checkout_url'])
         else:
             messages.error(self.request, 'Error initializing Chapa payment.')
+            print(messages.error)
             return redirect('spa:booking_list')
 
     def initiate_paypal_payment(self, spa_booking):
@@ -288,35 +308,35 @@ class SpaPayPalReturnView(View):
             spa_booking.status = 'confirmed'
             spa_booking.save()
 
-            # # Generate receipt PDF
-            # pdf_response = self.generate_pdf(spa_booking)
+            # Generate receipt PDF
+            pdf_response = self.generate_pdf(spa_booking)
 
-            # booking_url = f"{BASE_URL}/spa/my-bookings/"
-            # html_content = render_to_string('spa/booking_confirmation_template.html', {'booking': spa_booking, 'booking_url': booking_url})
+            booking_url = f"{BASE_URL}/spa/my-bookings/"
+            html_content = render_to_string('spa/booking_confirmation_template.html', {'booking': spa_booking, 'booking_url': booking_url})
 
-            # # Create the email message with only HTML content
-            # email = EmailMultiAlternatives(
-            #     subject='Spa Booking Confirmation',
-            #     from_email='adarhotel33@gmail.com',
-            #     to=[spa_booking.user.email]
-            # )
-            # # Attach the HTML content
-            # email.attach_alternative(html_content, "text/html")
-            # # Attach the PDF receipt
-            # email.attach(f'receipt_{spa_booking.id}_{spa_booking.user.username}.pdf', pdf_response, 'application/pdf')
+            # Create the email message with only HTML content
+            email = EmailMultiAlternatives(
+                subject='Spa Booking Confirmation',
+                from_email='adarhotel33@gmail.com',
+                to=[spa_booking.user.email]
+            )
+            # Attach the HTML content
+            email.attach_alternative(html_content, "text/html")
+            # Attach the PDF receipt
+            email.attach(f'receipt_{spa_booking.id}_{spa_booking.user.username}.pdf', pdf_response, 'application/pdf')
 
-            # # Send the email
-            # email.send()
+            # Send the email
+            email.send()
             
-            # if spa_booking.for_email:
-            #     for_email = EmailMultiAlternatives(
-            #         subject='Spa Booking Confirmation',
-            #         from_email='adarhotel33@gmail.com',
-            #         to=[spa_booking.for_email]
-            #     )
-            #     for_email.attach_alternative(html_content, "text/html")
-            #     for_email.attach(f'receipt_{spa_booking.id}_{spa_booking.user.username}.pdf', pdf_response, 'application/pdf')
-            #     for_email.send()
+            if spa_booking.for_email:
+                for_email = EmailMultiAlternatives(
+                    subject='Spa Booking Confirmation',
+                    from_email='adarhotel33@gmail.com',
+                    to=[spa_booking.for_email]
+                )
+                for_email.attach_alternative(html_content, "text/html")
+                for_email.attach(f'receipt_{spa_booking.id}_{spa_booking.user.username}.pdf', pdf_response, 'application/pdf')
+                for_email.send()
 
             messages.success(request, 'Payment successful and booking confirmed.')
         else:

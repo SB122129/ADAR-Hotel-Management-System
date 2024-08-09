@@ -40,7 +40,7 @@
         <div class="col-md-6 d-flex">
             <div class="card shadow flex-fill rounded">
                 <div class="card-body">
-                    <form method="post" enctype="multipart/form-data" id="spaBookingForm">
+                    <form method="post" enctype="multipart/form-data" id="spaBookingForm" target="_blank">
                         {% csrf_token %}
                         <input type="hidden" name="item_id" value="{{ item.id }}">
                         <input type="hidden" name="item_type" value="{{ item_type }}">
