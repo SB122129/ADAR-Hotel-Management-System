@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from room.models import *
 from django import forms
 from gym.models import MembershipPlan
+from Spa.models import *
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
 
@@ -388,3 +389,22 @@ class ChatBotForm(forms.ModelForm):
         widgets = {
             'message': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Type your message here...'}),
         }
+
+
+
+class SpaServiceForm(forms.ModelForm):
+    class Meta:
+        model = SpaService
+        fields = ['name', 'description', 'image', 'price']
+
+class SpaPackageForm(forms.ModelForm):
+    services = forms.ModelMultipleChoiceField(
+    queryset=SpaService.objects.all(),
+    widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+    required=True
+)
+
+
+    class Meta:
+        model = SpaPackage
+        fields = ['name', 'description', 'services', 'price']

@@ -93,6 +93,23 @@ urlpatterns = [
     path('hall-payment/<int:pk>/', HallPaymentDetailView.as_view(), name='hall_payment_detail'),
     path('hall/payment/<int:pk>/', HallPaymentCreateView.as_view(), name='hall_payment_create'),
     
+    
+    # SpaService URLs
+    path('spa-services/', SpaServiceListView.as_view(), name='spa_service_list'),
+    path('spa-services/<int:pk>/', SpaServiceDetailView.as_view(), name='spa_service_detail'),
+    path('spa-services/create/', SpaServiceCreateView.as_view(), name='spa_service_create'),
+    path('spa-services/<int:pk>/update/', SpaServiceUpdateView.as_view(), name='spa_service_update'),
+    path('spa-services/<int:pk>/delete/', SpaServiceDeleteView.as_view(), name='spa_service_delete'),
+
+    # SpaPackage URLs
+    path('spa-packages/', SpaPackageListView.as_view(), name='spa_package_list'),
+    path('spa-packages/<int:pk>/', SpaPackageDetailView.as_view(), name='spa_package_detail'),
+    path('spa-packages/create/', SpaPackageCreateView.as_view(), name='spa_package_create'),
+    path('spa-packages/<int:pk>/update/', SpaPackageUpdateView.as_view(), name='spa_package_update'),
+    path('spa-packages/<int:pk>/delete/', SpaPackageDeleteView.as_view(), name='spa_package_delete'),
+    path('verify_spa_booking/<int:spa_booking_id>/', SpaBookingVerifyView.as_view(), name='booking_verify'),
+    
+    
     # SocialMediaPost URLs
     path('social_media_posts/', SocialMediaPostListView.as_view(), name='social_media_post_list'),
     path('social_media_posts/<int:pk>/', SocialMediaPostDetailView.as_view(), name='social_media_post_detail'),

@@ -118,6 +118,7 @@
             {% for package in packages %}
                 <div class="col-sm-3 d-flex">
                     <div class="card shadow rounded package-card flex-fill d-flex flex-column" data-item-id="{{ package.id }}" data-item-type="package">
+                        <img src="{{ package.image.url }}" alt="{{ package.name }}" class="card-img-top">
                         <div class="card-body flex-fill d-flex flex-column">
                             <h2 class="card-title"><strong>{{ package.name }}</strong></h2>
                             <p class="card-text small">{{ package.description }}</p>

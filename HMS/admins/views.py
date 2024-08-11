@@ -11,6 +11,7 @@ from django.shortcuts import render, redirect,get_object_or_404
 from django import forms
 from gym.models import *
 from .forms import *
+from Spa.models import *
 import random
 import string
 from django.db.models import Count, Sum, Avg, F, ExpressionWrapper, fields
@@ -1205,6 +1206,130 @@ class HallPaymentListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
         return queryset
 
 
+from Spa.models import SpaService, SpaPackage
+from .forms import SpaServiceForm, SpaPackageForm
+
+# SpaService Views
+class SpaServiceListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
+    model = SpaService
+    template_name = 'admins/spa_service_list.html'
+    context_object_name = 'spa_services'
+    paginate_by = 10
+
+    def get_queryset(self):
+        query = self.request.GET.get('search')
+        if query:
+            return SpaService.objects.filter(name__icontains=query)
+        return SpaService.objects.order_by('name')
+
+class SpaServiceDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
+    model = SpaService
+    template_name = 'admins/spa_service_detail.html'
+
+class SpaServiceCreateView(OwnerOrManagerRequiredMixin, CreateView):
+    model = SpaService
+    form_class = SpaServiceForm
+    template_name = 'admins/spa_service_form.html'
+    success_url = reverse_lazy('admins:spa_service_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Spa Service created successfully.')
+        return response
+
+class SpaServiceUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
+    model = SpaService
+    form_class = SpaServiceForm
+    template_name = 'admins/spa_service_form.html'
+    success_url = reverse_lazy('admins:spa_service_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Spa Service updated successfully.')
+        return response
+
+class SpaServiceDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
+    model = SpaService
+    template_name = 'admins/spa_service_confirm_delete.html'
+    success_url = reverse_lazy('admins:spa_service_list')
+
+# SpaPackage Views
+class SpaPackageListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
+    model = SpaPackage
+    template_name = 'admins/spa_package_list.html'
+    context_object_name = 'spapackages'
+    paginate_by = 10
+
+    def get_queryset(self):
+        query = self.request.GET.get('search')
+        if query:
+            return SpaPackage.objects.filter(name__icontains=query)
+        return SpaPackage.objects.order_by('name')
+
+class SpaPackageDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
+    model = SpaPackage
+    template_name = 'admins/spa_package_detail.html'
+
+class SpaPackageCreateView(OwnerOrManagerRequiredMixin, CreateView):
+    model = SpaPackage
+    form_class = SpaPackageForm
+    template_name = 'admins/spa_package_form.html'
+    success_url = reverse_lazy('admins:spa_package_list')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Spa Package created successfully.')
+        return response
+
+class SpaPackageUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
+    model = SpaPackage
+    form_class = SpaPackageForm
+    template_name = 'admins/spa_package_form.html'
+    success_url = reverse_lazy('admins:spa_package_list')
+
+    def get_object(self, queryset=None):
+        return super().get_object(queryset)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.fields['services'].initial = self.object.services.all()
+        return form
+    
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        services = request.POST.getlist('services')
+        form.data = form.data.copy()
+        form.data.setlist('services', services)
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, 'Spa Package updated successfully.')
+        return response
+
+    def form_invalid(self, form):
+        # Print form errors to the console
+        print(form.errors)
+        # Optionally, you can log the errors or handle them as needed
+        messages.error(self.request, 'There was an error updating the Spa Package.')
+        return super().form_invalid(form)
+class SpaPackageDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
+    model = SpaPackage
+    template_name = 'admins/spa_package_confirm_delete.html'
+    success_url = reverse_lazy('admins:spa_package_list')
+
+class SpaBookingVerifyView(View):
+    def get(self, request, spa_booking_id, *args, **kwargs):
+        try:
+            booking = SpaBooking.objects.get(id=spa_booking_id)
+        except SpaBooking.DoesNotExist:
+            return render(request, 'admins/spa_booking_not_found.html')
+        
+        return render(request, 'admins/spa_booking_verify.html', {'booking': booking})
 
 
 

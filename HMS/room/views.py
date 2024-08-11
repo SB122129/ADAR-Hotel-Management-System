@@ -1006,7 +1006,7 @@ class ChapaWebhookView(View):
         buffer = BytesIO()
         
         # Generate QR code data
-        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_booking/{spa_booking.id}')
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_spa_booking/{spa_booking.id}')
         
         context = {
             'spa_booking': spa_booking,
