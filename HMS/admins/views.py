@@ -100,6 +100,43 @@ def admin_dashboard(request):
     # Extract categories and data values separately
     monthly_revenue_categories = [item['month'].strftime('%B %Y') for item in monthly_revenue]
     monthly_revenue_values = [float(item['total_revenue']) for item in monthly_revenue]
+    
+   # Spa Service Popularity
+    spa_service_popularity = list(
+        SpaBooking.objects
+        .filter(service__isnull=False)
+        .values('service__name')
+        .annotate(count=Count('id'))
+    )
+    spa_service_popularity_data = [{'name': item['service__name'], 'y': item['count']} for item in spa_service_popularity]
+
+    # Revenue by Spa Service
+    revenue_by_spa_service = list(
+        SpaPayment.objects
+        .filter(status='completed', spa_booking__service__isnull=False)
+        .values('spa_booking__service__name')
+        .annotate(total_revenue=Sum('amount'))
+    )
+    revenue_by_spa_service_data = [{'name': item['spa_booking__service__name'], 'y': float(item['total_revenue'])} for item in revenue_by_spa_service]
+
+    # Spa Package Popularity
+    spa_package_popularity = list(
+        SpaBooking.objects
+        .filter(package__isnull=False)
+        .values('package__name')
+        .annotate(count=Count('id'))
+    )
+    spa_package_popularity_data = [{'name': item['package__name'], 'y': item['count']} for item in spa_package_popularity]
+
+    # Revenue by Spa Package
+    revenue_by_spa_package = list(
+        SpaPayment.objects
+        .filter(status='completed', spa_booking__package__isnull=False)
+        .values('spa_booking__package__name')
+        .annotate(total_revenue=Sum('amount'))
+    )
+    revenue_by_spa_package_data = [{'name': item['spa_booking__package__name'], 'y': float(item['total_revenue'])} for item in revenue_by_spa_package]
+
 
 
     # User Registration Trends
@@ -128,6 +165,10 @@ def admin_dashboard(request):
         'recent_users_data': json.dumps(recent_users_data, cls=DjangoJSONEncoder),
         'monthly_revenue_categories': json.dumps(monthly_revenue_categories),
         'monthly_revenue_values': json.dumps(monthly_revenue_values),
+        'spa_service_popularity_data': json.dumps(spa_service_popularity_data, cls=DjangoJSONEncoder),
+        'revenue_by_spa_service_data': json.dumps(revenue_by_spa_service_data, cls=DjangoJSONEncoder),
+        'spa_package_popularity_data': json.dumps(spa_package_popularity_data, cls=DjangoJSONEncoder),
+        'revenue_by_spa_package_data': json.dumps(revenue_by_spa_package_data, cls=DjangoJSONEncoder),
         'user_registration_categories': json.dumps(user_registration_categories),
         'user_registration_values': json.dumps(user_registration_values)
     }
@@ -1292,15 +1333,11 @@ class SpaPackageUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        form.fields['services'].initial = self.object.services.all()
         return form
     
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
-        services = request.POST.getlist('services')
-        form.data = form.data.copy()
-        form.data.setlist('services', services)
         if form.is_valid():
             return self.form_valid(form)
         else:
@@ -1330,6 +1367,231 @@ class SpaBookingVerifyView(View):
             return render(request, 'admins/spa_booking_not_found.html')
         
         return render(request, 'admins/spa_booking_verify.html', {'booking': booking})
+
+
+
+from django.core.files.base import ContentFile
+from Spa.forms import SpaBookingForm
+
+class SpaBookingCreateView(LoginRequiredMixin, FormView):
+    form_class = SpaBookingForm
+    template_name = 'spa/admin_spa_booking_create.html'
+
+    def get_initial(self):
+        initial = super().get_initial()
+        item_type = self.kwargs.get('item_type')
+        item_id = self.kwargs.get('item_id')
+
+        selected_item = None
+        if item_type == 'service':
+            selected_item = SpaService.objects.filter(id=item_id).first()
+        elif item_type == 'package':
+            selected_item = SpaPackage.objects.filter(id=item_id).first()
+
+        if selected_item:
+            # Find an existing booking with a pending status for the user
+            existing_booking = SpaBooking.objects.filter(
+                service=selected_item if item_type == 'service' else None,
+                package=selected_item if item_type == 'package' else None,
+                status='pending'
+            ).first()
+
+            if existing_booking:
+                initial.update({
+                    'service': existing_booking.service,
+                    'package': existing_booking.package,
+                    'appointment_date': existing_booking.appointment_date,
+                    'appointment_time': existing_booking.appointment_time,
+                    'for_first_name': existing_booking.for_first_name,
+                    'for_last_name': existing_booking.for_last_name,
+                    'for_email': existing_booking.for_email,
+                    'for_phone_number': existing_booking.for_phone_number,
+                })
+
+                if existing_booking.for_first_name or existing_booking.for_last_name or existing_booking.for_email or existing_booking.for_phone_number:
+                    initial['booking_for'] = 'others'
+                else:
+                    initial['booking_for'] = 'self'
+
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        item_type = self.kwargs.get('item_type')
+        item_id = self.kwargs.get('item_id')
+
+        if item_type == 'service':
+            context['item'] = SpaService.objects.filter(id=item_id).first()
+        elif item_type == 'package':
+            context['item'] = SpaPackage.objects.filter(id=item_id).first()
+
+        return context
+
+    def form_valid(self, form):
+        item_type = self.kwargs.get('item_type')
+        item_id = self.kwargs.get('item_id')
+
+        if item_type == 'service':
+            selected_item = SpaService.objects.filter(id=item_id).first()
+        elif item_type == 'package':
+            selected_item = SpaPackage.objects.filter(id=item_id).first()
+        else:
+            selected_item = None
+
+        if selected_item is None:
+            messages.error(self.request, 'The item you are trying to book does not exist.')
+            return redirect('spa:booking_list')
+
+        appointment_date = form.cleaned_data['appointment_date']
+        appointment_time = form.cleaned_data['appointment_time']
+
+        existing_booking = SpaBooking.objects.filter(
+            appointment_date=appointment_date,
+            appointment_time=appointment_time,
+            service=selected_item if item_type == 'service' else None,
+            package=selected_item if item_type == 'package' else None,
+            status='pending',
+        ).first()
+
+        if existing_booking:
+            messages.error(self.request, 'You have an identical booking.')
+            return self.form_invalid(form)
+
+        total_bookings = SpaBooking.objects.filter(
+            appointment_date=appointment_date,
+            appointment_time=appointment_time,
+            service=selected_item if item_type == 'service' else None,
+            package=selected_item if item_type == 'package' else None,
+            status='pending',
+        ).count()
+
+        if total_bookings >= 5:
+            messages.error(self.request, 'This time slot is fully booked. Please select a different time.')
+            return self.form_invalid(form)
+        
+        spa_booking = self.create_booking(form, selected_item, item_type)
+
+        pdf_response = self.generate_pdf(spa_booking)
+        
+        # Attach PDF to the spa_booking model (optional)
+        spa_booking.receipt_pdf.save(f'receipt_{spa_booking.id}.pdf', ContentFile(pdf_response))
+
+        messages.success(self.request, 'Booking created successfully.')
+        return redirect('spa:booking_list')
+
+    def create_booking(self, form, selected_item, item_type):
+        booking_for = form.cleaned_data.get('booking_for')
+
+        spa_booking = SpaBooking.objects.create(
+            service=selected_item if item_type == 'service' else None,
+            package=selected_item if item_type == 'package' else None,
+            appointment_date=form.cleaned_data['appointment_date'],
+            appointment_time=form.cleaned_data['appointment_time'],
+            amount_due=selected_item.price,
+            for_first_name=form.cleaned_data['for_first_name'] if booking_for == 'others' else '',
+            for_last_name=form.cleaned_data['for_last_name'] if booking_for == 'others' else '',
+            for_phone_number=form.cleaned_data['for_phone_number'] if booking_for == 'others' else '',
+            for_email=form.cleaned_data['for_email'] if booking_for == 'others' else '',
+            status='confirmed',  # Directly confirmed for admin
+            tx_ref=self.generate_tx_ref(),
+        )
+        return spa_booking
+
+    def generate_tx_ref(self):
+        return f"spa_booking-admin-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+
+    def generate_pdf(self, spa_booking):
+        buffer = BytesIO()
+        
+        qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_booking/{spa_booking.id}')
+        
+        context = {
+            'booking': spa_booking,
+            'qr_code_data': qr_code_data,
+        }
+        
+        html_string = render_to_string('spa/booking_confirmation_template_receipt.html', context)
+        
+        pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        buffer.seek(0)
+        return buffer.read()
+
+    def generate_qr_code(self, data):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return mark_safe(f'data:image/png;base64,{img_str}')
+
+
+class SpaBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
+    model = SpaBooking
+    template_name = 'admins/spa_booking_list.html'
+    context_object_name = 'spabookings'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = SpaBooking.objects.all().order_by('-id')
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(user__username__icontains=search_query) |
+                Q(service__name__icontains=search_query) |
+                Q(package__name__icontains=search_query) |
+                Q(tx_ref__icontains=search_query)
+            )
+        return queryset
+
+class SpaBookingDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
+    model = SpaBooking
+    template_name = 'admins/spa_booking_detail.html'
+
+
+class SpaPaymentListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
+    model = SpaPayment
+    template_name = 'admins/spa_payment_list.html'
+    context_object_name = 'spapayments'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = SpaPayment.objects.all().order_by('id')
+        search_query = self.request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(spa_booking__user__username__icontains=search_query) |
+                Q(spa_booking__service__name__icontains=search_query) |
+                Q(spa_booking__package__name__icontains=search_query) |
+                Q(transaction_id__icontains=search_query)
+            )
+        return queryset
+
+class SpaPaymentDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
+    model = SpaPayment
+    template_name = 'admins/spa_payment_detail.html'
+
+class SpaPaymentDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
+    model = SpaPayment
+    success_url = reverse_lazy('admins:spa_payment_list')
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        spa_booking = self.object.spa_booking  # Get the associated spa booking instance
+        success_url = self.get_success_url()
+        try:
+            self.object.delete()
+            spa_booking.delete()  # Delete the associated spa booking instance
+            messages.success(self.request, 'Spa Payment and associated Spa Booking successfully deleted.')
+        except Exception as e:
+            messages.error(self.request, f'Failed to delete spa payment: {str(e)}')
+        return HttpResponseRedirect(success_url)
 
 
 

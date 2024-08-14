@@ -20,12 +20,41 @@
 <link rel="stylesheet" href="{% static 'css/style3.css' %}">
 <link rel="stylesheet" href="{% static 'css/style7.css?v=1.0' %}">
 <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
+
 <style>
     .dropdown-menu {
-    position: absolute;
-    right: 0;
-    z-index: 1050;
-}
+        position: absolute;
+        right: 0;
+        z-index: 1050;
+        min-width: 200px; /* Optional: Adjust width if needed */
+    }
+
+    .dropdown-menu.show {
+        display: block;
+    }
+
+    .dropdown-toggle::after {
+        display: none; /* Hide caret */
+    }
+
+    .dropdown-menu {
+        padding: 0;
+    }
+
+    .dropdown-item {
+        padding: 10px 15px;
+    }
+
+    /* Ensure the dropdowns don't overlap */
+    .dropdown-menu {
+        top: 100%;
+        margin-top: 0.125rem;
+    }
+
+    /* Adjust the dropdown positioning for proper display */
+    .dropdown.show .dropdown-menu {
+        display: block;
+    }
 </style>
 </head>
 <body>
@@ -37,63 +66,89 @@
                     ADAR Admin
                 </a>
             </li>
-            <li>
-                <a href="{% url 'admins:category_list' %}"><strong>Room Catagories</strong></a>
+            <!-- Room Dropdown -->
+            <li class="dropdown mt-3">
+                <a class="dropdown-toggle  w-75 ms-2  border-bottom border-4 border-warning border-bottom " href="#" id="roomDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <strong>Rooms</strong>
+                </a>
+                <ul class="dropdown-menu border-0" aria-labelledby="roomDropdown">
+                    <li><a class="dropdown-item p-0  w-75 mx-auto  small" href="{% url 'admins:category_list' %}"><strong>Room Categories</strong></a></li>
+                    <li><a class="dropdown-item p-0 mr-3 w-75 mx-auto  small" href="{% url 'admins:room_list' %}"><strong>Rooms</strong></a></li>
+                    <li><a class="dropdown-item p-0 mr-3 w-75 mx-auto  small" href="{% url 'admins:booking_list' %}"><strong>Room Bookings</strong></a></li>
+                    <li><a class="dropdown-item p-0 mr-3 w-75 mx-auto  small" href="{% url 'admins:payment_list' %}"><strong>Room Payments</strong></a></li>
+                </ul>
             </li>
-            <li>
-                <a href="{% url 'admins:room_list' %}" ><strong>Rooms</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:booking_list' %}" ><strong>Room Bookings</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:payment_list' %}" ><strong>Room Payments</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:membershipplan_list' %}" ><strong>Membership Plans</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:membership_list' %}" ><strong>Memberships</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:membershippayment_list' %}" ><strong>Membership Payments</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:hall_list' %}" ><strong>Halls</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:hall_booking_list' %}" ><strong>Hall Bookings</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:hall_payment_list' %}" ><strong>Hall Payments</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:spa_service_list' %}" ><strong>Spa Services</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:spa_package_list' %}" ><strong>Spa Packages</strong></a>
-            </li>
-            <li>
-                <a href="{% url 'admins:chat_list' %}" ><strong>Chat List</strong></a>
 
+            <!-- Membership Dropdown -->
+            <li class="dropdown">
+                <a class="dropdown-toggle w-75 ms-2  border-bottom border-4 border-warning border-bottom" href="#" id="membershipDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <strong>Membership</strong>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="membershipDropdown">
+                    <li><a class="dropdown-item" href="{% url 'admins:membershipplan_list' %}"><strong>Membership Plans</strong></a></li>
+                    <li><a class="dropdown-item" href="{% url 'admins:membership_list' %}"><strong>Memberships</strong></a></li>
+                    <li><a class="dropdown-item" href="{% url 'admins:membershippayment_list' %}"><strong>Membership Payments</strong></a></li>
+                </ul>
+            </li>
+
+            <!-- Hall Dropdown -->
+            <li class="dropdown">
+                <a class="dropdown-toggle " href="#" id="hallDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <strong>Halls</strong>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="hallDropdown">
+                    <li><a class="dropdown-item" href="{% url 'admins:hall_list' %}"><strong>Halls</strong></a></li>
+                    <li><a class="dropdown-item" href="{% url 'admins:hall_booking_list' %}"><strong>Hall Bookings</strong></a></li>
+                    <li><a class="dropdown-item" href="{% url 'admins:hall_payment_list' %}"><strong>Hall Payments</strong></a></li>
+                </ul>
+            </li>
+
+            <!-- Spa Dropdown -->
+            <li class="dropdown">
+                <a class="dropdown-toggle" href="#" id="spaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <strong>Spa</strong>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="spaDropdown">
+                    <li><a class="dropdown-item" href="{% url 'admins:spa_service_list' %}"><strong>Spa Services</strong></a></li>
+                    <li><a class="dropdown-item" href="{% url 'admins:spa_package_list' %}"><strong>Spa Packages</strong></a></li>
+                    <li><a class="dropdown-item" href="{% url 'admins:spa_booking_list' %}"><strong>Spa Bookings</strong></a></li>
+                    <li><a class="dropdown-item" href="{% url 'admins:spa_payment_list' %}"><strong>Spa Payments</strong></a></li>
+                </ul>
+            </li>
+
+            <!-- Chat Dropdown -->
+            <li class="dropdown">
+                <a class="dropdown-toggle" href="#" id="chatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <strong>Chat</strong>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="chatDropdown">
+                    <li><a class="dropdown-item" href="{% url 'admins:chat_list' %}"><strong>Chat List</strong></a></li>
+                    <li><a class="dropdown-item" href="{% url 'chat' %}"><strong>ADAR AI</strong></a></li>
+                </ul>
             </li>
 
             {% if user.role == 'owner' %}
-            <li>
-                <a href="{% url 'admins:manager_list' %}" ><strong>Managers</strong></a>
-
+            <!-- Manager Dropdown -->
+            <li class="dropdown">
+                <a class="dropdown-toggle" href="#" id="managerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <strong>Managers</strong>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="managerDropdown">
+                    <li><a class="dropdown-item" href="{% url 'admins:manager_list' %}"><strong>Managers</strong></a></li>
+                    <li><a class="dropdown-item" href="{% url 'admins:receptionist_list' %}"><strong>Receptionists</strong></a></li>
+                </ul>
             </li>
-                <li>
-                    <a href="{% url 'admins:receptionist_list' %}" ><strong>Receptionists</strong></a>
-                </li>
-             {% elif user.role == 'manager' %} 
-             <li>
-                <a href="{% url 'admins:receptionist_list' %}" ><strong>Receptionists</strong></a>
-            </li>  
+            {% elif user.role == 'manager' %}
+            <!-- Receptionist Dropdown -->
+            <li class="dropdown">
+                <a class="dropdown-toggle" href="#" id="receptionistDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <strong>Receptionists</strong>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="receptionistDropdown">
+                    <li><a class="dropdown-item" href="{% url 'admins:receptionist_list' %}"><strong>Receptionists</strong></a></li>
+                </ul>
+            </li>
             {% endif %}
-            <li>
-                <a href="{% url 'chat' %}"><strong>ADAR AI</strong></a>
-            </li>
         </ul>
     </div>
     <div id="page-content-wrapper">

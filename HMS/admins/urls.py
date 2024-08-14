@@ -109,6 +109,15 @@ urlpatterns = [
     path('spa-packages/<int:pk>/delete/', SpaPackageDeleteView.as_view(), name='spa_package_delete'),
     path('verify_spa_booking/<int:spa_booking_id>/', SpaBookingVerifyView.as_view(), name='booking_verify'),
     
+    # SpaBooking URLs
+    path('spa-booking/create/<str:item_type>/<int:item_id>/', SpaBookingCreateView.as_view(), name='spa_booking_create'),
+    path('spa-bookings/', SpaBookingListView.as_view(), name='spa_booking_list'),
+    path('spa-bookings/<int:pk>/', SpaBookingDetailView.as_view(), name='spa_booking_detail'),
+
+    # SpaPayment URLs
+    path('spa-payments/', SpaPaymentListView.as_view(), name='spa_payment_list'),
+    path('spa-payments/<int:pk>/', SpaPaymentDetailView.as_view(), name='spa_payment_detail'),
+    path('spa-payments/<int:pk>/delete/', SpaPaymentDeleteView.as_view(), name='spa_payment_delete'),
     
     # SocialMediaPost URLs
     path('social_media_posts/', SocialMediaPostListView.as_view(), name='social_media_post_list'),
