@@ -59,6 +59,12 @@
                             <a href="{% url 'admins:payment_detail' item.id %}" class="btn btn-link text-warning">
                                 <span class="material-symbols-outlined">info</span>
                             </a>
+                            {% if item.receipt_pdf %}
+                            <!-- Download button -->
+                            <a href="{% url 'admins:payment_download_receipt' item.id %}" class="btn btn-link text-primary">
+                                <span class="material-symbols-outlined">download</span>
+                            </a>
+                            {% endif %}
                             {% if user.role == 'owner' %}
                             <!-- Delete button with modal trigger -->
                             <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ item.id }}">

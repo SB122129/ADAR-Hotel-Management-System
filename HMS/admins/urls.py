@@ -45,7 +45,8 @@ urlpatterns = [
     path('payment/<int:booking_id>/extend/<int:pk>/update/', PaymentExtendView.as_view(), name='payment_extend_update'),
     path('payments/<int:pk>/', PaymentDetailView.as_view(), name='payment_detail'),
     path('payments/<int:pk>/delete/', PaymentDeleteView.as_view(), name='payment_delete'),
-
+    path('payment/<int:pk>/download/', PaymentDownloadReceiptView.as_view(), name='payment_download_receipt'),
+    
     path('membershipplans/', MembershipPlanListView.as_view(), name='membershipplan_list'),
     path('membershipplans/<int:pk>/', MembershipPlanDetailView.as_view(), name='membershipplan_detail'),
     path('membershipplans/create/', MembershipPlanCreateView.as_view(), name='membershipplan_create'),
@@ -62,7 +63,7 @@ urlpatterns = [
     path('membershippayments/', MembershipPaymentListView.as_view(), name='membershippayment_list'),
     path('membershippayments/<int:pk>/', MembershipPaymentDetailView.as_view(), name='membershippayment_detail'),
     path('membershippayments/<int:pk>/delete/', MembershipPaymentDeleteView.as_view(), name='membershippayment_delete'),
-
+    path('membership/payment/<int:pk>/download/', MembershipPaymentDownloadReceiptView.as_view(), name='membershippayment_download_receipt'),
     
     
     # RoomRating URLs
@@ -92,7 +93,7 @@ urlpatterns = [
     path('hall_payment/', HallPaymentListView.as_view(), name='hall_payment_list'),
     path('hall-payment/<int:pk>/', HallPaymentDetailView.as_view(), name='hall_payment_detail'),
     path('hall/payment/<int:pk>/', HallPaymentCreateView.as_view(), name='hall_payment_create'),
-    
+    path('hall/payment/<int:pk>/download/', HallPaymentDownloadReceiptView.as_view(), name='hall_payment_download_receipt'),
     
     # SpaService URLs
     path('spa-services/', SpaServiceListView.as_view(), name='spa_service_list'),
@@ -110,15 +111,16 @@ urlpatterns = [
     path('verify_spa_booking/<int:spa_booking_id>/', SpaBookingVerifyView.as_view(), name='booking_verify'),
     
     # SpaBooking URLs
-    path('spa-booking/create/<str:item_type>/<int:item_id>/', SpaBookingCreateView.as_view(), name='spa_booking_create'),
+    # urls.py
+    path('spa-booking/create/', SpaBookingCreateView.as_view(), name='spa_booking_create'),
     path('spa-bookings/', SpaBookingListView.as_view(), name='spa_booking_list'),
     path('spa-bookings/<int:pk>/', SpaBookingDetailView.as_view(), name='spa_booking_detail'),
-
+    path('spa-bookings/<int:pk>/update/',SpaBookingUpdateView.as_view(), name='spa_booking_update'),
     # SpaPayment URLs
     path('spa-payments/', SpaPaymentListView.as_view(), name='spa_payment_list'),
     path('spa-payments/<int:pk>/', SpaPaymentDetailView.as_view(), name='spa_payment_detail'),
     path('spa-payments/<int:pk>/delete/', SpaPaymentDeleteView.as_view(), name='spa_payment_delete'),
-    
+    path('spa/payment/<int:pk>/download/', SpaPaymentDownloadReceiptView.as_view(), name='spa_payment_download_receipt'),
     # SocialMediaPost URLs
     path('social_media_posts/', SocialMediaPostListView.as_view(), name='social_media_post_list'),
     path('social_media_posts/<int:pk>/', SocialMediaPostDetailView.as_view(), name='social_media_post_detail'),

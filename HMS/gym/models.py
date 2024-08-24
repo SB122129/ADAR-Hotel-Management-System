@@ -55,6 +55,7 @@ class MembershipPayment(models.Model):
     transaction_id = models.CharField(max_length=100)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='chapa')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    receipt_pdf = models.FileField(upload_to='media/receipts/', blank=True, null=True)
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')], default='pending')
 
     def __str__(self):

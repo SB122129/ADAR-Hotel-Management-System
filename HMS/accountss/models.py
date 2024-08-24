@@ -59,6 +59,8 @@ class Custom_user(AbstractUser):
         super().save(*args, **kwargs)
     def __str__(self):
         return self.username    
+    class Meta:
+        app_label = 'accountss' 
 
 
 class Language(models.Model):

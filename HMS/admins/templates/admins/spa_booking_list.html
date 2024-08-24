@@ -26,8 +26,8 @@
             </div>
         </div>
         <div class="d-flex flex-wrap w-100 w-md-50 justify-content-center justify-content-md-end">
-            <a href="" class="btn btn-primary btn-sm mb-2 mb-md-0">Create Spa Booking</a>&ensp;
-            <a href="{% url 'spa:booking_list' %}" class="btn btn-sm btn-success ms-md-2">Show All</a>
+            <a href="{% url 'admins:spa_booking_create' %}" class="btn btn-primary btn-sm mb-2 mb-md-0">Create Spa Booking</a>&ensp;
+            <a href="{% url 'admins:spa_booking_list' %}" class="btn btn-sm btn-success ms-md-2">Show All</a>
         </div>
     </form>
 
@@ -49,7 +49,7 @@
                 {% if object_list %}
                 {% for item in object_list %}
                 <tr>
-                    <td class="align-middle">{{ item.user.username }}</td>
+                    <td class="align-middle">{% if item.user.username %}{{ item.user.username }}{% else %}{{item.for_first_name}}{% endif %}</td>
                     <td class="align-middle">
                         {% if item.service %}
                             {{ item.service.name }}
@@ -70,7 +70,7 @@
                     </td>
                     <td class="text-center">
                         <div class="btn-group" role="group">
-                            <a href="" class="btn btn-link text-primary">
+                            <a href="{% url 'admins:spa_booking_update' item.id %}" class="btn btn-link text-primary">
                                 <span class="material-symbols-outlined">edit_note</span>
                             </a>
                             <a href="{% url 'admins:spa_booking_detail' item.id %}" class="btn btn-link text-warning">

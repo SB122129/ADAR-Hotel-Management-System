@@ -35,6 +35,7 @@
             <p><strong>Email:</strong> {{ membership.for_email }}</p>
             <p><strong>Phone Number:</strong> {{ membership.for_phone_number }}</p>
         {% endif %}
+        <p><strong>Amount:</strong> {{ membership.plan.price }} ETB</p>
     </div>
     <div class="qr-code">
         <img src="{{ qr_code_data }}" alt="QR Code">

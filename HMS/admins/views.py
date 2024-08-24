@@ -495,6 +495,9 @@ class PaymentExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
 
         # Generate receipt PDF
         pdf_response = self.generate_pdf(booking)
+        pdf_name = f"room_booking_extend_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
+        pdf_file = ContentFile(pdf_response) 
+        payment.receipt_pdf.save(pdf_name, pdf_file)
 
         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return HttpResponse(pdf_response, content_type='application/pdf')
@@ -538,6 +541,7 @@ class PaymentExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
         img_str = base64.b64encode(buffered.getvalue()).decode()
         return mark_safe(f'data:image/png;base64,{img_str}')
 
+from django.db import IntegrityError, transaction
 class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
     model = Payment
     form_class = PaymentCreateForm
@@ -558,28 +562,47 @@ class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
-        payment = form.save(commit=False)
-        booking = get_object_or_404(Booking, pk=self.kwargs.get('booking_id'))
-        payment.booking = booking
-        payment.transaction_id = booking.tx_ref
-        payment.payment_date = datetime.now()
-        payment.status = 'completed'
-        payment.save()
-        booking.status = 'confirmed'
-        booking.save()
+        booking_id = self.kwargs.get('booking_id')
+        booking = get_object_or_404(Booking, pk=booking_id)
 
-        # Generate receipt PDF
-        pdf_response = self.generate_pdf(booking)
+        # Check if a payment already exists
+        if Payment.objects.filter(booking=booking).exists():
+            messages.error(self.request, 'Payment already exists for this booking.')
+            return redirect('admins:payment_list')
 
-        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return HttpResponse(pdf_response, content_type='application/pdf')
-        
-        # Automatically download the PDF receipt
-        response = HttpResponse(pdf_response, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="receipt_{booking.id}_{booking.full_name}.pdf"'
+        try:
+            with transaction.atomic():
+                payment = form.save(commit=False)
+                payment.booking = booking
+                payment.transaction_id = booking.tx_ref
+                payment.payment_date = datetime.now()
+                payment.status = 'completed'
+                payment.save()
 
-        messages.success(self.request, 'Booking and Payment completed')
-        return response
+                booking.status = 'confirmed'
+                booking.save()
+
+                # Generate receipt PDF
+                pdf_response = self.generate_pdf(booking)
+                pdf_name = f"room_booking_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
+                pdf_file = ContentFile(pdf_response) 
+                payment.receipt_pdf.save(pdf_name, pdf_file)
+
+                # Handle AJAX request for PDF download
+                if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return HttpResponse(pdf_response, content_type='application/pdf')
+
+                # Regular response (fallback)
+                response = HttpResponse(pdf_response, content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename="receipt_{booking.id}_{booking.full_name}.pdf"'
+                
+                messages.success(self.request, 'Booking and Payment completed')
+                return response
+
+        except IntegrityError:
+            messages.error(self.request, 'A payment for this booking already exists.')
+            return redirect('admins:payment_list')
+
 
     def generate_pdf(self, booking):
         buffer = BytesIO()
@@ -650,12 +673,31 @@ class PaymentDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
         booking = self.object.booking  # Get the associated booking instance
+
+        if booking:
+            print(f"Booking found: {booking.id}")  # Debug statement
+        else:
+            print("No associated booking found.")  # Debug statement
+        
         success_url = self.get_success_url()
+
+        # Explicitly delete the associated booking first, then the payment
+        if booking:
+            booking.delete()
+        
         self.object.delete()
-        booking.delete()  # Delete the associated booking instance
+
         return HttpResponseRedirect(success_url)
 
 
+class PaymentDownloadReceiptView(View):
+    def get(self, request, pk, *args, **kwargs):
+        payment = get_object_or_404(Payment, pk=pk)
+
+        # Serve the file for download
+        response = HttpResponse(payment.receipt_pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{payment.receipt_pdf.name}"'
+        return response
 
 
 
@@ -776,6 +818,9 @@ class MembershipCreateView(OwnerManagerOrReceptionistRequiredMixin, View):
 
             # Generate receipt PDF
             pdf_response = self.generate_pdf(membership)
+            pdf_name = f"membership_receipt_{membership.id}_{membership.for_first_name if membership.for_first_name else membership.user.username}.pdf"
+            pdf_file = ContentFile(pdf_response) 
+            payment.receipt_pdf.save(pdf_name, pdf_file)
 
             # Save and send the PDF response
             if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -839,6 +884,15 @@ class MembershipUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
     success_url = reverse_lazy('admins:membership_list')
     success_message = "Membership was updated successfully."
 
+
+class MembershipPaymentDownloadReceiptView(View):
+    def get(self, request, pk, *args, **kwargs):
+        payment = get_object_or_404(MembershipPayment, pk=pk)
+
+        # Serve the file for download
+        response = HttpResponse(payment.receipt_pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{payment.receipt_pdf.name}"'
+        return response
 
 class MembershipVerifyView(View):
     def get(self, request, membership_id, *args, **kwargs):
@@ -1120,6 +1174,10 @@ class HallPaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, TemplateVie
 
             # Generate receipt PDF
             pdf_response = self.generate_pdf(booking)
+            pdf_name = f"hall_booking_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
+            pdf_file = ContentFile(pdf_response) 
+            payment.receipt_pdf.save(pdf_name, pdf_file)
+            
 
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return HttpResponse(pdf_response, content_type='application/pdf')
@@ -1167,6 +1225,14 @@ class HallPaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, TemplateVie
         img_str = base64.b64encode(buffered.getvalue()).decode()
         return mark_safe(f'data:image/png;base64,{img_str}')
 
+
+
+class HallPaymentDownloadReceiptView(View):
+    def get(self, request, pk, *args, **kwargs):
+        payment = get_object_or_404(Hall_Payment, pk=pk)
+        response = HttpResponse(payment.receipt_pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{payment.receipt_pdf.name}"'
+        return response
 
 class HallBookingVerifyView(View):
     def get(self, request, booking_id, *args, **kwargs):
@@ -1359,6 +1425,15 @@ class SpaPackageDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     template_name = 'admins/spa_package_confirm_delete.html'
     success_url = reverse_lazy('admins:spa_package_list')
 
+class SpaPaymentDownloadReceiptView(View):
+    def get(self, request, pk, *args, **kwargs):
+        payment = get_object_or_404(SpaPayment, pk=pk)
+
+        # Serve the file for download
+        response = HttpResponse(payment.receipt_pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{payment.receipt_pdf.name}"'
+        return response
+
 class SpaBookingVerifyView(View):
     def get(self, request, spa_booking_id, *args, **kwargs):
         try:
@@ -1371,76 +1446,34 @@ class SpaBookingVerifyView(View):
 
 
 from django.core.files.base import ContentFile
-from Spa.forms import SpaBookingForm
+from admins.forms import SpaBookingForm
 
 class SpaBookingCreateView(LoginRequiredMixin, FormView):
     form_class = SpaBookingForm
-    template_name = 'spa/admin_spa_booking_create.html'
+    template_name = 'admins/spa_booking_form.html'
+    
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            # Form is valid, handle it
+            return self.form_valid(form)
+        else:
+            # Form is invalid, return errors
+            return self.form_invalid(form)
 
-    def get_initial(self):
-        initial = super().get_initial()
-        item_type = self.kwargs.get('item_type')
-        item_id = self.kwargs.get('item_id')
-
-        selected_item = None
-        if item_type == 'service':
-            selected_item = SpaService.objects.filter(id=item_id).first()
-        elif item_type == 'package':
-            selected_item = SpaPackage.objects.filter(id=item_id).first()
-
-        if selected_item:
-            # Find an existing booking with a pending status for the user
-            existing_booking = SpaBooking.objects.filter(
-                service=selected_item if item_type == 'service' else None,
-                package=selected_item if item_type == 'package' else None,
-                status='pending'
-            ).first()
-
-            if existing_booking:
-                initial.update({
-                    'service': existing_booking.service,
-                    'package': existing_booking.package,
-                    'appointment_date': existing_booking.appointment_date,
-                    'appointment_time': existing_booking.appointment_time,
-                    'for_first_name': existing_booking.for_first_name,
-                    'for_last_name': existing_booking.for_last_name,
-                    'for_email': existing_booking.for_email,
-                    'for_phone_number': existing_booking.for_phone_number,
-                })
-
-                if existing_booking.for_first_name or existing_booking.for_last_name or existing_booking.for_email or existing_booking.for_phone_number:
-                    initial['booking_for'] = 'others'
-                else:
-                    initial['booking_for'] = 'self'
-
-        return initial
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        item_type = self.kwargs.get('item_type')
-        item_id = self.kwargs.get('item_id')
-
-        if item_type == 'service':
-            context['item'] = SpaService.objects.filter(id=item_id).first()
-        elif item_type == 'package':
-            context['item'] = SpaPackage.objects.filter(id=item_id).first()
-
-        return context
 
     def form_valid(self, form):
-        item_type = self.kwargs.get('item_type')
-        item_id = self.kwargs.get('item_id')
+        service = form.cleaned_data.get('service')
+        package = form.cleaned_data.get('package')
 
-        if item_type == 'service':
-            selected_item = SpaService.objects.filter(id=item_id).first()
-        elif item_type == 'package':
-            selected_item = SpaPackage.objects.filter(id=item_id).first()
+        if service:
+            selected_item = service
+            item_type = 'service'
+        elif package:
+            selected_item = package
+            item_type = 'package'
         else:
-            selected_item = None
-
-        if selected_item is None:
-            messages.error(self.request, 'The item you are trying to book does not exist.')
-            return redirect('spa:booking_list')
+            return self.form_invalid(form)
 
         appointment_date = form.cleaned_data['appointment_date']
         appointment_time = form.cleaned_data['appointment_time']
@@ -1454,7 +1487,7 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
         ).first()
 
         if existing_booking:
-            messages.error(self.request, 'You have an identical booking.')
+            form.add_error(None, 'You have an identical booking.')
             return self.form_invalid(form)
 
         total_bookings = SpaBooking.objects.filter(
@@ -1466,53 +1499,78 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
         ).count()
 
         if total_bookings >= 5:
-            messages.error(self.request, 'This time slot is fully booked. Please select a different time.')
+            form.add_error(None, 'This time slot is fully booked. Please select a different time.')
             return self.form_invalid(form)
-        
+
         spa_booking = self.create_booking(form, selected_item, item_type)
+        pdf_data = self.generate_pdf(spa_booking)
+        payment = self.create_payment(spa_booking, form, pdf_data)
 
-        pdf_response = self.generate_pdf(spa_booking)
-        
-        # Attach PDF to the spa_booking model (optional)
-        spa_booking.receipt_pdf.save(f'receipt_{spa_booking.id}.pdf', ContentFile(pdf_response))
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return HttpResponse(pdf_data, content_type='application/pdf')
 
-        messages.success(self.request, 'Booking created successfully.')
-        return redirect('spa:booking_list')
+        response = HttpResponse(pdf_data, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="spa_booking_receipt_{spa_booking.id}_{spa_booking.for_first_name}.pdf"'
+        messages.success(self.request, 'Booking and payment created successfully.')
+        return response
+
+    def form_invalid(self, form):
+        print('form',form.errors)
+        return super().form_invalid(form)
+
+
+    
 
     def create_booking(self, form, selected_item, item_type):
-        booking_for = form.cleaned_data.get('booking_for')
-
         spa_booking = SpaBooking.objects.create(
             service=selected_item if item_type == 'service' else None,
             package=selected_item if item_type == 'package' else None,
             appointment_date=form.cleaned_data['appointment_date'],
             appointment_time=form.cleaned_data['appointment_time'],
             amount_due=selected_item.price,
-            for_first_name=form.cleaned_data['for_first_name'] if booking_for == 'others' else '',
-            for_last_name=form.cleaned_data['for_last_name'] if booking_for == 'others' else '',
-            for_phone_number=form.cleaned_data['for_phone_number'] if booking_for == 'others' else '',
-            for_email=form.cleaned_data['for_email'] if booking_for == 'others' else '',
-            status='confirmed',  # Directly confirmed for admin
+            for_first_name=form.cleaned_data['for_first_name'],
+            for_last_name=form.cleaned_data['for_last_name'],
+            for_phone_number=form.cleaned_data['for_phone_number'],
+            for_email=form.cleaned_data['for_email'],
+            status='confirmed',
             tx_ref=self.generate_tx_ref(),
         )
         return spa_booking
 
-    def generate_tx_ref(self):
-        return f"spa_booking-admin-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+    def create_payment(self, spa_booking, form, pdf_data):
+        payment_method = form.cleaned_data['payment_method']
+        payment = SpaPayment.objects.create(
+            spa_booking=spa_booking,
+            transaction_id=spa_booking.tx_ref,
+            payment_method=payment_method,
+            amount=spa_booking.amount_due,
+            status='completed',
+        )
+
+        # Save the PDF receipt to the 'receipt' field
+        pdf_name = f"spa_booking_receipt_{spa_booking.id}_{spa_booking.for_first_name}.pdf"
+        payment.receipt_pdf.save(pdf_name, ContentFile(pdf_data))
+        payment.save()
+
+        return payment
 
     def generate_pdf(self, spa_booking):
         buffer = BytesIO()
-        
+
+        # Generate QR code data
         qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_booking/{spa_booking.id}')
-        
+
         context = {
-            'booking': spa_booking,
+            'spa_booking': spa_booking,
             'qr_code_data': qr_code_data,
         }
-        
+
         html_string = render_to_string('spa/booking_confirmation_template_receipt.html', context)
-        
+
         pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+        if pisa_status.err:
+            raise Exception("PDF generation failed")
+
         buffer.seek(0)
         return buffer.read()
 
@@ -1530,6 +1588,16 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
         return mark_safe(f'data:image/png;base64,{img_str}')
+
+    def generate_tx_ref(self):
+        return f"spa_booking-admin-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+
+class SpaBookingUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
+    model = SpaBooking
+    template_name = 'admins/spa_booking_update_form.html'
+    form_class = SpaBookingUpdateForm
+    success_url = reverse_lazy('admins:spa_booking_list')
+    success_message = "Spa Booking status was updated successfully."
 
 
 class SpaBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):

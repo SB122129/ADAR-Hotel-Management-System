@@ -290,6 +290,8 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
 
 
 
+from django.core.files.base import ContentFile
+
 class SpaPayPalReturnView(View):
     def get(self, request, *args, **kwargs):
         payment_id = request.GET.get('paymentId')
@@ -298,21 +300,26 @@ class SpaPayPalReturnView(View):
 
         payment = paypalrestsdk.Payment.find(payment_id)
         if payment.execute({"payer_id": payer_id}):
-            SpaPayment.objects.create(
+            # Generate receipt PDF
+            pdf_response = self.generate_pdf(spa_booking)
+            pdf_name = f"spa_booking_receipt_{spa_booking.id}_{spa_booking.for_first_name if spa_booking.for_first_name else spa_booking.user.username}.pdf"
+            pdf_file = ContentFile(pdf_response)  # Convert PDF response to ContentFile
+
+            # Save the payment and PDF file to the model
+            spa_payment = SpaPayment.objects.create(
                 spa_booking=spa_booking,
                 transaction_id=payment_id,
                 amount=spa_booking.amount_due,
                 status='completed',
-                payment_method='paypal'
+                payment_method='paypal',
             )
+            spa_payment.receipt_pdf.save(pdf_name, pdf_file)  # Save the PDF to the receipt_pdf field
+
             spa_booking.status = 'confirmed'
             spa_booking.save()
 
-            # Generate receipt PDF
-            pdf_response = self.generate_pdf(spa_booking)
-
             booking_url = f"{BASE_URL}/spa/my-bookings/"
-            html_content = render_to_string('spa/booking_confirmation_template.html', {'booking': spa_booking, 'booking_url': booking_url})
+            html_content = render_to_string('spa/booking_confirmation_template.html', {'spa_booking': spa_booking, 'booking_url': booking_url})
 
             # Create the email message with only HTML content
             email = EmailMultiAlternatives(
@@ -323,7 +330,7 @@ class SpaPayPalReturnView(View):
             # Attach the HTML content
             email.attach_alternative(html_content, "text/html")
             # Attach the PDF receipt
-            email.attach(f'receipt_{spa_booking.id}_{spa_booking.user.username}.pdf', pdf_response, 'application/pdf')
+            email.attach(pdf_name, pdf_response, 'application/pdf')
 
             # Send the email
             email.send()
@@ -335,7 +342,7 @@ class SpaPayPalReturnView(View):
                     to=[spa_booking.for_email]
                 )
                 for_email.attach_alternative(html_content, "text/html")
-                for_email.attach(f'receipt_{spa_booking.id}_{spa_booking.user.username}.pdf', pdf_response, 'application/pdf')
+                for_email.attach(pdf_name, pdf_response, 'application/pdf')
                 for_email.send()
 
             messages.success(request, 'Payment successful and booking confirmed.')
@@ -351,7 +358,7 @@ class SpaPayPalReturnView(View):
         qr_code_data = self.generate_qr_code(f'{BASE_URL}/admins/verify_booking/{spa_booking.id}')
         
         context = {
-            'booking': spa_booking,
+            'spa_booking': spa_booking,
             'qr_code_data': qr_code_data,
         }
         
@@ -375,6 +382,7 @@ class SpaPayPalReturnView(View):
         img.save(buffered, format="PNG")
         img_str = base64.b64encode(buffered.getvalue()).decode()
         return mark_safe(f'data:image/png;base64,{img_str}')
+
 
 
 

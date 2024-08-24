@@ -59,6 +59,11 @@
                             <a href="{% url 'admins:membershippayment_detail' item.id %}" class="btn btn-link text-warning">
                                 <span class="material-symbols-outlined">info</span>
                             </a>
+                            {% if item.receipt_pdf %}
+                            <a href="{% url 'admins:membershippayment_download_receipt' item.id %}" class="btn btn-link text-primary">
+                                <span class="material-symbols-outlined">download</span>
+                            </a>
+                            {% endif %}
                             {% if user.role == 'owner' %}
                             <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-id="{{ item.id }}">
                                 <span class="material-symbols-outlined">delete_forever</span>

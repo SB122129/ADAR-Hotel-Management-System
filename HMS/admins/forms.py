@@ -296,6 +296,7 @@ class MembershipCreateForm(forms.ModelForm):
 
 from django import forms
 from Hall.models import Hall, Hall_Booking, Hall_Payment
+from datetime import timedelta, datetime
 
 class CheckAvailabilityForm(forms.Form):
     hall = forms.ModelChoiceField(queryset=Hall.objects.all(), widget=forms.Select(attrs={'class': 'form-control'}))
@@ -312,11 +313,28 @@ class CheckAvailabilityForm(forms.Form):
         end_time = cleaned_data.get('end_time')
         hall = cleaned_data.get('hall')
 
+        # Check if start date is in the past
+        if start_date and start_date < timezone.now().date():
+            raise ValidationError("Start date cannot be in the past.")
+
+        # Check if end date is in the past
+        if end_date and end_date < timezone.now().date():
+            raise ValidationError("End date cannot be in the past.")
+
+        # Check if end date is before start date
         if end_date and end_date < start_date:
             raise ValidationError("End date cannot be before start date.")
 
+        # Check if end time is before start time when dates are the same
         if end_date == start_date and end_time < start_time:
             raise ValidationError("End time cannot be before start time when start and end dates are the same.")
+
+        # Check if the gap between start time and end time is at least one hour
+        if end_date == start_date:
+            start_datetime = datetime.combine(start_date, start_time)
+            end_datetime = datetime.combine(end_date, end_time)
+            if end_datetime - start_datetime < timedelta(hours=1):
+                raise ValidationError("The gap between start time and end time must be at least one hour.")
 
         return cleaned_data
 
@@ -468,7 +486,7 @@ class SpaBookingForm(forms.ModelForm):
         validators=[phone_validator],
         widget=forms.TextInput(attrs={'placeholder': '+2519xxxxxxxx or +2517xxxxxxxx', 'pattern': r'^\+251(9|7)\d{8}$'})
     )
-    payment_method = forms.ChoiceField(choices=[('chapa', 'Chapa'), ('paypal', 'PayPal')])
+    payment_method = forms.ChoiceField(choices=[('chapa', 'Chapa'), ('paypal', 'PayPal'),('cash', 'Cash')])
 
     class Meta:
         model = SpaBooking
@@ -491,3 +509,18 @@ class SpaBookingForm(forms.ModelForm):
             raise ValidationError('The appointment time must be between 7:00 AM and 9:00 PM.')
         
         return appointment_time
+
+    def clean(self):
+        cleaned_data = super().clean()
+        service = cleaned_data.get('service')
+        package = cleaned_data.get('package')
+
+        if service and package:
+            raise ValidationError('You cannot select both a service and a package. Please select only one.')
+
+        return cleaned_data
+
+class SpaBookingUpdateForm(forms.ModelForm):
+    class Meta:
+        model = SpaBooking
+        fields = ['status']

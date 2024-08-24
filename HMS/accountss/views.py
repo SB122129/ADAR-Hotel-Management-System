@@ -30,6 +30,24 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 
+
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.hashers import make_password
+from .models import Custom_user
+
+class CustomUserAdmin(UserAdmin):
+    model = Custom_user
+
+    def save_model(self, request, obj, form, change):
+        if form.cleaned_data['password']:
+            obj.password = make_password(form.cleaned_data['password'])
+        super().save_model(request, obj, form, change)
+
+# Modify this instead of registering again
+admin.site.unregister(Custom_user)  # If needed, to clear the existing registration
+admin.site.register(Custom_user, CustomUserAdmin)
+
 @login_required
 def redirect_view(request):
     user = request.user

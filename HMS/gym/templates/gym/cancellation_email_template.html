@@ -67,7 +67,7 @@
             <h3>Dear {{ membership.user.first_name }},</h3>
             <p>You have successfully cancelled membership for  {{ membership.plan.name }} {% if membership.for_first_name %} for {{membership.for_first_name}}{% endif %} </p>
             <p>We hope to see you soon!</p>
-            <a href="{{ booking_url }}" class="button">View Bookings</a>
+            <a href="{{ membership_url }}" class="button">View Memberships</a>
         </div>
         <div class="footer">
             <p>Thank you for choosing ADAR Hotel!</p>

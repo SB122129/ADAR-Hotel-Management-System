@@ -6,6 +6,7 @@ from .models import Room, Booking, Payment, RoomRating,Receipt
 from .forms import BookingForm, RoomRatingForm
 import requests
 import random
+from django.core.files.base import ContentFile
 from reportlab.pdfgen import canvas
 from django.db.models import Q
 from django.utils import timezone
@@ -554,7 +555,9 @@ class PayPalReturnView(View):
 
                 # Generate receipt PDF
                 pdf_response = self.generate_pdf(booking)
-
+                pdf_name = f"room_booking_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
+                pdf_file = ContentFile(pdf_response) 
+                payment.receipt_pdf.save(pdf_name, pdf_file)
                 booking_url = f"{BASE_URL}/room/my-bookings/"
                 if booking.extended_check_out_date:
                     subject = 'Room Booking Extension Confirmation'
@@ -728,6 +731,9 @@ class ChapaWebhookView(View):
 
         # Generate receipt PDF
         pdf_response = self.generate_pdf(booking)
+        pdf_name = f"room_booking_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
+        pdf_file = ContentFile(pdf_response) 
+        payment.receipt_pdf.save(pdf_name, pdf_file)
         # Attach the PDF receipt
         email.attach(f'receipt_{booking.id}_{booking.user.username}.pdf', pdf_response, 'application/pdf')
 
@@ -822,6 +828,9 @@ class ChapaWebhookView(View):
 
         # Generate receipt PDF
         pdf_response = self.generate_hall_pdf(booking)
+        pdf_name = f"hall_booking_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
+        pdf_file = ContentFile(pdf_response) 
+        payment.receipt_pdf.save(pdf_name, pdf_file)
         # Attach the PDF receipt
         email.attach(f'receipt_{booking.id}_{booking.user.username}.pdf', pdf_response, 'application/pdf')
 
@@ -899,6 +908,9 @@ class ChapaWebhookView(View):
 
         # Generate receipt PDF
         pdf_response = self.generate_membership_pdf(membership)
+        pdf_name = f"membership_booking_receipt_{membership.id}_{membership.for_first_name if membership.for_first_name else membership.user.username}.pdf"
+        pdf_file = ContentFile(pdf_response) 
+        membership_payment.receipt_pdf.save(pdf_name, pdf_file)
         # Attach the PDF receipt
         email.attach(f'receipt_{membership.id}_{membership.user.username}.pdf', pdf_response, 'application/pdf')
 
@@ -971,6 +983,9 @@ class ChapaWebhookView(View):
 
         # Generate receipt PDF
         pdf_response = self.generate_spa_pdf(spa_booking)
+        pdf_name = f"spa_booking_receipt_{spa_booking.id}_{spa_booking.for_first_name if spa_booking.for_first_name else spa_booking.user.username}.pdf"
+        pdf_file = ContentFile(pdf_response)
+        payment.receipt_pdf.save(pdf_name, pdf_file)
 
         booking_url = f"{BASE_URL}/spa/my-bookings/"
         html_content = render_to_string('spa/booking_confirmation_template.html', {'spa_booking': spa_booking, 'booking_url': booking_url})

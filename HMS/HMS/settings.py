@@ -115,7 +115,7 @@ ALLOWED_HOSTS = [ '*']
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000/',
     'https://broadly-lenient-adder.ngrok-free.app',
-    'https://adarhotel33.loophole.site',
+    'https://adarhotel3.loophole.site',
 ]
 
 CSRF_COOKIE_SECURE = False

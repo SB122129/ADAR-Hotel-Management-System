@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from .forms import CheckAvailabilityForm, BookingForm
 import datetime
 import random
+from django.core.files.base import ContentFile
 import string
 import requests
 from decimal import Decimal
@@ -352,6 +353,9 @@ class PayPalReturnView(View):
                 
                 # Generate receipt PDF
                 pdf_response = self.generate_pdf(booking)
+                pdf_name = f"hall_booking_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
+                pdf_file = ContentFile(pdf_response) 
+                payment_record.receipt_pdf.save(pdf_name, pdf_file)
 
                 # Prepare the booking URL and render the confirmation email template
                 booking_url = f"{BASE_URL}/hall/my-bookings/"

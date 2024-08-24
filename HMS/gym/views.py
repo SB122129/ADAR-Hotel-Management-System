@@ -17,6 +17,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from .models import MembershipPlan, Membership, MembershipPayment
 from .forms import *
+from django.core.files.base import ContentFile
 from dateutil.relativedelta import relativedelta
 import random
 import string
@@ -292,7 +293,7 @@ class PayPalReturnView(View):
 
         payment = paypalrestsdk.Payment.find(payment_id)
         if payment.execute({"payer_id": payer_id}):
-            MembershipPayment.objects.create(
+            payment = MembershipPayment.objects.create(
                 membership=membership,
                 transaction_id=payment_id,
                 amount=membership.plan.price,
@@ -304,7 +305,9 @@ class PayPalReturnView(View):
             
             # Generate receipt PDF
             pdf_response = self.generate_pdf(membership)
-            
+            pdf_name = f"membership_booking_receipt_{membership.id}_{membership.for_first_name if membership.for_first_name else membership.user.username}.pdf"
+            pdf_file = ContentFile(pdf_response) 
+            payment.receipt_pdf.save(pdf_name, pdf_file)
             membership_url = f"{BASE_URL}/gym/my-memberships/"
             html_content = render_to_string('gym/membership_confirmation_template.html', {'membership': membership, 'membership_url': membership_url})
             

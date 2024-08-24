@@ -68,7 +68,7 @@
             </li>
             <!-- Room Dropdown -->
             <li class="dropdown mt-3">
-                <a class="dropdown-toggle  w-75 ms-2  border-bottom border-4 border-warning border-bottom " href="#" id="roomDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <a class="dropdown-toggle  w-75 ms-2  border-bottom border-3 border-warning border-bottom " href="#" id="roomDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <strong>Rooms</strong>
                 </a>
                 <ul class="dropdown-menu border-0" aria-labelledby="roomDropdown">
@@ -81,49 +81,49 @@
 
             <!-- Membership Dropdown -->
             <li class="dropdown">
-                <a class="dropdown-toggle w-75 ms-2  border-bottom border-4 border-warning border-bottom" href="#" id="membershipDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <a class="dropdown-toggle w-75 ms-2  border-bottom border-3 border-warning border-bottom" href="#" id="membershipDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <strong>Membership</strong>
                 </a>
-                <ul class="dropdown-menu" aria-labelledby="membershipDropdown">
-                    <li><a class="dropdown-item" href="{% url 'admins:membershipplan_list' %}"><strong>Membership Plans</strong></a></li>
-                    <li><a class="dropdown-item" href="{% url 'admins:membership_list' %}"><strong>Memberships</strong></a></li>
-                    <li><a class="dropdown-item" href="{% url 'admins:membershippayment_list' %}"><strong>Membership Payments</strong></a></li>
+                <ul class="dropdown-menu border-0" aria-labelledby="membershipDropdown">
+                    <li><a class="dropdown-item p-0  w-75 mx-auto  small" href="{% url 'admins:membershipplan_list' %}"><strong>Membership Plans</strong></a></li>
+                    <li><a class="dropdown-item p-0  w-75 mx-auto  small" href="{% url 'admins:membership_list' %}"><strong>Memberships</strong></a></li>
+                    <li><a class="dropdown-item p-0  w-75 mx-auto  small" href="{% url 'admins:membershippayment_list' %}"><strong>Membership Payments</strong></a></li>
                 </ul>
             </li>
 
             <!-- Hall Dropdown -->
             <li class="dropdown">
-                <a class="dropdown-toggle " href="#" id="hallDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <a class="dropdown-toggle  w-75 ms-2  border-bottom border-3 border-warning border-bottom" href="#" id="hallDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <strong>Halls</strong>
                 </a>
-                <ul class="dropdown-menu" aria-labelledby="hallDropdown">
-                    <li><a class="dropdown-item" href="{% url 'admins:hall_list' %}"><strong>Halls</strong></a></li>
-                    <li><a class="dropdown-item" href="{% url 'admins:hall_booking_list' %}"><strong>Hall Bookings</strong></a></li>
-                    <li><a class="dropdown-item" href="{% url 'admins:hall_payment_list' %}"><strong>Hall Payments</strong></a></li>
+                <ul class="dropdown-menu border-0" aria-labelledby="hallDropdown">
+                    <li><a class="dropdown-item p-0  w-75 mx-auto  small " href="{% url 'admins:hall_list' %}"><strong>Halls</strong></a></li>
+                    <li><a class="dropdown-item p-0  w-75 mx-auto  small" href="{% url 'admins:hall_booking_list' %}"><strong>Hall Bookings</strong></a></li>
+                    <li><a class="dropdown-item p-0  w-75 mx-auto  small" href="{% url 'admins:hall_payment_list' %}"><strong>Hall Payments</strong></a></li>
                 </ul>
             </li>
 
             <!-- Spa Dropdown -->
             <li class="dropdown">
-                <a class="dropdown-toggle" href="#" id="spaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <a class="dropdown-toggle  w-75 ms-2  border-bottom border-3 border-warning border-bottom" href="#" id="spaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <strong>Spa</strong>
                 </a>
-                <ul class="dropdown-menu" aria-labelledby="spaDropdown">
-                    <li><a class="dropdown-item" href="{% url 'admins:spa_service_list' %}"><strong>Spa Services</strong></a></li>
-                    <li><a class="dropdown-item" href="{% url 'admins:spa_package_list' %}"><strong>Spa Packages</strong></a></li>
-                    <li><a class="dropdown-item" href="{% url 'admins:spa_booking_list' %}"><strong>Spa Bookings</strong></a></li>
-                    <li><a class="dropdown-item" href="{% url 'admins:spa_payment_list' %}"><strong>Spa Payments</strong></a></li>
+                <ul class="dropdown-menu border-0" aria-labelledby="spaDropdown">
+                    <li><a class="dropdown-item p-0 w-75 mx-auto  small" href="{% url 'admins:spa_service_list' %}"><strong>Spa Services</strong></a></li>
+                    <li><a class="dropdown-item p-0 w-75 mx-auto  small" href="{% url 'admins:spa_package_list' %}"><strong>Spa Packages</strong></a></li>
+                    <li><a class="dropdown-item p-0 w-75 mx-auto  small" href="{% url 'admins:spa_booking_list' %}"><strong>Spa Bookings</strong></a></li>
+                    <li><a class="dropdown-item p-0 w-75 mx-auto  small" href="{% url 'admins:spa_payment_list' %}"><strong>Spa Payments</strong></a></li>
                 </ul>
             </li>
 
             <!-- Chat Dropdown -->
-            <li class="dropdown">
-                <a class="dropdown-toggle" href="#" id="chatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <li class="dropdown ">
+                <a class="dropdown-toggle w-75 ms-2  border-bottom border-3 border-warning border-bottom" href="#" id="chatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <strong>Chat</strong>
                 </a>
-                <ul class="dropdown-menu" aria-labelledby="chatDropdown">
-                    <li><a class="dropdown-item" href="{% url 'admins:chat_list' %}"><strong>Chat List</strong></a></li>
-                    <li><a class="dropdown-item" href="{% url 'chat' %}"><strong>ADAR AI</strong></a></li>
+                <ul class="dropdown-menu border-0" aria-labelledby="chatDropdown">
+                    <li><a class="dropdown-item p-0 w-75 mx-auto  small" href="{% url 'admins:chat_list' %}"><strong>Chat List</strong></a></li>
+                    <li><a class="dropdown-item p-0 w-75 mx-auto  small" href="{% url 'chat' %}"><strong>ADAR AI</strong></a></li>
                 </ul>
             </li>
 

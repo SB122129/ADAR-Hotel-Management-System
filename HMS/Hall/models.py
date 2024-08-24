@@ -69,6 +69,7 @@ class Hall_Payment(models.Model):
     transaction_id = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
+    receipt_pdf = models.FileField(upload_to='media/receipts/', blank=True, null=True)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='chapa')
     
     def __str__(self):
