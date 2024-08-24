@@ -48,7 +48,7 @@
                 {% for item in object_list %}
                 <tr>
                     <td class="align-middle"><a href="{% url 'admins:spa_booking_detail' item.spa_booking.pk %}" class="text-decoration-none text-primary">{{ item.spa_booking }}</a></td>
-                    <td class="align-middle">{{ item.spa_booking.user.username }}</td>
+                    <td class="align-middle">{% if item.spa_booking.user.username %}{{ item.spa_booking.user.username }}{% else %}{{item.spa_booking.for_first_name}}{% endif %}</td>
                     <td class="align-middle">{% if item.spa_booking.service %}{{ item.spa_booking.service.name }}{% else %} {{ item.spa_booking.package.name }} {% endif %}</td>
                     <td class="align-middle">ETB {{ item.amount }}</td>
                     <td class="align-middle">{{ item.payment_date }}</td>

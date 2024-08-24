@@ -163,12 +163,14 @@ body{
     }
     
     .sidebar-brand {
-    border-bottom: 2px solid rgba(102, 97, 91, 0.3);
+    border-bottom: 5px solid rgba(102, 97, 91, 0.3);
+    margin-top: 5px;
+
     }
     
     .sidebar-brand {
-    padding: 18px 0px;
-    margin: 0 20px;
+    padding: 25px 0px;
+    margin: 10px 20px;
     }
     
     .navbar .navbar-nav > li > a p {

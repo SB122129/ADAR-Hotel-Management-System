@@ -8,7 +8,7 @@
             <div class="card shadow-lg">
                 <div class="card-body">
                     <h5 class="card-title text-center mb-3 mt-3"><strong>Create Spa Booking</strong></h5>
-                    <form id="spa-booking-form" method="post" class="d-flex flex-column" action="{% url 'admins:booking_create' %}">
+                    <form id="spa-booking-form" method="post" class="d-flex flex-column" action="{% url 'admins:spa_booking_create' %}">
                         {% csrf_token %}
                         <div id="non-field-errors" class="alert alert-danger alert-dismissible fade show" role="alert" style="display: none;">
                             <span id="non-field-errors-text"></span>

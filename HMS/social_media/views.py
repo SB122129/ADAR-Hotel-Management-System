@@ -25,6 +25,7 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from datetime import timedelta
 from django.db.models import Count, Sum
+from Spa.models import *
 
 
 
@@ -80,35 +81,55 @@ class ChatBotViews(LoginRequiredMixin, FormView, ListView):
     def handle_custom_commands(self, user_message):
         user_message_lower = user_message.lower()
 
-        if "available rooms" in user_message_lower:
+        # Available room commands
+        if any(keyword in user_message_lower for keyword in ["available rooms", "show me rooms", "rooms that are available"]):
             return self.get_available_rooms()
 
-        if "pending bookings" in user_message_lower:
+        # Pending bookings commands
+        if any(keyword in user_message_lower for keyword in ["pending bookings", "show pending bookings"]):
             return self.get_pending_bookings()
 
-        if "total bookings" in user_message_lower:
+        # Total bookings commands
+        if any(keyword in user_message_lower for keyword in ["total bookings", "all bookings"]):
             return self.get_total_bookings()
 
-        if "total revenue by room type" in user_message_lower:
+        # Total revenue by room type commands
+        if any(keyword in user_message_lower for keyword in ["total revenue by room type", "room revenue"]):
             return self.get_total_revenue_by_room_type()
 
-        if "total revenue by hall type" in user_message_lower:
+        # Total revenue by hall type commands
+        if any(keyword in user_message_lower for keyword in ["total revenue by hall type", "hall revenue"]):
             return self.get_total_revenue_by_hall_type()
 
-        if "total number of memberships" in user_message_lower:
+        # Membership commands
+        if any(keyword in user_message_lower for keyword in ["total number of memberships", "membership count", "membership statistics"]):
             return self.get_total_memberships()
 
-        if "booking trends" in user_message_lower:
+        # Booking trends
+        if any(keyword in user_message_lower for keyword in ["booking trends", "trends for bookings"]):
             return self.get_booking_trends()
 
-        if "room booking trends" in user_message_lower:
+        # Room booking trends
+        if any(keyword in user_message_lower for keyword in ["room booking trends", "trends for room bookings"]):
             return self.get_room_booking_trends()
 
-        if "hall booking trends" in user_message_lower:
+        # Hall booking trends
+        if any(keyword in user_message_lower for keyword in ["hall booking trends", "trends for hall bookings"]):
             return self.get_hall_booking_trends()
+
+        # Spa-related commands
+        if any(keyword in user_message_lower for keyword in ["available spa services", "list spa services"]):
+            return self.get_spa_services()
+
+        if any(keyword in user_message_lower for keyword in ["available spa packages", "list spa packages"]):
+            return self.get_spa_packages()
+
+        if any(keyword in user_message_lower for keyword in ["pending spa bookings", "spa bookings pending"]):
+            return self.get_pending_spa_bookings()
 
         return None
 
+    # Existing methods for room, hall, and membership-related data
     def get_available_rooms(self):
         available_rooms = Room.objects.filter(room_status='vacant')
         response_text = "Available Rooms:<br>"
@@ -149,7 +170,6 @@ class ChatBotViews(LoginRequiredMixin, FormView, ListView):
         return response_text
 
     def get_booking_trends(self):
-        # Example of booking trends over the last month
         one_month_ago = timezone.now() - timedelta(days=30)
         room_bookings = Booking.objects.filter(created_at__gte=one_month_ago).count()
         hall_bookings = Hall_Booking.objects.filter(created_at__gte=one_month_ago).count()
@@ -173,6 +193,29 @@ class ChatBotViews(LoginRequiredMixin, FormView, ListView):
         response_text = "Hall Booking Trends:<br>"
         for booking in hall_bookings:
             response_text += f"{booking['created_at__date']}: {booking['count']} bookings<br>"
+        return response_text
+
+    # New methods for spa-related data
+    def get_spa_services(self):
+        services = SpaService.objects.all()
+        response_text = "Available Spa Services:<br>"
+        for service in services:
+            response_text += f"{service.name} - ETB {service.price}<br>"
+        return response_text
+
+    def get_spa_packages(self):
+        packages = SpaPackage.objects.all()
+        response_text = "Available Spa Packages:<br>"
+        for package in packages:
+            response_text += f"{package.name} - ETB {package.price}<br>"
+        return response_text
+
+    def get_pending_spa_bookings(self):
+        pending_spa_bookings = SpaBooking.objects.filter(status='pending')
+        response_text = "Pending Spa Bookings:<br>"
+        for booking in pending_spa_bookings:
+            service_or_package = booking.service.name if booking.service else booking.package.name
+            response_text += f"Spa Booking ID: {booking.id} - {service_or_package} for {booking.appointment_date}<br>"
         return response_text
 
 

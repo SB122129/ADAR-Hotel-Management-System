@@ -48,7 +48,7 @@
                 {% for item in object_list %}
                 <tr>
                     <td class="align-middle"><a href="{% url 'admins:membership_detail' item.membership.pk %}" class="text-decoration-none text-primary">{{ item.membership }}</a></td>
-                    <td class="align-middle">{{ item.membership.user.username }}</td>
+                    <td class="align-middle">{% if membership.user.username %}{{ membership.user.username }}{% else %}{{membership.for_first_name}}{% endif %}</td>
                     <td class="align-middle">{{ item.membership.plan.name }}</td>
                     <td class="align-middle">ETB {{ item.amount }}</td>
                     <td class="align-middle">{{ item.payment_date }}</td>

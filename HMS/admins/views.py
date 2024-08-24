@@ -912,7 +912,7 @@ class MembershipPaymentListView(OwnerManagerOrReceptionistRequiredMixin, ListVie
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = MembershipPayment.objects.all().order_by('id')
+        queryset = MembershipPayment.objects.all().order_by('-id')
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
@@ -1509,17 +1509,20 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return HttpResponse(pdf_data, content_type='application/pdf')
 
+
         response = HttpResponse(pdf_data, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="spa_booking_receipt_{spa_booking.id}_{spa_booking.for_first_name}.pdf"'
         messages.success(self.request, 'Booking and payment created successfully.')
         return response
 
     def form_invalid(self, form):
-        print('form',form.errors)
-        return super().form_invalid(form)
-
-
-    
+        print('form', form.errors)
+        
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'errors': form.errors}, status=400)
+        
+        # For non-AJAX requests, fallback to the default behavior
+        return super().form_invalid(form)  
 
     def create_booking(self, form, selected_item, item_type):
         spa_booking = SpaBooking.objects.create(
@@ -1566,7 +1569,7 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
         }
 
         html_string = render_to_string('spa/booking_confirmation_template_receipt.html', context)
-
+        print("Generated HTML for PDF:", html_string)
         pisa_status = pisa.CreatePDF(html_string, dest=buffer)
         if pisa_status.err:
             raise Exception("PDF generation failed")
@@ -1630,7 +1633,7 @@ class SpaPaymentListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = SpaPayment.objects.all().order_by('id')
+        queryset = SpaPayment.objects.all().order_by('-id')
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
