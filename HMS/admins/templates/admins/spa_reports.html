@@ -1,0 +1,102 @@
+{% extends 'admins/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h3 class="mb-4 text-center"><strong>Spa Reports</strong></h3>
+
+    <div class="card shadow-sm rounded mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3"><i class="bi bi-calculator"></i><strong> Calculated Reports</strong></h5>
+            <div class="row mb-2">
+                <div class="col-5"><strong>Monthly Bookings</strong></div>
+                <div class="col-7">{{ monthly_bookings }}</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-5"><strong>Monthly Revenue</strong></div>
+                <div class="col-7">ETB {{ monthly_revenue }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4 shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="card-title"><strong>Bookings by Service</strong></h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for item in bookings_by_service %}
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>{{ item.service__name }}</span>
+                                <span>{{ item.total }} bookings</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    
+        <div class="col-md-6">
+            <div class="card mb-4 shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="card-title"><strong>Bookings by Package</strong></h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for item in bookings_by_package %}
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>{{ item.package__name }}</span>
+                                <span>{{ item.total }} bookings</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+
+    <div class="card shadow-sm rounded mb-4 mt-4">
+        <div class="card-header">
+            <h5 class="card-title"><strong>All Data Reports</strong></h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'admins:export_spa_report' 'bookings' %}" class="btn btn-warning btn-block">
+                        <i class="bi bi-download"></i> Download All Bookings Report
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'admins:export_spa_report' 'services' %}" class="btn btn-warning btn-block">
+                        <i class="bi bi-download"></i> Download All Services Report
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'admins:export_spa_report' 'packages' %}" class="btn btn-warning btn-block">
+                        <i class="bi bi-download"></i> Download All Packages Report
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'admins:export_spa_report' 'payments' %}" class="btn btn-warning btn-block">
+                        <i class="bi bi-download"></i> Download All Payments Report
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'admins:export_spa_report' 'monthly_bookings' %}" class="btn btn-warning btn-block">
+                        <i class="bi bi-download"></i> Download Monthly Bookings Report
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'admins:export_spa_report' 'monthly_revenue' %}" class="btn btn-warning btn-block">
+                        <i class="bi bi-download"></i> Download Monthly Revenue Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

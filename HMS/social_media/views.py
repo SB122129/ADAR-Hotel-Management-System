@@ -259,3 +259,417 @@ def send_message_to_telegram(request):
 
         return JsonResponse({"status": "success"})
     return JsonResponse({"status": "invalid request"}, status=400)
+
+
+from django.views.generic import CreateView, ListView
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
+from .models import SocialMediaPost
+from .forms import SocialMediaPostForm
+import requests
+from requests_oauthlib import OAuth1
+import json
+from tempfile import NamedTemporaryFile
+
+
+
+
+# Functions to handle posting to various platforms
+
+facebook_app_secret = 'f67d5b305bbc09cac226063be6e47acf'
+facebook_app_id = '3433472120208474'
+
+meta_access_token = 'EAAwyuYYSPFoBOxa0HFZANR4urHmHgTa4wtTrQhsoe7ZC0MXzKmldjcjZCvUHAYV6CZBcY7e3h90eL4bmOw3o0WYcUN9fKycs5ed1g27IKQxIS6rpqjUTKyt6DKXGhQnVunryCN0ZCaMaHozjvac8MIYLAZCsfT2ERAmEw3ubpC3f7Gq1Qt7FodNUGwDqGRgIA6w7yEHtHX'
+
+
+import requests
+
+def post_to_facebook(message, media_path=None):
+    access_token = meta_access_token
+    page_id = '61564722219150'
+    api_version = 'v17.0'  # Use the latest stable API version
+
+    if media_path:
+        post_url = f'https://graph.facebook.com/{api_version}/{page_id}/photos'
+        post_data = {'caption': message, 'access_token': access_token}
+        files = {'source': open(media_path, 'rb')}
+        response = requests.post(post_url, data=post_data, files=files)
+    else:
+        post_url = f'https://graph.facebook.com/{api_version}/{page_id}/feed'
+        post_data = {'message': message, 'access_token': access_token}
+        response = requests.post(post_url, data=post_data)
+
+    # Detailed logging for debugging
+    if response.status_code in (200, 201):
+        post_id = response.json().get('id')
+        print("Successfully posted to Facebook.")
+        return post_id
+    else:
+        print(f"Failed to post to Facebook: {response.status_code}")
+        print(f"Response content: {response.text}")
+        return None
+
+
+
+
+
+
+
+def post_to_instagram(message, image_path):
+    instagram_access_token = meta_access_token
+    instagram_account_id = '17841468557520601'
+    relative_image_path = image_path.split('media')[-1].replace('\\', '/')
+    image_url = f'https://broadly-lenient-adder.ngrok-free.app/media/media/social_media{relative_image_path}'
+
+    media_url = f'https://graph.facebook.com/v12.0/{instagram_account_id}/media'
+    data = {'image_url': image_url, 'caption': message, 'access_token': instagram_access_token}
+    response = requests.post(media_url, data=data)
+    if response.status_code != 200:
+        return None
+
+    creation_id = response.json().get('id')
+    if not creation_id:
+        return None
+
+    publish_url = f'https://graph.facebook.com/v12.0/{instagram_account_id}/media_publish'
+    data = {'creation_id': creation_id, 'access_token': instagram_access_token}
+    response = requests.post(publish_url, data=data)
+
+    if response.status_code == 200:
+        return creation_id  # Return the media ID as the post ID
+    else:
+        return None
+
+
+
+
+
+
+
+
+twitter_API_key = 'wuOoH0b4ZNSxfedPUh1IEFvF7'
+twitter_API_key_secret = 'bxzrnz6erCkPJvNKtJZQIdFzVxYWAtA1UmMc6JvPv1GKEXK2kI'
+twitter_bearer_token = 'AAAAAAAAAAAAAAAAAAAAAOw0vgEAAAAA6SgZUQN8Ipj8DPPMxWa9a6Odjsc%3D1qPjDb0TbOgP0OCW2CqDS506Iz4qRTRJUG1qABYpjOzcdI2y0Z'
+twitter_access_token = '1827809612294225920-r3NmY7AvxXW9PyoawwVdy5YqZXHt7i'
+twitter_access_token_secret = 'oyIJtyGf128w92yl8UJFqINOQ0oA2y7hFV18pxwlz5eVp'
+twitter_client_id = 'bl9BVk5jbXY4ZGVfTDl4Mm1ZRHY6MTpjaQ'
+twitter_client_secret = 'f1cjZw2it8uZfXuLs-VfX8hZ6_re4Xtv8YkZa0n7RJ5HKxZ6Sm'
+
+
+
+
+def post_to_x_v2(message, image_url=None):
+    auth = OAuth1(twitter_API_key, twitter_API_key_secret, twitter_access_token, twitter_access_token_secret)
+    media_id = None
+
+    if image_url:
+        response = requests.get(image_url)
+        if response.status_code == 200:
+            with NamedTemporaryFile(delete=False) as tmp_file:
+                tmp_file.write(response.content)
+                tmp_file_path = tmp_file.name
+            with open(tmp_file_path, 'rb') as image_file:
+                files = {'media': image_file}
+                upload_url = 'https://upload.twitter.com/1.1/media/upload.json'
+                response = requests.post(upload_url, auth=auth, files=files)
+                if response.status_code == 200:
+                    media_id = response.json().get('media_id_string')
+                else:
+                    return None
+
+    tweet_data = {'text': message}
+    if media_id:
+        tweet_data['media'] = {'media_ids': [media_id]}
+
+    post_url = 'https://api.twitter.com/2/tweets'
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(post_url, auth=auth, json=tweet_data, headers=headers)
+
+    if response.status_code in (200, 201):
+        tweet_id = response.json().get('data', {}).get('id')  # Get the tweet ID
+        print("Successfully posted to X.")
+        return tweet_id
+    else:
+        print(f"Failed to post to X: {response.status_code} - {response.text}")
+        return None
+
+
+
+
+
+
+
+
+import requests
+from urllib.parse import quote
+
+def post_to_telegram(message, image_url=None):
+    bot_token = settings.TELEGRAM_BOT_TOKEN
+    channel_id = '@adarhotel'
+    
+    if image_url:
+        # Ensure the image URL is encoded
+        image_url = quote(image_url, safe=':/')
+        
+        # Send a photo with a caption
+        base_url = f'https://api.telegram.org/bot{bot_token}/sendPhoto'
+        data = {
+            'chat_id': channel_id,
+            'photo': image_url,
+            'caption': message
+        }
+        response = requests.post(base_url, data=data)
+    else:
+        # Send a text message
+        base_url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
+        data = {
+            'chat_id': channel_id,
+            'text': message,
+            'parse_mode': 'HTML'
+        }
+        response = requests.post(base_url, data=data)
+
+    if response.status_code == 200:
+        message_id = response.json().get('result', {}).get('message_id')  # Get the message ID
+        return message_id
+    else:
+        print(f"Failed to post to Telegram: {response.status_code} - {response.text}")
+        return None
+
+
+
+
+class SocialMediaPostCreateView(LoginRequiredMixin, CreateView):
+    model = SocialMediaPost
+    form_class = SocialMediaPostForm
+    template_name = 'social_media/post_form.html'
+    success_url = reverse_lazy('post_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        response = super().form_valid(form)
+        local_media_path = form.instance.image.path if form.instance.image else None
+        image_url = self.request.build_absolute_uri(form.instance.image.url) if form.instance.image else None
+        platforms = form.cleaned_data['platforms']
+        success = True
+
+        for platform in platforms:
+            if platform == 'facebook':
+                post_id = post_to_facebook(form.instance.message, local_media_path)
+                if post_id:
+                    form.instance.facebook_post_id = post_id  # Save Facebook post ID
+                success &= bool(post_id)
+            elif platform == 'x':
+                post_id = post_to_x_v2(form.instance.message, image_url)
+                if post_id:
+                    form.instance.x_post_id = post_id  # Save X post ID
+                success &= bool(post_id)
+            elif platform == 'instagram':
+                post_id = post_to_instagram(form.instance.message, local_media_path)
+                if post_id:
+                    form.instance.instagram_post_id = post_id  # Save Instagram post ID
+                success &= bool(post_id)
+            elif platform == 'telegram':
+                post_id = post_to_telegram(form.instance.message, image_url)
+                if post_id:
+                    form.instance.telegram_message_id = post_id  # Save Telegram message ID
+                success &= bool(post_id)
+
+        if success:
+            form.instance.posted = True
+            form.instance.save()
+
+        return response
+
+
+from django.views.generic import View
+from django.shortcuts import redirect, get_object_or_404
+from django.contrib import messages
+from .models import SocialMediaPost
+
+class DeletePostFromPlatformsView(View):
+    def post(self, request, pk, *args, **kwargs):
+        post = get_object_or_404(SocialMediaPost, pk=pk)
+
+        # Get selected platforms from the form data
+        selected_platforms = [platform.lower() for platform in request.POST.getlist('platforms')]
+
+        if not selected_platforms:
+            messages.error(request, "You must select at least one platform to delete from.")
+            return redirect('post_list')
+
+        # Convert post.platforms from a string representation to a list (if necessary)
+        platforms = post.platforms if isinstance(post.platforms, list) else post.platforms.split(',')
+
+        success = True
+
+        # Loop through selected platforms and call the respective delete function
+        for platform in selected_platforms:
+            if platform == 'facebook':
+                success &= delete_from_facebook(post)
+            elif platform == 'x':
+                success &= delete_from_x(post)
+            elif platform == 'telegram':
+                success &= delete_from_telegram(post)
+            elif platform == 'instagram':
+                pass  # Add logic if needed
+
+        if success:
+            # Remove the selected platforms from the post's platforms list
+            remaining_platforms = [p for p in platforms if p not in selected_platforms]
+            post.platforms = remaining_platforms
+
+            # If no platforms remain, mark the post as not posted
+            if not remaining_platforms:
+                post.posted = False
+                messages.success(request, 'Post has been deleted from all selected platforms and is now marked as not posted.')
+            else:
+                messages.success(request, 'Post has been deleted from the selected platforms.')
+
+            post.save()
+        else:
+            messages.error(request, 'Failed to delete the post from some platforms.')
+
+        return redirect('post_list')
+
+
+
+def delete_from_facebook(post):
+    facebook_post_id = post.facebook_post_id
+    access_token = meta_access_token
+
+    if not facebook_post_id:
+        return False
+
+    url = f'https://graph.facebook.com/v17.0/{facebook_post_id}'
+    params = {'access_token': access_token}
+
+    response = requests.delete(url, params=params)
+
+    if response.status_code == 200:
+        # Keep the facebook_post_id, just return success
+        return True
+    else:
+        print(f"Failed to delete Facebook post: {response.text}")
+        return False
+
+
+
+def delete_from_x(post):
+    x_post_id = post.x_post_id
+
+    if not x_post_id:
+        return False
+
+    api_key = twitter_API_key
+    api_secret_key = twitter_API_key_secret
+    access_token = twitter_access_token
+    access_token_secret = twitter_access_token_secret
+
+    oauth = OAuth1(api_key, api_secret_key, access_token, access_token_secret)
+    url = f'https://api.twitter.com/2/tweets/{x_post_id}'
+
+    response = requests.delete(url, auth=oauth)
+
+    if response.status_code == 200:
+        # Keep the x_post_id, just return success
+        return True
+    else:
+        print(f"Failed to delete tweet on X: {response.text}")
+        return False
+
+
+
+def delete_from_instagram(post):
+    instagram_post_id = post.instagram_post_id
+    access_token = meta_access_token
+
+    if not instagram_post_id:
+        print("Instagram post ID is missing.")
+        return False
+
+    url = f'https://graph.facebook.com/v17.0/{instagram_post_id}'
+    params = {'access_token': access_token}
+
+    response = requests.delete(url, params=params)
+
+    if response.status_code == 200:
+        # Successfully deleted the post
+        return True
+    else:
+        error_info = response.json().get('error', {})
+        error_message = error_info.get('message', 'Unknown error')
+        error_code = error_info.get('code', 'Unknown code')
+        error_subcode = error_info.get('error_subcode', 'Unknown subcode')
+        print(f"Failed to delete Instagram post: {error_message} (Code: {error_code}, Subcode: {error_subcode})")
+        
+        # Handling specific errors
+        if error_code == 100 and error_subcode == 33:
+            print("The post does not exist, or the action is not supported.")
+        
+        return False
+
+
+
+
+
+
+
+
+
+def delete_from_telegram(post):
+    telegram_message_id = post.telegram_message_id
+    telegram_chat_id = '@adarhotel'
+    telegram_token = settings.TELEGRAM_BOT_TOKEN
+
+    if not telegram_message_id:
+        return False
+
+    url = f'https://api.telegram.org/bot{telegram_token}/deleteMessage'
+    params = {
+        'chat_id': telegram_chat_id,
+        'message_id': telegram_message_id
+    }
+
+    response = requests.post(url, params=params)
+
+    if response.status_code == 200:
+        # Keep the telegram_message_id, just return success
+        return True
+    else:
+        print(f"Failed to delete Telegram message: {response.text}")
+        return False
+
+
+
+
+
+
+class SocialMediaPostListView(LoginRequiredMixin, ListView):
+    model = SocialMediaPost
+    template_name = 'social_media/post_list.html'
+    context_object_name = 'posts'
+    paginate_by = 10  # Pagination: Show 10 posts per page
+
+    def get_queryset(self):
+        # Get the user's posts and filter them
+        queryset = SocialMediaPost.objects.filter(user=self.request.user).order_by('-post_date')
+        
+        # Get search query from the request
+        search_query = self.request.GET.get('search', '')
+        
+        if search_query:
+            queryset = queryset.filter(
+                Q(platform__icontains=search_query) |  # Search within the 'platform' field
+                Q(message__icontains=search_query)  # Search within the 'message' field
+            )
+        return queryset
+
+
+from django.views.generic import DetailView
+from .models import SocialMediaPost
+
+class SocialMediaPostDetailView(DetailView):
+    model = SocialMediaPost
+    template_name = 'social_media/post_detail.html'
+    context_object_name = 'object'

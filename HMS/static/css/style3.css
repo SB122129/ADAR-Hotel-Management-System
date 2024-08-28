@@ -162,16 +162,7 @@ body{
     right: -1px;
     }
     
-    .sidebar-brand {
-    border-bottom: 5px solid rgba(102, 97, 91, 0.3);
-    margin-top: 5px;
-
-    }
     
-    .sidebar-brand {
-    padding: 25px 0px;
-    margin: 10px 20px;
-    }
     
     .navbar .navbar-nav > li > a p {
     display: inline-block;

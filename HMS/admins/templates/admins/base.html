@@ -65,6 +65,19 @@
     padding: 15px;
     }
 
+    .sidebar-brand {
+        border-bottom: 4px solid rgb(0, 0, 0);
+        border-radius: 5px;
+        margin-top: 2px;
+    
+        }
+        
+        .sidebar-brand {
+        padding: 5px 0px;
+        margin: 5px 5px;
+        }
+
+    
     
 </style>
 </head>
@@ -74,14 +87,14 @@
         <ul class="sidebar-nav">
             <li class="sidebar-brand">
                 <a class="text-warning font-weight-bold fs-3" href="{% url 'admins:admin_dashboard' %}">
-                    ADAR Admin
+                    ADAR ADMIN
                 </a>
             </li>
             <!-- Room Dropdown -->
 <li class="dropdown dropdown-center mt-3">
     <a class="dropdown-toggle fs-5  d-flex justify-content-between align-items-center fs-5" href="#" id="roomDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
         <strong>Rooms</strong>
-        <span class="ms-auto ">
+        <span class="ms-auto fs-6 ">
 <i class="fa fa-chevron-down" aria-hidden="true"></i>&ensp;
 </span>
     </a>
@@ -101,7 +114,7 @@
 <li class="dropdown mt-2">
     <a class="dropdown-toggle fs-5  d-flex justify-content-between align-items-center" href="#" id="membershipDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
         <strong>Membership</strong>
-        <span class="ms-auto ">
+        <span class="ms-auto fs-6 ">
 <i class="fa fa-chevron-down" aria-hidden="true"></i>&ensp;
 </span>
     </a>
@@ -119,7 +132,7 @@
 <li class="dropdown mt-2">
     <a class="dropdown-toggle fs-5  d-flex justify-content-between align-items-center" href="#" id="hallDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
         <strong>Halls</strong>
-        <span class="ms-auto ">
+        <span class="ms-auto fs-6 ">
 <i class="fa fa-chevron-down" aria-hidden="true"></i>&ensp;
 </span>
     </a>
@@ -137,7 +150,7 @@
 <li class="dropdown mt-2">
     <a class="dropdown-toggle fs-5  d-flex justify-content-between align-items-center" href="#" id="spaDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
         <strong>Spa</strong>
-        <span class="ms-auto ">
+        <span class="ms-auto fs-6 ">
 <i class="fa fa-chevron-down" aria-hidden="true"></i>&ensp;
 </span>
     </a>
@@ -157,7 +170,7 @@
 <li class="dropdown mt-2">
     <a class="dropdown-toggle fs-5  d-flex justify-content-between align-items-center" href="#" id="chatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
         <strong>Chat</strong>
-        <span class="ms-auto ">
+        <span class="ms-auto fs-6 ">
 <i class="fa fa-chevron-down" aria-hidden="true"></i>&ensp;
 </span>
     </a>
@@ -166,6 +179,24 @@
         <div class="dropdown-divider p-0 m-0"></div>
         <li><a class="dropdown-item pt-0 pr-0 pb-0  pl-2" href="{% url 'chat' %}"><strong>ADAR AI</strong></a></li>
         <div class="dropdown-divider p-0 m-0"></div>
+        <li><a class="dropdown-item pt-0 pr-0 pb-0  pl-2" href="{% url 'post_create' %}"><strong>Post to Social Media</strong></a></li>
+        <div class="dropdown-divider p-0 m-0"></div>
+        <li><a class="dropdown-item pt-0 pr-0 pb-0  pl-2" href="{% url 'post_list' %}"><strong>Social Media Posts</strong></a></li>
+        <div class="dropdown-divider p-0 m-0"></div>
+    </ul>
+</li>
+
+<li class="dropdown mt-2">
+    <a class="dropdown-toggle fs-5  d-flex justify-content-between align-items-center" href="#" id="chatDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <strong>Reports</strong>
+        <span class="ms-auto fs-6 ">
+<i class="fa fa-chevron-down" aria-hidden="true"></i>&ensp;
+</span>
+    </a>
+    <ul class="dropdown-menu border border-bottom dropdown-menu-end position-static" aria-labelledby="chatDropdown">
+        <li><a class="dropdown-item pt-0 pr-0 pb-0  pl-2" href="{% url 'admins:spa_report' %}"><strong>Spa Reports</strong></a></li>
+        <div class="dropdown-divider p-0 m-0"></div>
+        
     </ul>
 </li>
 
@@ -174,7 +205,7 @@
 <li class="dropdown mt-2">
     <a class="dropdown-toggle fs-5  d-flex justify-content-between align-items-center" href="#" id="managerDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
         <strong>Staff </strong>
-        <span class="ms-auto"><i class="fa fa-chevron-down" aria-hidden="true"></i>&ensp;</span>
+        <span class="ms-auto fs-6"><i class="fa fa-chevron-down" aria-hidden="true"></i>&ensp;</span>
     </a>
     <ul class="dropdown-menu border border-bottom dropdown-menu-end position-static" aria-labelledby="managerDropdown">
         <li><a class="dropdown-item pt-0 pr-0 pb-0  pl-2" href="{% url 'admins:manager_list' %}"><strong>Managers</strong></a></li>
@@ -188,7 +219,7 @@
 <li class="dropdown mt-2">
     <a class="dropdown-toggle fs-5  d-flex justify-content-between align-items-center" href="#" id="receptionistDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
         <strong>Receptionists</strong>
-        <span class="ms-auto ">
+        <span class="ms-auto fs-6">
 <i class="fa fa-chevron-down" aria-hidden="true"></i>&ensp;
 </span>
     </a>

@@ -1,19 +1,25 @@
 from django.db import models
-from accountss.models import Custom_user # Import the custom User model
+from accountss.models import Custom_user
+from multiselectfield import MultiSelectField
 
 class SocialMediaPost(models.Model):
     PLATFORM_CHOICES = (
         ('facebook', 'Facebook'),
-        ('twitter', 'Twitter'),
+        ('x', 'X'),
         ('instagram', 'Instagram'),
-        ('linkedin', 'LinkedIn'),
+        ('telegram', 'Telegram'),
     )
 
     user = models.ForeignKey(Custom_user, on_delete=models.CASCADE)  # Use the custom User model
-    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
+    platforms = MultiSelectField(choices=PLATFORM_CHOICES,default='telegram')
     message = models.TextField()
+    image = models.ImageField(upload_to='media/social_media/', blank=True, null=True)
     post_date = models.DateTimeField(auto_now_add=True)
     posted = models.BooleanField(default=False)
+    facebook_post_id = models.CharField(max_length=100, blank=True, null=True)
+    instagram_post_id = models.CharField(max_length=100, blank=True, null=True)
+    telegram_message_id = models.CharField(max_length=100, blank=True, null=True)
+    x_post_id = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return f'{self.platform} post by {self.user.username} on {self.post_date}'

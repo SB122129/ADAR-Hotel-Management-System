@@ -1834,3 +1834,132 @@ class ChatMessageUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
     fields = '__all__'
     success_url = reverse_lazy('admins:chat_message_list')
 
+
+
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.views import View
+from django.utils.timezone import now
+import datetime
+import openpyxl
+from django.db.models import Count, Sum
+from Spa.models import SpaBooking, SpaService, SpaPackage, SpaPayment
+
+class SpaReportView(View):
+    def get(self, request):
+        # Data for all models
+        bookings = SpaBooking.objects.all()
+        services = SpaService.objects.all()
+        packages = SpaPackage.objects.all()
+        payments = SpaPayment.objects.all()
+
+        # Calculated reports
+        current_month = now().month
+        current_year = now().year
+        
+        monthly_bookings = bookings.filter(created_at__year=current_year, created_at__month=current_month).count()
+        monthly_revenue = payments.filter(payment_date__year=current_year, payment_date__month=current_month).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Filter out bookings where service is None
+        bookings_with_service = bookings.exclude(service__isnull=True)
+        bookings_by_service = bookings_with_service.values('service__name').annotate(total=Count('id'))
+
+        # Filter out bookings where package is None
+        bookings_with_package = bookings.exclude(package__isnull=True)
+        bookings_by_package = bookings_with_package.values('package__name').annotate(total=Count('id'))
+        
+        context = {
+            'bookings': bookings,
+            'services': services,
+            'packages': packages,
+            'payments': payments,
+            'monthly_bookings': monthly_bookings,
+            'monthly_revenue': monthly_revenue,
+            'bookings_by_service': bookings_by_service,
+            'bookings_by_package': bookings_by_package,
+        }
+        
+        return render(request, 'admins/spa_reports.html', context)
+
+class ExportSpaReportView(View):
+    def get(self, request, report_type):
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename={report_type}_report.xlsx'
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f'{report_type.capitalize()} Report'
+
+        # Generate data based on the report type
+        if report_type == 'bookings':
+            bookings = SpaBooking.objects.all()
+            ws.append(['Booking ID', 'User', 'Service', 'Package', 'Booking Date', 'Appointment Date', 'Appointment Time'])
+            for booking in bookings:
+                ws.append([
+                    booking.id, 
+                    booking.user.username if booking.user and booking.user.username else f"{booking.for_first_name} {booking.for_last_name}" if booking.for_first_name and booking.for_last_name else 'N/A', 
+                    booking.service.name if booking.service else 'N/A', 
+                    booking.package.name if booking.package else 'N/A', 
+                    booking.created_at.strftime('%Y-%m-%d'),
+                    booking.appointment_date.strftime('%Y-%m-%d') if booking.appointment_date else 'N/A',
+                    booking.appointment_time.strftime('%H:%M:%S') if booking.appointment_time else 'N/A'
+                ])
+        
+        elif report_type == 'services':
+            services = SpaService.objects.all()
+            ws.append(['Service ID', 'Name', 'Description', 'Price'])
+            for service in services:
+                ws.append([service.id, service.name, service.description, service.price])
+
+        elif report_type == 'packages':
+            packages = SpaPackage.objects.all()
+            ws.append(['Package ID', 'Name', 'Description', 'Price'])
+            for package in packages:
+                ws.append([package.id, package.name, package.description, package.price])
+        
+        elif report_type == 'payments':
+            payments = SpaPayment.objects.all()
+            ws.append(['Payment ID', 'Booking ID', 'Booked By', 'Amount', 'Payment Date', 'Payment Method'])
+            for payment in payments:
+                person = payment.spa_booking.user.username if payment.spa_booking.user and payment.spa_booking.user.username else f"{payment.spa_booking.for_first_name} {payment.spa_booking.for_last_name}" if payment.spa_booking.for_first_name and payment.spa_booking.for_last_name else 'N/A'
+                ws.append([
+                    payment.id, 
+                    payment.spa_booking.id, 
+                    person, 
+                    payment.amount, 
+                    payment.payment_date.strftime('%Y-%m-%d'),
+                    payment.payment_method if payment.payment_method else 'N/A'
+                ])
+
+        elif report_type == 'monthly_bookings':
+            current_month = now().month
+            current_year = now().year
+            bookings = SpaBooking.objects.filter(created_at__year=current_year, created_at__month=current_month)
+            ws.append(['Booking ID', 'User', 'Service', 'Package', 'Booking Date'])
+            for booking in bookings:
+                ws.append([
+                    booking.id, 
+                    booking.user.username if booking.user and booking.user.username else f"{booking.for_first_name} {booking.for_last_name}" if booking.for_first_name and booking.for_last_name else 'N/A', 
+                    booking.service.name if booking.service else 'N/A', 
+                    booking.package.name if booking.package else 'N/A', 
+                    booking.created_at.strftime('%Y-%m-%d')
+                ])
+        
+        elif report_type == 'monthly_revenue':
+            current_month = now().month
+            current_year = now().year
+            payments = SpaPayment.objects.filter(payment_date__year=current_year, payment_date__month=current_month)
+            ws.append(['Payment ID', 'Booking ID', 'Amount', 'Payment Date'])
+
+            total_amount = 0  # Initialize total amount
+
+            for payment in payments:
+                ws.append([payment.id, payment.spa_booking.id, payment.amount, payment.payment_date.strftime('%Y-%m-%d')])
+                total_amount += payment.amount  # Add payment amount to total
+
+            # Append the total amount row
+            ws.append(['', '', 'Total', total_amount])
+
+        wb.save(response)
+        return response

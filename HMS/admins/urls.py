@@ -139,6 +139,10 @@ urlpatterns = [
     path('chats/<int:user_id>/', ChatDetailView.as_view(), name='chat_detail'),
     path('chats/<int:user_id>/send/', SendMessageView.as_view(), name='send_message'),
     path('fetch_new_messages/<int:user_id>/', fetch_new_messages, name='fetch_new_messages'),
+    path('spa-report/', SpaReportView.as_view(), name='spa_report'),
+    path('export-spa-report/<str:report_type>/', ExportSpaReportView.as_view(), name='export_spa_report'),
+
+
 ]
 
 

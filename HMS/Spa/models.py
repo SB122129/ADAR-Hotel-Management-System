@@ -32,6 +32,7 @@ class SpaBooking(models.Model):
     appointment_date = models.DateField()
     appointment_time = models.TimeField()
     amount_due = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True,blank=True,null=True)
     tx_ref = models.CharField(max_length=100, unique=True, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     for_first_name = models.CharField(max_length=100, null=True, blank=True)

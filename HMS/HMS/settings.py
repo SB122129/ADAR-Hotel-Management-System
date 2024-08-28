@@ -161,6 +161,7 @@ INSTALLED_APPS = [
     "hueymail",
     'telegram_bot',
     'Spa',
+    'tinymce',
 ]
 
 import environ
