@@ -4,6 +4,7 @@
 <div class="container mt-4">
     <h3 class="mb-4 text-center"><strong>Spa Reports</strong></h3>
 
+    <!-- Calculated Reports -->
     <div class="card shadow-sm rounded mb-4">
         <div class="card-body">
             <h5 class="card-title mb-3"><i class="bi bi-calculator"></i><strong> Calculated Reports</strong></h5>
@@ -17,7 +18,8 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Bookings and Revenue Reports -->
     <div class="row">
         <div class="col-md-6">
             <div class="card mb-4 shadow-sm h-100">
@@ -36,7 +38,7 @@
                 </div>
             </div>
         </div>
-    
+
         <div class="col-md-6">
             <div class="card mb-4 shadow-sm h-100">
                 <div class="card-header">
@@ -55,9 +57,8 @@
             </div>
         </div>
     </div>
-    
-    
 
+    <!-- Download Data Reports -->
     <div class="card shadow-sm rounded mb-4 mt-4">
         <div class="card-header">
             <h5 class="card-title"><strong>All Data Reports</strong></h5>
@@ -65,38 +66,170 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <a href="{% url 'admins:export_spa_report' 'bookings' %}" class="btn btn-warning btn-block">
-                        <i class="bi bi-download"></i> Download All Bookings Report
-                    </a>
+                    <form action="{% url 'admins:export_spa_report' 'bookings' %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning btn-block">
+                            <i class="bi bi-download"></i> Download All Bookings Report
+                        </button>
+                    </form>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <a href="{% url 'admins:export_spa_report' 'services' %}" class="btn btn-warning btn-block">
-                        <i class="bi bi-download"></i> Download All Services Report
-                    </a>
+                    <form action="{% url 'admins:export_spa_report' 'services' %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning btn-block">
+                            <i class="bi bi-download"></i> Download All Services Report
+                        </button>
+                    </form>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <a href="{% url 'admins:export_spa_report' 'packages' %}" class="btn btn-warning btn-block">
-                        <i class="bi bi-download"></i> Download All Packages Report
-                    </a>
+                    <form action="{% url 'admins:export_spa_report' 'packages' %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning btn-block">
+                            <i class="bi bi-download"></i> Download All Packages Report
+                        </button>
+                    </form>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <a href="{% url 'admins:export_spa_report' 'payments' %}" class="btn btn-warning btn-block">
-                        <i class="bi bi-download"></i> Download All Payments Report
-                    </a>
+                    <form action="{% url 'admins:export_spa_report' 'payments' %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning btn-block">
+                            <i class="bi bi-download"></i> Download All Payments Report
+                        </button>
+                    </form>
                 </div>
+
+                <!-- Monthly Bookings Report Form -->
                 <div class="col-md-6 mb-3">
-                    <a href="{% url 'admins:export_spa_report' 'monthly_bookings' %}" class="btn btn-warning btn-block">
+                    <button type="button" class="btn btn-warning btn-block" onclick="toggleForm('monthly_bookings_form')">
                         <i class="bi bi-download"></i> Download Monthly Bookings Report
-                    </a>
+                    </button>
+                    <form id="monthly_bookings_form" method="POST" action="{% url 'admins:export_spa_report' 'monthly_bookings' %}" style="display: none;" onsubmit="return validateDates('start_month_bookings', 'end_month_bookings', 'monthly_bookings_error')">
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="col">
+                                <label for="start_month_bookings"><strong>Start Month</strong></label>
+                                <input type="month" id="start_month_bookings" name="start_month" class="form-control form-control-sm mt-2 w-50" required>
+                            </div>
+                            <div class="col">
+                                <label for="end_month_bookings"><strong>End Month</strong></label>
+                                <input type="month" id="end_month_bookings" name="end_month" class="form-control form-control-sm mt-2 w-50" required>
+                                <div id="monthly_bookings_error" class="text-danger mt-2"></div>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-warning btn-block btn-sm mt-2">
+                                    <i class="bi bi-download"></i> Submit and Download
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
+
+                <!-- Monthly Revenue Report Form -->
                 <div class="col-md-6 mb-3">
-                    <a href="{% url 'admins:export_spa_report' 'monthly_revenue' %}" class="btn btn-warning btn-block">
+                    <button type="button" class="btn btn-warning btn-block" onclick="toggleForm('monthly_revenue_form')">
                         <i class="bi bi-download"></i> Download Monthly Revenue Report
-                    </a>
+                    </button>
+                    <form id="monthly_revenue_form" method="POST" action="{% url 'admins:export_spa_report' 'monthly_revenue' %}" style="display: none;" onsubmit="return validateDates('start_month_revenue', 'end_month_revenue', 'monthly_revenue_error')">
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="col">
+                                <label for="start_month_revenue"><strong>Start Month</strong></label>
+                                <input type="month" id="start_month_revenue" name="start_month" class="form-control form-control-sm mt-2 w-50" required>
+                            </div>
+                            <div class="col">
+                                <label for="end_month_revenue"><strong>End Month</strong></label>
+                                <input type="month" id="end_month_revenue" name="end_month" class="form-control form-control-sm mt-2 w-50" required>
+                                <div id="monthly_revenue_error" class="text-danger mt-2"></div>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-warning btn-block btn-sm mt-2">
+                                    <i class="bi bi-download"></i> Submit and Download
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
+
+                <!-- Monthly Packages Report Form -->
+                <div class="col-md-6 mb-3">
+                    <button type="button" class="btn btn-warning btn-block" onclick="toggleForm('monthly_packages_form')">
+                        <i class="bi bi-download"></i> Download Monthly Packages Report
+                    </button>
+                    <form id="monthly_packages_form" method="POST" action="{% url 'admins:export_spa_report' 'monthly_packages' %}" style="display: none;" onsubmit="return validateDates('start_month_packages', 'end_month_packages', 'monthly_packages_error')">
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="col">
+                                <label for="start_month_packages"><strong>Start Month</strong></label>
+                                <input type="month" id="start_month_packages" name="start_month" class="form-control form-control-sm mt-2 w-50" required>
+                            </div>
+                            <div class="col">
+                                <label for="end_month_packages"><strong>End Month</strong></label>
+                                <input type="month" id="end_month_packages" name="end_month" class="form-control form-control-sm mt-2 w-50" required>
+                                <div id="monthly_packages_error" class="text-danger mt-2"></div>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-warning btn-block btn-sm mt-2">
+                                    <i class="bi bi-download"></i> Submit and Download
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Monthly Services Report Form -->
+                <div class="col-md-6 mb-3">
+                    <button type="button" class="btn btn-warning btn-block" onclick="toggleForm('monthly_services_form')">
+                        <i class="bi bi-download"></i> Download Monthly Services Report
+                    </button>
+                    <form id="monthly_services_form" method="POST" action="{% url 'admins:export_spa_report' 'monthly_services' %}" style="display: none;" onsubmit="return validateDates('start_month_services', 'end_month_services', 'monthly_services_error')">
+                        {% csrf_token %}
+                        <div class="form-row">
+                            <div class="col">
+                                <label for="start_month_services"><strong>Start Month</strong></label>
+                                <input type="month" id="start_month_services" name="start_month" class="form-control form-control-sm mt-2 w-50" required>
+                            </div>
+                            <div class="col">
+                                <label for="end_month_services"><strong>End Month</strong></label>
+                                <input type="month" id="end_month_services" name="end_month" class="form-control form-control-sm mt-2 w-50" required>
+                                <div id="monthly_services_error" class="text-danger mt-2"></div>
+                            </div>
+                            <div class="col">
+                                <button type="submit" class="btn btn-warning btn-block btn-sm mt-2">
+                                    <i class="bi bi-download"></i> Submit and Download
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
             </div>
         </div>
     </div>
-    
 </div>
+
+<script>
+    function toggleForm(formId) {
+        var form = document.getElementById(formId);
+        if (form.style.display === "none" || form.style.display === "") {
+            form.style.display = "block";
+        } else {
+            form.style.display = "none";
+        }
+    }
+
+    function validateDates(startId, endId, errorId) {
+        var startMonth = document.getElementById(startId).value;
+        var endMonth = document.getElementById(endId).value;
+        var errorElement = document.getElementById(errorId);
+
+        if (startMonth > endMonth) {
+            errorElement.innerHTML = `<p class='small'><i class="bi bi-info-circle"></i> End Month cannot be earlier than Start Month.</p>`;
+            return false;
+        } else {
+            errorElement.textContent = '';
+            return true;
+        }
+    }
+</script>
+
 {% endblock %}

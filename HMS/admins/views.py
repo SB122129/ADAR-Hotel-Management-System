@@ -1883,29 +1883,41 @@ class SpaReportView(View):
         return render(request, 'admins/spa_reports.html', context)
 
 class ExportSpaReportView(View):
-    def get(self, request, report_type):
+    
+    def post(self, request, report_type):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename={report_type}_report.xlsx'
 
-        wb = openpyxl.Workbook()
+        wb = Workbook()
         ws = wb.active
         ws.title = f'{report_type.capitalize()} Report'
 
-        # Generate data based on the report type
+        # Parse the dates from the POST request
+        start_month = request.POST.get('start_month')
+        end_month = request.POST.get('end_month')
+
+        if start_month and end_month:
+            try:
+                start_date = datetime.strptime(start_month, '%Y-%m').date()
+                end_date = datetime.strptime(end_month, '%Y-%m').date()
+            except ValueError:
+                return HttpResponse("Invalid date format", status=400)
+
+        # Handle various report types
         if report_type == 'bookings':
             bookings = SpaBooking.objects.all()
             ws.append(['Booking ID', 'User', 'Service', 'Package', 'Booking Date', 'Appointment Date', 'Appointment Time'])
             for booking in bookings:
                 ws.append([
-                    booking.id, 
-                    booking.user.username if booking.user and booking.user.username else f"{booking.for_first_name} {booking.for_last_name}" if booking.for_first_name and booking.for_last_name else 'N/A', 
-                    booking.service.name if booking.service else 'N/A', 
-                    booking.package.name if booking.package else 'N/A', 
+                    booking.id,
+                    booking.user.username if booking.user else f"{booking.for_first_name} {booking.for_last_name}",
+                    booking.service.name if booking.service else 'N/A',
+                    booking.package.name if booking.package else 'N/A',
                     booking.created_at.strftime('%Y-%m-%d'),
                     booking.appointment_date.strftime('%Y-%m-%d') if booking.appointment_date else 'N/A',
                     booking.appointment_time.strftime('%H:%M:%S') if booking.appointment_time else 'N/A'
                 ])
-        
+
         elif report_type == 'services':
             services = SpaService.objects.all()
             ws.append(['Service ID', 'Name', 'Description', 'Price'])
@@ -1917,49 +1929,392 @@ class ExportSpaReportView(View):
             ws.append(['Package ID', 'Name', 'Description', 'Price'])
             for package in packages:
                 ws.append([package.id, package.name, package.description, package.price])
-        
+
         elif report_type == 'payments':
             payments = SpaPayment.objects.all()
             ws.append(['Payment ID', 'Booking ID', 'Booked By', 'Amount', 'Payment Date', 'Payment Method'])
             for payment in payments:
-                person = payment.spa_booking.user.username if payment.spa_booking.user and payment.spa_booking.user.username else f"{payment.spa_booking.for_first_name} {payment.spa_booking.for_last_name}" if payment.spa_booking.for_first_name and payment.spa_booking.for_last_name else 'N/A'
+                person = payment.spa_booking.user.username if payment.spa_booking.user else f"{payment.spa_booking.for_first_name} {payment.spa_booking.for_last_name}"
                 ws.append([
-                    payment.id, 
-                    payment.spa_booking.id, 
-                    person, 
-                    payment.amount, 
+                    payment.id,
+                    payment.spa_booking.id,
+                    person,
+                    payment.amount,
                     payment.payment_date.strftime('%Y-%m-%d'),
                     payment.payment_method if payment.payment_method else 'N/A'
                 ])
 
+        # Monthly Bookings Report
         elif report_type == 'monthly_bookings':
-            current_month = now().month
-            current_year = now().year
-            bookings = SpaBooking.objects.filter(created_at__year=current_year, created_at__month=current_month)
+            current_date = start_date
+            bookings_data = []
+            month_totals = {}
+
+            while current_date <= end_date:
+                next_month = current_date.replace(day=28) + timedelta(days=4)
+                next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                bookings = SpaBooking.objects.filter(
+                    created_at__gte=current_date,
+                    created_at__lt=next_month_start
+                )
+
+                monthly_count = bookings.count()
+                month_totals[current_date.strftime('%Y-%m')] = monthly_count
+
+                for booking in bookings:
+                    bookings_data.append([
+                        booking.id,
+                        booking.user.username if booking.user else f"{booking.for_first_name} {booking.for_last_name}",
+                        booking.service.name if booking.service else 'N/A',
+                        booking.package.name if booking.package else 'N/A',
+                        booking.created_at.strftime('%Y-%m-%d')
+                    ])
+
+                current_date = next_month_start
+
             ws.append(['Booking ID', 'User', 'Service', 'Package', 'Booking Date'])
-            for booking in bookings:
-                ws.append([
-                    booking.id, 
-                    booking.user.username if booking.user and booking.user.username else f"{booking.for_first_name} {booking.for_last_name}" if booking.for_first_name and booking.for_last_name else 'N/A', 
-                    booking.service.name if booking.service else 'N/A', 
-                    booking.package.name if booking.package else 'N/A', 
-                    booking.created_at.strftime('%Y-%m-%d')
-                ])
+            for row in bookings_data:
+                ws.append(row)
+
+            ws.append([])
+            ws.append(['Month', 'Total Bookings'])
+            for month, total in month_totals.items():
+                ws.append([month, total])
+
+        # Monthly Revenue Report
+        elif report_type == 'monthly_revenue':
+            current_date = start_date
+            revenue_data = []
+            month_totals = {}
+
+            while current_date <= end_date:
+                next_month = current_date.replace(day=28) + timedelta(days=4)
+                next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                payments = SpaPayment.objects.filter(
+                    payment_date__gte=current_date,
+                    payment_date__lt=next_month_start
+                )
+
+                monthly_total = payments.aggregate(total=Sum('amount'))['total'] or 0
+                month_totals[current_date.strftime('%Y-%m')] = monthly_total
+
+                for payment in payments:
+                    revenue_data.append([
+                        payment.id,
+                        payment.spa_booking.id,
+                        payment.amount,
+                        payment.payment_date.strftime('%Y-%m-%d'),
+                        payment.payment_method
+                    ])
+
+                current_date = next_month_start
+
+            ws.append(['Payment ID', 'Booking ID', 'Amount', 'Payment Date', 'Payment Method'])
+            for row in revenue_data:
+                ws.append(row)
+
+            ws.append([])
+            ws.append(['Month', 'Total Revenue'])
+            for month, total in month_totals.items():
+                ws.append([month, total])
+
+        # Monthly Services Report
+        elif report_type == 'monthly_services':
+            current_date = start_date
+            services_data = []
+            month_totals = {}
+            month_revenue = {}
+
+            while current_date <= end_date:
+                next_month = current_date.replace(day=28) + timedelta(days=4)
+                next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                # Get all bookings for services within the month
+                service_bookings = SpaBooking.objects.filter(
+                    appointment_date__gte=current_date,
+                    appointment_date__lt=next_month_start,
+                    service__isnull=False
+                )
+
+                monthly_count = service_bookings.count()
+                total_revenue = service_bookings.aggregate(revenue=Sum('amount_due'))['revenue'] or 0
+
+                month_totals[current_date.strftime('%Y-%m')] = monthly_count
+                month_revenue[current_date.strftime('%Y-%m')] = total_revenue
+
+                for booking in service_bookings:
+                    services_data.append([
+                        booking.service.id,
+                        booking.service.name,
+                        booking.service.description,
+                        booking.service.price
+                    ])
+
+                current_date = next_month_start
+
+            # Append service booking details to the worksheet
+            ws.append(['Service ID', 'Name', 'Description', 'Price'])
+            for row in services_data:
+                ws.append(row)
+
+            # Append the monthly totals and revenue to the worksheet
+            ws.append([])
+            ws.append(['Month', 'Total Service Bookings', 'Revenue (ETB)'])
+            for month, total in month_totals.items():
+                ws.append([month, total, month_revenue.get(month, 0)])
+
+        # Monthly Packages Report
+        elif report_type == 'monthly_packages':
+            current_date = start_date
+            packages_data = []
+            month_totals = {}
+            month_revenue = {}
+
+            while current_date <= end_date:
+                next_month = current_date.replace(day=28) + timedelta(days=4)
+                next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                # Get all bookings for packages within the month
+                package_bookings = SpaBooking.objects.filter(
+                    appointment_date__gte=current_date,
+                    appointment_date__lt=next_month_start,
+                    package__isnull=False
+                )
+
+                monthly_count = package_bookings.count()
+                total_revenue = package_bookings.aggregate(revenue=Sum('amount_due'))['revenue'] or 0
+
+                month_totals[current_date.strftime('%Y-%m')] = monthly_count
+                month_revenue[current_date.strftime('%Y-%m')] = total_revenue
+
+                for booking in package_bookings:
+                    packages_data.append([
+                        booking.package.id,
+                        booking.package.name,
+                        booking.package.description,
+                        booking.package.price
+                    ])
+
+                current_date = next_month_start
+
+            # Append package booking details to the worksheet
+            ws.append(['Package ID', 'Name', 'Description', 'Price'])
+            for row in packages_data:
+                ws.append(row)
+
+            # Append the monthly totals and revenue to the worksheet
+            ws.append([])
+            ws.append(['Month', 'Total Package Bookings', 'Revenue (ETB)'])
+            for month, total in month_totals.items():
+                ws.append([month, total, month_revenue.get(month, 0)])
+
+        wb.save(response)
+        return response
+
+
+
+
+class RoomReportView(View):
+    def get(self, request):
+        current_month = now().month
+        current_year = now().year
+
+        # Monthly room bookings
+        monthly_room_bookings = Booking.objects.filter(
+            created_at__year=current_year, created_at__month=current_month
+        ).count()
+
+        # Monthly room revenue
+        monthly_room_revenue = Payment.objects.filter(
+            payment_date__year=current_year, payment_date__month=current_month
+        ).aggregate(total=Sum('booking__total_amount'))['total'] or 0
+
+        # Room popularity
+        popular_rooms = Booking.objects.values('room__room_number').annotate(total=Count('id')).order_by('-total')
+
+        # Guest satisfaction
+        room_ratings = RoomRating.objects.values('room__room_number').annotate(avg_rating=Avg('rating')).order_by('-avg_rating')
+
+        context = {
+            'monthly_room_bookings': monthly_room_bookings,
+            'monthly_room_revenue': monthly_room_revenue,
+            'popular_rooms': popular_rooms,
+            'room_ratings': room_ratings,
+        }
         
+        return render(request, 'admins/room_reports.html', context)
+
+from openpyxl import Workbook
+from datetime import datetime
+
+
+from datetime import datetime, timedelta
+
+
+
+class ExportRoomReportView(View):
+
+    def post(self, request, report_type):
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename={report_type}_report.xlsx'
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f'{report_type.capitalize()} Report'
+
+        start_month = request.POST.get('start_month')
+        end_month = request.POST.get('end_month')
+
+        if report_type == 'bookings':
+            bookings = Booking.objects.all()
+            ws.append(['Booking ID', 'Room Number', 'User', 'Check-in Date', 'Check-out Date', 'Total Amount', 'Status'])
+            for booking in bookings:
+                user_display = booking.user.username if booking.user else booking.full_name
+                ws.append([
+                    booking.id,
+                    booking.room.room_number,
+                    user_display,
+                    booking.check_in_date,
+                    booking.check_out_date,
+                    booking.total_amount,
+                    booking.status,
+                ])
+
         elif report_type == 'monthly_revenue':
             current_month = now().month
             current_year = now().year
-            payments = SpaPayment.objects.filter(payment_date__year=current_year, payment_date__month=current_month)
-            ws.append(['Payment ID', 'Booking ID', 'Amount', 'Payment Date'])
+            payments = Payment.objects.filter(payment_date__year=current_year, payment_date__month=current_month)
+            ws.append(['Payment ID', 'Booking ID', 'Total Amount', 'Payment Date', 'Payment Method'])
 
-            total_amount = 0  # Initialize total amount
-
+            total_amount = 0
             for payment in payments:
-                ws.append([payment.id, payment.spa_booking.id, payment.amount, payment.payment_date.strftime('%Y-%m-%d')])
-                total_amount += payment.amount  # Add payment amount to total
-
-            # Append the total amount row
+                total_amount += payment.booking.total_amount
+                ws.append([
+                    payment.id,
+                    payment.booking.id,
+                    payment.booking.total_amount,
+                    payment.payment_date,
+                    payment.payment_method,
+                ])
             ws.append(['', '', 'Total', total_amount])
+
+        elif report_type == 'popularity':
+            popular_rooms = Booking.objects.values('room__room_number').annotate(total=Count('id')).order_by('-total')
+            ws.append(['Room Number', 'Total Bookings'])
+            for room in popular_rooms:
+                ws.append([room['room__room_number'], room['total']])
+
+        elif report_type == 'satisfaction':
+            room_ratings = RoomRating.objects.values('room__room_number').annotate(avg_rating=Avg('rating')).order_by('-avg_rating')
+            ws.append(['Room Number', 'Average Rating'])
+            for rating in room_ratings:
+                ws.append([rating['room__room_number'], rating['avg_rating']])
+
+        elif report_type == 'all_payments':
+            payments = Payment.objects.all()
+            ws.append(['Payment ID', 'Booking ID', 'Total Amount', 'Payment Date', 'Payment Method'])
+            for payment in payments:
+                # Convert payment_date to naive datetime
+                payment_date_naive = payment.payment_date.replace(tzinfo=None)
+                ws.append([
+                    payment.id,
+                    payment.booking.id,
+                    payment.booking.total_amount,
+                    payment_date_naive,
+                    payment.payment_method,
+                ])
+
+        # POST request with date range (monthly reports)
+        if start_month and end_month:
+            try:
+                start_date = datetime.strptime(start_month, '%Y-%m').date()
+                end_date = datetime.strptime(end_month, '%Y-%m').date()
+            except ValueError:
+                return HttpResponse("Invalid date format", status=400)
+
+            if report_type == 'monthly_bookings':
+                current_date = start_date
+                bookings_data = []
+                month_totals = {}
+
+                while current_date <= end_date:
+                    next_month = current_date.replace(day=28) + timedelta(days=4)  # this will get to the next month
+                    next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                    bookings = Booking.objects.filter(
+                        check_in_date__gte=current_date,
+                        check_in_date__lt=next_month_start
+                    )
+
+                    monthly_count = bookings.count()
+                    month_totals[current_date.strftime('%Y-%m')] = monthly_count
+
+                    for booking in bookings:
+                        user_display = booking.user.username if booking.user else booking.full_name
+                        bookings_data.append([
+                            booking.id,
+                            booking.room.room_number,
+                            user_display,
+                            booking.check_in_date,
+                            booking.check_out_date,
+                            booking.total_amount,
+                            booking.status
+                        ])
+
+                    current_date = next_month_start  # move to the next month
+
+                # Write booking details
+                ws.append(['Booking ID', 'Room Number', 'User', 'Check-in Date', 'Check-out Date', 'Total Amount', 'Status'])
+                for row in bookings_data:
+                    ws.append(row)
+
+                # Write summary of monthly bookings
+                ws.append([])
+                ws.append(['Month', 'Total Bookings'])
+                for month, total in month_totals.items():
+                    ws.append([month, total])
+
+            elif report_type == 'monthly_revenue':
+                current_date = start_date
+                revenue_data = []
+                month_totals = {}
+
+                while current_date <= end_date:
+                    next_month = current_date.replace(day=28) + timedelta(days=4)  # this will get to the next month
+                    next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                    payments = Payment.objects.filter(
+                        payment_date__gte=current_date,
+                        payment_date__lt=next_month_start
+                    )
+
+                    monthly_total = payments.aggregate(total=Sum('booking__total_amount'))['total'] or 0
+                    month_totals[current_date.strftime('%Y-%m')] = monthly_total
+
+                    for payment in payments:
+                        payment_date_naive = payment.payment_date.replace(tzinfo=None)  # Convert to naive datetime
+                        revenue_data.append([
+                            payment.id,
+                            payment.booking.id,
+                            payment.booking.total_amount,
+                            payment_date_naive,
+                            payment.payment_method
+                        ])
+
+                    current_date = next_month_start  # move to the next month
+
+                # Write payment details
+                ws.append(['Payment ID', 'Booking ID', 'Total Amount', 'Payment Date', 'Payment Method'])
+                for row in revenue_data:
+                    ws.append(row)
+
+                # Write summary of monthly revenue
+                ws.append([])
+                ws.append(['Month', 'Total Revenue'])
+                for month, total in month_totals.items():
+                    ws.append([month, total])
 
         wb.save(response)
         return response
