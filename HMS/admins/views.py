@@ -2318,3 +2318,230 @@ class ExportRoomReportView(View):
 
         wb.save(response)
         return response
+
+
+
+
+
+class HallReportView(View):
+    def get(self, request):
+        current_month = now().month
+        current_year = now().year
+
+        # Monthly hall bookings
+        monthly_hall_bookings = Hall_Booking.objects.filter(
+            created_at__year=current_year, created_at__month=current_month
+        ).count()
+
+        # Monthly hall revenue
+        monthly_hall_revenue = Hall_Booking.objects.filter(
+            created_at__year=current_year, created_at__month=current_month
+        ).aggregate(total=Sum('amount_due'))['total'] or 0
+
+        # Hall popularity (number of bookings)
+        popular_halls = Hall_Booking.objects.values('hall__hall_number').annotate(total=Count('id')).order_by('-total')
+
+        # Guest satisfaction (average rating - assuming there's a HallRating model similar to RoomRating)
+        # hall_ratings = HallRating.objects.values('hall__hall_number').annotate(avg_rating=Avg('rating')).order_by('-avg_rating')
+
+        context = {
+            'monthly_hall_bookings': monthly_hall_bookings,
+            'monthly_hall_revenue': monthly_hall_revenue,
+            'popular_halls': popular_halls,
+            # 'hall_ratings': hall_ratings,  # Uncomment if ratings are implemented
+        }
+        
+        return render(request, 'admins/hall_reports.html', context)
+
+
+class ExportHallReportView(View):
+    def post(self, request, report_type):
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename={report_type}_report.xlsx'
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f'{report_type.capitalize()} Report'
+
+        start_month = request.POST.get('start_month')
+        end_month = request.POST.get('end_month')
+
+        if start_month and end_month:
+            start_date = datetime.strptime(start_month, '%Y-%m')
+            end_date = datetime.strptime(end_month, '%Y-%m')
+
+        if report_type == 'bookings':
+            bookings = Hall_Booking.objects.all()
+            ws.append(['Booking ID', 'Hall Number', 'User', 'Start Date', 'End Date','Start Time','End Time', 'Total Amount', 'Status'])
+            for booking in bookings:
+                user_display = booking.user.username if booking.user else booking.full_name
+                ws.append([
+                    booking.id,
+                    booking.hall.hall_number,
+                    user_display,
+                    booking.start_date,
+                    booking.end_date,
+                    booking.start_time,
+                    booking.end_time,
+                    booking.amount_due,
+                    booking.status,
+                ])
+
+        elif report_type == 'all_payments':
+            payments = Hall_Payment.objects.all()
+            ws.append(['Payment ID', 'Booking ID', 'Payment Method', 'Transaction ID', 'Payment Date', 'Status'])
+            for payment in payments:
+                payment_date_naive = payment.payment_date.replace(tzinfo=None)
+                ws.append([
+                    payment.id,
+                    payment.booking.id,
+                    payment.payment_method,
+                    payment.transaction_id,
+                    payment_date_naive,
+                    payment.status,
+                ])
+
+        # Monthly Payments Report
+        elif report_type == 'monthly_payments':
+            current_date = start_date
+            payment_data = []
+            month_totals = {}
+
+            # Loop through each month in the date range
+            while current_date <= end_date:
+                next_month = current_date.replace(day=28) + timedelta(days=4)
+                next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                # Get payments for the current month
+                payments = Hall_Payment.objects.filter(
+                    payment_date__gte=current_date,
+                    payment_date__lt=next_month_start
+                )
+
+                # Calculate the total for the current month
+                monthly_total = payments.aggregate(total=Sum('booking__amount_due'))['total'] or 0
+                month_totals[current_date.strftime('%Y-%m')] = monthly_total
+
+                # Collect payment details
+                for payment in payments:
+                    payment_date_naive = payment.payment_date.replace(tzinfo=None)  # Convert to naive datetime
+                    payment_data.append([
+                        payment.id,
+                        payment.booking.id,
+                        payment.booking.amount_due,
+                        payment_date_naive,
+                        payment.payment_method
+                    ])
+
+                current_date = next_month_start  # Move to the next month
+
+            # Write payment details to Excel
+            ws.append(['Payment ID', 'Booking ID', 'Total Amount', 'Payment Date', 'Payment Method'])
+            for row in payment_data:
+                ws.append(row)
+
+            # Add a space before the summary section
+            ws.append([])
+            ws.append([])
+
+            # Write monthly totals to Excel
+            ws.append(['Month', 'Total Payments'])
+            for month, total in month_totals.items():
+                ws.append([month, total])
+
+        # Monthly Revenue Report
+        elif report_type == 'monthly_revenue':
+            current_date = start_date
+            revenue_data = []
+            month_totals = {}
+
+            while current_date <= end_date:
+                next_month = current_date.replace(day=28) + timedelta(days=4)
+                next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                payments = Hall_Payment.objects.filter(
+                    payment_date__gte=current_date,
+                    payment_date__lt=next_month_start
+                )
+
+                monthly_total = payments.aggregate(total=Sum('booking__amount_due'))['total'] or 0
+                month_totals[current_date.strftime('%Y-%m')] = monthly_total
+
+                for payment in payments:
+                    payment_date_naive = payment.payment_date.replace(tzinfo=None)
+                    revenue_data.append([
+                        payment.id,
+                        payment.booking.id,
+                        payment.booking.amount_due,
+                        payment_date_naive,
+                        payment.payment_method
+                    ])
+
+                current_date = next_month_start
+
+            # Write payment details
+            ws.append(['Payment ID', 'Booking ID', 'Total Amount', 'Payment Date', 'Payment Method'])
+            for row in revenue_data:
+                ws.append(row)
+
+            # Write summary of monthly revenue
+            ws.append([])
+            ws.append(['Month', 'Total Revenue'])
+            for month, total in month_totals.items():
+                ws.append([month, total])
+
+        elif report_type == 'monthly_bookings':
+            current_date = start_date
+            bookings_data = []
+            month_totals = {}
+
+            while current_date <= end_date:
+                next_month = current_date.replace(day=28) + timedelta(days=4)
+                next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                bookings = Hall_Booking.objects.filter(
+                    start_date__gte=current_date,
+                    start_date__lt=next_month_start
+                )
+
+                monthly_total = bookings.aggregate(total=Count('id'))['total'] or 0
+                month_totals[current_date.strftime('%Y-%m')] = monthly_total
+                
+                for booking in bookings:
+                    created_date_naive = booking.created_at.replace(tzinfo=None)
+                    user_display = booking.user.username if booking.user else booking.full_name
+                    bookings_data.append([
+                        booking.id,
+                        created_date_naive,
+                        booking.hall.hall_number,
+                        user_display,
+                        booking.start_date,
+                        booking.end_date,
+                        booking.start_time,
+                        booking.end_time,
+                        booking.amount_due,
+                        booking.status
+                    ])
+
+                current_date = next_month_start
+
+            # Write booking details
+            ws.append(['Booking ID','Created', 'Hall Number', 'User', 'Start Date', 'End Date','Start Time','End Time', 'Total Amount', 'Status'])
+            for row in bookings_data:
+                ws.append(row)
+
+            # Write summary of monthly bookings
+            ws.append([])
+            ws.append(['Month', 'Total Bookings'])
+            for month, total in month_totals.items():
+                ws.append([month, total])
+        # Hall Popularity Report
+        elif report_type == 'popularity':
+            hall_popularity = Hall_Booking.objects.values('hall__hall_number').annotate(total=Count('id')).order_by('-total')
+            ws.append(['Hall Number', 'Total Bookings'])
+            for hall in hall_popularity:
+                ws.append([hall['hall__hall_number'], hall['total']])
+
+        
+        wb.save(response)
+        return response

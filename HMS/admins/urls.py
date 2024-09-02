@@ -143,7 +143,8 @@ urlpatterns = [
     path('export-spa-report/<str:report_type>/', ExportSpaReportView.as_view(), name='export_spa_report'),
     path('room-reports/', RoomReportView.as_view(), name='room_reports'),
     path('export-room-report/<str:report_type>/', ExportRoomReportView.as_view(), name='export_room_report'),
-
+    path('hall/reports/', HallReportView.as_view(), name='hall_reports'),
+    path('hall/reports/export/<str:report_type>/', ExportHallReportView.as_view(), name='export_hall_report'),
 ]
 
 
