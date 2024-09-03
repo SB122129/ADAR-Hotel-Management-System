@@ -2545,3 +2545,164 @@ class ExportHallReportView(View):
         
         wb.save(response)
         return response
+
+
+
+class MembershipReportView(View):
+    def get(self, request):
+        memberships = Membership.objects.all()
+        membership_plans = MembershipPlan.objects.all()
+        payments = MembershipPayment.objects.all()
+
+        current_month = now().month
+        current_year = now().year
+
+        # Calculated reports
+        monthly_memberships = memberships.filter(created_at__year=current_year, created_at__month=current_month).count()
+        monthly_revenue = payments.filter(payment_date__year=current_year, payment_date__month=current_month).aggregate(total=Sum('amount'))['total'] or 0
+
+        # Popularity of plans
+        memberships_by_plan = memberships.values('plan__name').annotate(total=Count('id')).order_by('-total')
+
+        context = {
+            'memberships': memberships,
+            'membership_plans': membership_plans,
+            'payments': payments,
+            'monthly_memberships': monthly_memberships,
+            'monthly_revenue': monthly_revenue,
+            'memberships_by_plan': memberships_by_plan,
+        }
+
+        return render(request, 'admins/membership_reports.html', context)
+
+class ExportMembershipReportView(View):
+    
+    def post(self, request, report_type):
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename={report_type}_report.xlsx'
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f'{report_type.capitalize()} Report'
+
+        start_month = request.POST.get('start_month')
+        end_month = request.POST.get('end_month')
+
+        if start_month and end_month:
+            try:
+                start_date = datetime.strptime(start_month, '%Y-%m').date()
+                end_date = datetime.strptime(end_month, '%Y-%m').date()
+            except ValueError:
+                return HttpResponse("Invalid date format", status=400)
+
+        if report_type == 'memberships':
+            memberships = Membership.objects.all()
+            ws.append(['Membership ID', 'User', 'Plan', 'Start Date', 'End Date', 'Status', 'Created At'])
+            for membership in memberships:
+                ws.append([
+                    membership.id,
+                    membership.user.username if membership.user else f"{membership.for_first_name} {membership.for_last_name}",
+                    membership.plan.name,
+                    membership.start_date.strftime('%Y-%m-%d'),
+                    membership.end_date.strftime('%Y-%m-%d'),
+                    membership.status,
+                    membership.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                ])
+
+        elif report_type == 'plans':
+            plans = MembershipPlan.objects.all()
+            ws.append(['Plan ID', 'Name', 'Price', 'Duration (Months)', 'Description'])
+            for plan in plans:
+                ws.append([plan.id, plan.name, plan.price, plan.duration_months, plan.description])
+
+        elif report_type == 'payments':
+            payments = MembershipPayment.objects.all()
+            ws.append(['Payment ID', 'Membership ID', 'User', 'Amount', 'Payment Date', 'Payment Method', 'Status'])
+            for payment in payments:
+                user_display = payment.membership.user.username if payment.membership.user else f"{payment.membership.for_first_name} {payment.membership.for_last_name}"
+                ws.append([
+                    payment.id,
+                    payment.membership.id,
+                    user_display,
+                    payment.amount,
+                    payment.payment_date.strftime('%Y-%m-%d %H:%M:%S'),
+                    payment.payment_method,
+                    payment.status
+                ])
+
+        elif report_type == 'monthly_memberships':
+            current_date = start_date
+            memberships_data = []
+            month_totals = {}
+
+            while current_date <= end_date:
+                next_month = current_date.replace(day=28) + timedelta(days=4)
+                next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                monthly_memberships = Membership.objects.filter(
+                    created_at__gte=current_date,
+                    created_at__lt=next_month_start
+                )
+
+                monthly_count = monthly_memberships.count()
+                month_totals[current_date.strftime('%Y-%m')] = monthly_count
+
+                for membership in monthly_memberships:
+                    memberships_data.append([
+                        membership.id,
+                        membership.user.username if membership.user else f"{membership.for_first_name} {membership.for_last_name}",
+                        membership.plan.name,
+                        membership.start_date.strftime('%Y-%m-%d'),
+                        membership.created_at.strftime('%Y-%m-%d')
+                    ])
+
+                current_date = next_month_start
+
+            ws.append(['Membership ID', 'User', 'Plan', 'Start Date', 'Created At'])
+            for row in memberships_data:
+                ws.append(row)
+
+            ws.append([])
+            ws.append(['Month', 'Total Memberships'])
+            for month, total in month_totals.items():
+                ws.append([month, total])
+
+        elif report_type == 'monthly_revenue':
+            current_date = start_date
+            revenue_data = []
+            month_totals = {}
+
+            while current_date <= end_date:
+                next_month = current_date.replace(day=28) + timedelta(days=4)
+                next_month_start = next_month - timedelta(days=next_month.day - 1)
+
+                monthly_payments = MembershipPayment.objects.filter(
+                    payment_date__gte=current_date,
+                    payment_date__lt=next_month_start
+                )
+
+                monthly_total = monthly_payments.aggregate(total=Sum('amount'))['total'] or 0
+                month_totals[current_date.strftime('%Y-%m')] = monthly_total
+
+                for payment in monthly_payments:
+                    revenue_data.append([
+                        payment.id,
+                        payment.membership.id,
+                        payment.amount,
+                        payment.payment_date.strftime('%Y-%m-%d %H:%M:%S'),
+                        payment.payment_method
+                    ])
+
+                current_date = next_month_start
+
+            ws.append(['Payment ID', 'Membership ID', 'Amount', 'Payment Date', 'Payment Method'])
+            for row in revenue_data:
+                ws.append(row)
+
+            ws.append([])
+            ws.append(['Month', 'Total Revenue'])
+            for month, total in month_totals.items():
+                ws.append([month, total])
+
+        wb.save(response)
+        return response

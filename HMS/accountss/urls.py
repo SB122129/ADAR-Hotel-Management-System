@@ -10,5 +10,5 @@ urlpatterns = [
     path('profile/<int:pk>/', ProfileDetailView.as_view(), name='profile_detail'),
     path('profile/<int:pk>/update/', ProfileUpdateView.as_view(), name='profile_update'),
     path('activate/<uidb64>/<token>/', activate, name='activate'),
-    
+    path('profile/change-password/', CustomPasswordChangeView.as_view(), name='change_password'),
 ]

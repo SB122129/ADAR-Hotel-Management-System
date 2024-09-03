@@ -180,3 +180,35 @@ class ProfileUpdateView(LoginRequiredMixin,UpdateView):
         user = self.request.user
         user.first_login = False
         return reverse_lazy('profile_detail', kwargs={'pk': self.object.pk})
+    
+
+from django.contrib.auth.views import PasswordChangeView
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash, logout
+
+
+class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    template_name = 'accountss/change_password.html'
+    form_class = PasswordChangeForm
+    
+    from django.urls import reverse_lazy
+
+    def get_success_url(self):
+        return reverse_lazy('login')
+
+    def form_valid(self, form):
+        user = form.save()
+        update_session_auth_hash(self.request, user)  # Important, to update the session with the new password
+        logout(self.request)
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        # Handle invalid form submission if necessary
+        return super().form_invalid(form)
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.user = self.request.user
+        return form

@@ -145,6 +145,8 @@ urlpatterns = [
     path('export-room-report/<str:report_type>/', ExportRoomReportView.as_view(), name='export_room_report'),
     path('hall/reports/', HallReportView.as_view(), name='hall_reports'),
     path('hall/reports/export/<str:report_type>/', ExportHallReportView.as_view(), name='export_hall_report'),
+    path('membership_reports/', MembershipReportView.as_view(), name='membership_reports'),
+    path('export_membership_report/<str:report_type>/', ExportMembershipReportView.as_view(), name='export_membership_report'),
 ]
 
 
