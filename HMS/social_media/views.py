@@ -50,6 +50,7 @@ class ChatBotViews(LoginRequiredMixin, FormView, ListView):
         user_message = form.cleaned_data['message']
         response_text = self.get_gemini_response(user_message)
         
+        # Save the chat in the database
         ChatBot.objects.create(
             user=self.request.user,
             message=user_message,
@@ -61,17 +62,19 @@ class ChatBotViews(LoginRequiredMixin, FormView, ListView):
         return super().form_valid(form)
 
     def get_gemini_response(self, user_message):
-        # Check for custom commands
-        response_text = self.handle_custom_commands(user_message)
-        if response_text:
-            return response_text
+        # Check for custom commands and pass results to Gemini
+        data_to_send = self.handle_custom_commands(user_message)
+        
+        if data_to_send:  # If there is a custom command result, pass it to Gemini for response
+            prompt = f"Here is the data: {data_to_send}. Could you summarize this information in a friendly and helpful tone that is meant for the Staff of of a hotel named ADAR so refer to them as ADAR Team and elaborate on the data? and if the data is empty  for example of its pending bookings just say there are no , and list the data where its suitable to list and use bold for names and values and forget this chats history and dont put your name at the end of your response "
+        else:  # Otherwise, send the user's message to Gemini
+            prompt = user_message
 
-        # If no custom commands, use Gemini response
+        # Generate a response using Gemini
         model = genai.GenerativeModel("gemini-pro")
         chat = model.start_chat()
-        response = chat.send_message(user_message)
+        response = chat.send_message(prompt)
         
-        # Assuming response.text contains the relevant response data
         response_content = response.text
         response_content = response_content.replace("\n", "<br>")
         formatted_response = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', response_content)
@@ -132,17 +135,17 @@ class ChatBotViews(LoginRequiredMixin, FormView, ListView):
     # Existing methods for room, hall, and membership-related data
     def get_available_rooms(self):
         available_rooms = Room.objects.filter(room_status='vacant')
-        response_text = "Available Rooms:<br>"
+        room_data = ""
         for room in available_rooms:
-            response_text += f"{room.room_number} - {room.room_type.name}<br>"
-        return response_text
+            room_data += f"Room {room.room_number} - {room.room_type.name}. "
+        return f"Available rooms: {room_data}"
 
     def get_pending_bookings(self):
         pending_bookings = Booking.objects.filter(status='pending')
-        response_text = "Pending Bookings:<br>"
+        booking_data = ""
         for booking in pending_bookings:
-            response_text += f"Booking ID: {booking.id} - {booking.room.room_number} ({booking.room.room_type.name})<br>"
-        return response_text
+            booking_data += f"Booking ID: {booking.id}, Room: {booking.room.room_number} ({booking.room.room_type.name}). "
+        return f"Pending bookings: {booking_data}"
 
     def get_total_bookings(self):
         total_bookings = Booking.objects.count()
@@ -150,76 +153,69 @@ class ChatBotViews(LoginRequiredMixin, FormView, ListView):
 
     def get_total_revenue_by_room_type(self):
         room_revenue = Room.objects.values('room_type__name').annotate(total_revenue=Sum('booking__total_amount'))
-        response_text = "Total Revenue by Room Type:<br>"
+        room_data = ""
         for room in room_revenue:
-            response_text += f"{room['room_type__name']}: ETB {room['total_revenue']}<br>"
-        return response_text
+            room_data += f"{room['room_type__name']}: ETB {room['total_revenue']}. "
+        return f"Total Revenue by Room Type: {room_data}"
 
     def get_total_revenue_by_hall_type(self):
         hall_revenue = Hall.objects.values('hall_type__name').annotate(total_revenue=Sum('hall_booking__amount_due'))
-        response_text = "Total Revenue by Hall Type:<br>"
+        hall_data = ""
         for hall in hall_revenue:
-            response_text += f"{hall['hall_type__name']}: ETB {hall['total_revenue']}<br>"
-        return response_text
+            hall_data += f"{hall['hall_type__name']}: ETB {hall['total_revenue']}. "
+        return f"Total Revenue by Hall Type: {hall_data}"
 
     def get_total_memberships(self):
         memberships = Membership.objects.values('plan__name').annotate(total_members=Count('id'))
-        response_text = "Total Memberships by Plan:<br>"
+        membership_data = ""
         for membership in memberships:
-            response_text += f"{membership['plan__name']}: {membership['total_members']} memberships<br>"
-        return response_text
+            membership_data += f"{membership['plan__name']}: {membership['total_members']} memberships. "
+        return f"Total Memberships by Plan: {membership_data}"
 
     def get_booking_trends(self):
         one_month_ago = timezone.now() - timedelta(days=30)
         room_bookings = Booking.objects.filter(created_at__gte=one_month_ago).count()
         hall_bookings = Hall_Booking.objects.filter(created_at__gte=one_month_ago).count()
-
-        response_text = f"Booking Trends in the Last Month:<br>Room Bookings: {room_bookings}<br>Hall Bookings: {hall_bookings}"
-        return response_text
+        return f"Booking Trends in the Last Month: Room Bookings: {room_bookings}, Hall Bookings: {hall_bookings}"
 
     def get_room_booking_trends(self):
         one_month_ago = timezone.now() - timedelta(days=30)
         room_bookings = Booking.objects.filter(created_at__gte=one_month_ago).values('created_at__date').annotate(count=Count('id'))
-        
-        response_text = "Room Booking Trends:<br>"
+        booking_data = ""
         for booking in room_bookings:
-            response_text += f"{booking['created_at__date']}: {booking['count']} bookings<br>"
-        return response_text
+            booking_data += f"{booking['created_at__date']}: {booking['count']} bookings. "
+        return f"Room Booking Trends: {booking_data}"
 
     def get_hall_booking_trends(self):
         one_month_ago = timezone.now() - timedelta(days=30)
         hall_bookings = Hall_Booking.objects.filter(created_at__gte=one_month_ago).values('created_at__date').annotate(count=Count('id'))
-        
-        response_text = "Hall Booking Trends:<br>"
+        booking_data = ""
         for booking in hall_bookings:
-            response_text += f"{booking['created_at__date']}: {booking['count']} bookings<br>"
-        return response_text
+            booking_data += f"{booking['created_at__date']}: {booking['count']} bookings. "
+        return f"Hall Booking Trends: {booking_data}"
 
     # New methods for spa-related data
     def get_spa_services(self):
         services = SpaService.objects.all()
-        response_text = "Available Spa Services:<br>"
+        service_data = ""
         for service in services:
-            response_text += f"{service.name} - ETB {service.price}<br>"
-        return response_text
+            service_data += f"{service.name} - ETB {service.price}. "
+        return f"Available Spa Services: {service_data}"
 
     def get_spa_packages(self):
         packages = SpaPackage.objects.all()
-        response_text = "Available Spa Packages:<br>"
+        package_data = ""
         for package in packages:
-            response_text += f"{package.name} - ETB {package.price}<br>"
-        return response_text
+            package_data += f"{package.name} - ETB {package.price}. "
+        return f"Available Spa Packages: {package_data}"
 
     def get_pending_spa_bookings(self):
         pending_spa_bookings = SpaBooking.objects.filter(status='pending')
-        response_text = "Pending Spa Bookings:<br>"
+        booking_data = ""
         for booking in pending_spa_bookings:
             service_or_package = booking.service.name if booking.service else booking.package.name
-            response_text += f"Spa Booking ID: {booking.id} - {service_or_package} for {booking.appointment_date}<br>"
-        return response_text
-
-
-
+            booking_data += f"Spa Booking ID: {booking.id} - {service_or_package} for {booking.appointment_date}. "
+        return f"Pending Spa Bookings: {booking_data}"
 
 
 
@@ -287,7 +283,7 @@ import requests
 def post_to_facebook(message, media_path=None):
     access_token = meta_access_token
     page_id = '61564722219150'
-    api_version = 'v17.0'  # Use the latest stable API version
+    api_version = 'v17.0'  
 
     if media_path:
         post_url = f'https://graph.facebook.com/{api_version}/{page_id}/photos'
@@ -498,7 +494,7 @@ class DeletePostFromPlatformsView(View):
             messages.error(request, "You must select at least one platform to delete from.")
             return redirect('post_list')
 
-        # Convert post.platforms from a string representation to a list (if necessary)
+        
         platforms = post.platforms if isinstance(post.platforms, list) else post.platforms.split(',')
 
         success = True

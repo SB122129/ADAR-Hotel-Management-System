@@ -1,2 +1,2 @@
 # config.py
-BASE_URL = 'https://adarhotel3.loophole.site/'
+BASE_URL = 'https://broadly-lenient-adder.ngrok-free.app/'

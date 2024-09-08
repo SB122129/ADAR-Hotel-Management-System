@@ -29,6 +29,11 @@ from django.core.mail import EmailMultiAlternatives
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import PasswordChangeView
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash, logout
 
 
 from django.contrib import admin
@@ -36,27 +41,18 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.hashers import make_password
 from .models import Custom_user
 
-class CustomUserAdmin(UserAdmin):
-    model = Custom_user
+# class CustomUserAdmin(UserAdmin):
+#     model = Custom_user
 
-    def save_model(self, request, obj, form, change):
-        if form.cleaned_data['password']:
-            obj.password = make_password(form.cleaned_data['password'])
-        super().save_model(request, obj, form, change)
+#     def save_model(self, request, obj, form, change):
+#         if form.cleaned_data['password']:
+#             obj.password = make_password(form.cleaned_data['password'])
+#         super().save_model(request, obj, form, change)
 
-# Modify this instead of registering again
-admin.site.unregister(Custom_user)  # If needed, to clear the existing registration
-admin.site.register(Custom_user, CustomUserAdmin)
+# # Modify this instead of registering again
+# admin.site.unregister(Custom_user)  # If needed, to clear the existing registration
+# admin.site.register(Custom_user, CustomUserAdmin)
 
-@login_required
-def redirect_view(request):
-    user = request.user
-    if user.first_login:
-        user.first_login = False
-        user.save()
-        return redirect(reverse('profile_detail', kwargs={'pk': user.pk}))
-    else:
-        return redirect(reverse('home'))
 
 
 
@@ -182,19 +178,12 @@ class ProfileUpdateView(LoginRequiredMixin,UpdateView):
         return reverse_lazy('profile_detail', kwargs={'pk': self.object.pk})
     
 
-from django.contrib.auth.views import PasswordChangeView
-from django.urls import reverse_lazy
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib.auth import update_session_auth_hash, logout
 
 
 class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     template_name = 'accountss/change_password.html'
     form_class = PasswordChangeForm
     
-    from django.urls import reverse_lazy
-
     def get_success_url(self):
         return reverse_lazy('login')
 
@@ -205,7 +194,6 @@ class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        # Handle invalid form submission if necessary
         return super().form_invalid(form)
 
     def get_form(self, form_class=None):

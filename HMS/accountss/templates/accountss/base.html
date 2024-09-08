@@ -136,7 +136,7 @@ body {
               id="dropdownMenuButton" aria-haspopup="true" aria-expanded="false">Room</a>
             <div class="dropdown-menu transparent-dropdown" aria-labelledby="dropdownMenuButton">
               <a class="dropdown-item nav-link text-warning " href="{% url 'rooms' %}">View Rooms</a>
-              {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
+              {% if user.is_authenticated %}
               <a class="dropdown-item nav-link text-warning" href="{% url 'bookings' %}">My Bookings</a>
               <a class="dropdown-item nav-link text-warning" href="{% url 'my_room_ratings' %}">My Ratings</a>
               
@@ -195,6 +195,7 @@ body {
   </nav> <!-- navbar -->
 
   {% block content %}
+  
   {% endblock content %}
 
   {% block contents %}

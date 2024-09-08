@@ -67,7 +67,6 @@ from Spa.models import *
 
 def home(request):
     rooms = Room.objects.all().order_by('room_type', 'id').distinct('room_type')
-    print(rooms)
     return render(request, 'room/home.html', {'rooms': rooms})
 
 from django.db.models import Avg
@@ -168,6 +167,8 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         context['room_number'] = room.room_number  # Assuming 'number' is the field for room number
         context['room_type'] = room.room_type
         context['price_per_night'] = room.price_per_night  
+        context['capacity'] = room.capacity  
+
         return context
 
     def form_valid(self, form):

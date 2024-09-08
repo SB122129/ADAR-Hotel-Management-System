@@ -59,55 +59,6 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
-# Celery configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Make sure Redis is running
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
-
-
-# from huey_config import RedisHuey
-
-# HUEY = RedisHuey(
-#     'my-app', 
-#     host='localhost', 
-#     port=6379
-# )
-
-
-
-
-# DJANGO_HUEY = {
-#     'huey_class': 'huey.RedisHuey',  # Use 'huey.SqliteHuey', 'huey.MemoryHuey', etc.
-#     'name': 'room',
-#     'results': True,
-#     'store_none': False,
-#     'immediate': False,  # If True, runs tasks synchronously, mainly for debugging/testing
-#     'utc': True,
-#     'blocking': True,  # If True, Huey will block until results are available.
-#     'backend_class': 'huey.RedisBackend',  # Use 'huey.MemoryBackend', etc.
-#     'connection': {
-#         'host': 'localhost',
-#         'port': 6379,
-#         'db': 0,
-#         'connection_pool': None,  # Use a Redis connection pool
-#         'read_timeout': 1,  # If >0, sets the Redis client's socket read timeout
-#         'max_errors': 1000,  # Max # of errors before giving up
-#         'retry_delay': 1,  # # of seconds to wait between errors
-#     },
-#     'consumer': {
-#         'workers': 4,
-#         'worker_type': 'thread',  # 'thread' or 'greenlet'
-#         'initial_delay': 0.1,  # Small amount of time to sleep at start
-#         'backoff': 1.15,  # Exponential backoff using this rate
-#         'max_delay': 10.0,  # Max amount of time to pause between retries
-#         'scheduler_interval': 1,  # Check schedule every second
-#         'periodic': True,  # Enable crontab feature
-#         'check_worker_health': True,  # Enable worker health checks
-#     },
-# }
 
 
 

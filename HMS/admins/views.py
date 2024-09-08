@@ -355,6 +355,14 @@ class BookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     paginate_by = 10
 
     def get_queryset(self):
+        queryset = Booking.objects.all().order_by('-created_at')
+
+        # Get the current time
+        now = timezone.now()
+
+        # Automatically update the status of bookings with a past checkout date to 'Cancelled'
+        queryset.filter(check_out_date__lt=now, status__in=['pending', 'confirmed']).update(status='cancelled')
+        
         queryset = Booking.objects.all().order_by('-created_at')  # Changed from 'id' to '-created_at'
         search_query = self.request.GET.get('search', '')
         if search_query:
@@ -748,7 +756,7 @@ class MembershipPlanDeleteView(OwnerOrManagerRequiredMixin,  DeleteView):
     success_url = reverse_lazy('admins:membershipplan_list')
 
 # Membership Views
-class MembershipListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
+class MembershipListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = Membership
     template_name = 'admins/membership_list.html'
     context_object_name = 'memberships'
@@ -756,6 +764,17 @@ class MembershipListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
 
     def get_queryset(self):
         queryset = Membership.objects.all().order_by('-id')
+
+        # Get the current time
+        now = timezone.now()
+
+        # Automatically update the status of memberships with a past end_date to 'Cancelled'
+        queryset.filter(
+            end_date__lt=now,
+            status__in=['active', 'pending']  # Assuming these are the statuses before 'Cancelled'
+        ).update(status='cancelled')
+
+        # Search logic
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
@@ -763,6 +782,7 @@ class MembershipListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
                 Q(plan__name__icontains=search_query) |
                 Q(tx_ref__icontains=search_query)
             )
+
         return queryset
 
 class MembershipDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
@@ -1254,24 +1274,35 @@ class HallBookingUpdateView(OwnerManagerOrReceptionistRequiredMixin,UpdateView):
     success_url = reverse_lazy('admins:hall_booking_list')
 
 
-class HallBookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
+class HallBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = Hall_Booking
     template_name = 'admins/hall_booking_list.html'
     context_object_name = 'object_list'
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = Hall_Booking.objects.all().order_by('-created_at')  # Adjust as needed
+        queryset = Hall_Booking.objects.all().order_by('-created_at')
+
+        # Get the current time
+        now = timezone.now()
+
+        # Automatically update the status of hall bookings with a past end_date to 'Cancelled'
+        queryset.filter(
+            end_date__lt=now,
+            status__in=['pending', 'confirmed']
+        ).update(status='cancelled')
+
+        # Search logic
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
                 Q(user__username__icontains=search_query) |
                 Q(hall__hall_number__icontains=search_query) |
                 Q(hall__hall_type__name__icontains=search_query) |
-                Q(tx_ref__icontains=search_query)  # Adjust this field as needed
+                Q(tx_ref__icontains=search_query)
             )
-        return queryset
 
+        return queryset
 # Hall Payment Views
 
 
@@ -1611,6 +1642,17 @@ class SpaBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = SpaBooking.objects.all().order_by('-id')
+
+        # Get the current time
+        now = timezone.now()
+
+        # Automatically update the status of spa bookings with a past appointment_date to 'Cancelled'
+        queryset.filter(
+            appointment_date__lt=now,
+            status__in=['pending', 'confirmed']  # Assuming 'pending' and 'confirmed' are valid statuses
+        ).update(status='cancelled')
+
+        # Search logic
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
@@ -1619,6 +1661,7 @@ class SpaBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
                 Q(package__name__icontains=search_query) |
                 Q(tx_ref__icontains=search_query)
             )
+
         return queryset
 
 class SpaBookingDetailView(OwnerManagerOrReceptionistRequiredMixin, DetailView):
