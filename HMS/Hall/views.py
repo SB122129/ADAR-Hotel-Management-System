@@ -38,6 +38,7 @@ from django.db.models import Q
 from xhtml2pdf import pisa
 from io import BytesIO
 import qrcode
+from datetime import timedelta
 import base64
 from django.utils.safestring import mark_safe
 
@@ -430,13 +431,23 @@ class BookingListView(LoginRequiredMixin,ListView):
 
     def get_queryset(self):
         self.cancel_past_bookings()  
-        return Hall_Booking.objects.filter(user=self.request.user).exclude(status='cancelled')
+        return Hall_Booking.objects.filter(user=self.request.user).order_by('-id')
 
+    
     def cancel_past_bookings(self):
-        past_bookings = Hall_Booking.objects.filter(user=self.request.user, end_date__lt=timezone.now().date()).exclude(status='cancelled')
+        # Cancel past bookings where end_date is in the past and status is not already 'cancelled'
+        past_bookings = Hall_Booking.objects.filter(end_date__lt=timezone.now().date()).exclude(status='cancelled')
         for booking in past_bookings:
             booking.status = 'cancelled'
             booking.save()
+        
+        # Cancel pending bookings where created_at is more than 2 days ago
+        two_days_ago = timezone.now() - timedelta(days=2)
+        pending_bookings = Hall_Booking.objects.filter(status='pending', created_at__lt=two_days_ago)
+        for booking in pending_bookings:
+            booking.status = 'cancelled'
+            booking.save()
+
 
 
 

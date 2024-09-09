@@ -10,6 +10,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
 from config import BASE_URL
 import requests
+from django.utils import timezone
 import random
 import string
 from paypalrestsdk import Payment, configure 
@@ -391,13 +392,37 @@ class SpaPayPalCancelView(View):
         messages.warning(request, 'Payment cancelled.')
         return redirect('spa:booking_list')
 
+from datetime import timedelta
+from django.utils import timezone
 class BookingListView(LoginRequiredMixin, ListView):
     model = SpaBooking
     template_name = 'spa/booking_list.html'
     context_object_name = 'bookings'
 
+
     def get_queryset(self):
-        return SpaBooking.objects.filter(user=self.request.user)
+        # Get all bookings for the logged-in user
+        bookings = SpaBooking.objects.filter(user=self.request.user).order_by('-id')
+
+        current_date = timezone.now().date()
+        two_days_ago = timezone.now() - timedelta(days=2)
+    
+        # Get all bookings
+        bookings_all = SpaBooking.objects.all()
+        
+        # Loop through the bookings and cancel those with past appointment dates
+        for booking in bookings_all:
+            # Cancel bookings with past appointment dates
+            if booking.appointment_date < current_date:
+                booking.status = 'cancelled'
+                booking.save()
+            # Cancel pending bookings where created_at date is more than 2 days ago
+            elif booking.status == 'pending' and booking.created_at < two_days_ago:
+                booking.status = 'cancelled'
+                booking.save()
+
+        return bookings
+
 
 class CancelBookingView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):

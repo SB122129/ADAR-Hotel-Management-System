@@ -129,23 +129,25 @@ class BookingListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         self.cancel_past_bookings() 
-        bookings_lists = Booking.objects.filter(user=self.request.user).annotate(
-                status_order=Case(
-                    When(status='confirmed', then=Value(1)),
-                    When(status='pending', then=Value(2)),
-                    When(status='cancelled', then=Value(3)),
-                    default=Value(4),
-                    output_field=IntegerField(),
-                )
-            ).order_by('status_order')
+        bookings_lists = Booking.objects.filter(user=self.request.user).order_by('-id')
         return bookings_lists
+    
     def cancel_past_bookings(self):
+        # Cancel past bookings where check_out_date or extended_check_out_date is in the past and status is not already 'cancelled'
         past_bookings = Booking.objects.filter(
-                        Q(check_out_date__lt=timezone.now().date()) | Q(extended_check_out_date__lt=timezone.now().date()),
-                        user=self.request.user).exclude(status='cancelled')
+            Q(check_out_date__lt=timezone.now().date()) | Q(extended_check_out_date__lt=timezone.now().date())
+        ).exclude(status='cancelled')
         for booking in past_bookings:
             booking.status = 'cancelled'
             booking.save()
+
+        # Cancel pending bookings where created_at is more than 2 days ago
+        two_days_ago = timezone.now() - timedelta(days=2)
+        pending_bookings = Booking.objects.filter(status='pending', created_at__lt=two_days_ago)
+        for booking in pending_bookings:
+            booking.status = 'cancelled'
+            booking.save()
+
 
 
 

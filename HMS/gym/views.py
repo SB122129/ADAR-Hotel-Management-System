@@ -31,6 +31,7 @@ import qrcode
 import base64
 from django.utils.safestring import mark_safe
 from django.utils import timezone
+from datetime import timedelta
 
 
 
@@ -41,10 +42,19 @@ class MyMembershipsView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         self.cancel_memberships_bookings()
-        return Membership.objects.filter(user=self.request.user)
+        return Membership.objects.filter(user=self.request.user).order_by('-id')
+
     def cancel_memberships_bookings(self):
-        past_memberships = Membership.objects.filter(user=self.request.user, end_date__lt=timezone.now().date()).exclude(status='cancelled')
+        # Cancel memberships where the end date is in the past and status is not already 'cancelled'
+        past_memberships = Membership.objects.filter(end_date__lt=timezone.now().date()).exclude(status='cancelled')
         for membership in past_memberships:
+            membership.status = 'cancelled'
+            membership.save()
+        
+        # Cancel bookings that are pending for more than 2 days
+        two_days_ago = timezone.now() - timedelta(days=2)
+        pending_memberships = Membership.objects.filter(status='pending', created_at__lt=two_days_ago)
+        for membership in pending_memberships:
             membership.status = 'cancelled'
             membership.save()
 
