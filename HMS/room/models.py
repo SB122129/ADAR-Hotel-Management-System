@@ -11,11 +11,6 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
-
-
-
-
-
 class Room(models.Model):
     ROOM_STATUS_CHOICES = (
         ('vacant', 'Vacant'),
@@ -33,12 +28,7 @@ class Room(models.Model):
     floor = models.IntegerField()
 
     def __str__(self):
-        return self.room_number
-
-    
-
-
-
+        return f"{self.room_number} - {self.room_type}"
 
 class Booking(models.Model):
     STATUS_CHOICES = (
@@ -85,38 +75,6 @@ class Booking(models.Model):
         room = self.room
         super().delete(*args, **kwargs)
 
-    def update_room_and_booking__status(self):
-        now = timezone.now().date()
-        print(f"Updating room status for room {self.room.room_number}")
-
-        # Check if any booking has check_out_date or extended_check_out_date less than today
-        bookings_to_cancel = self.room.booking_set.filter(
-            checked_in=True,
-            check_out_date__lt=now
-        ) | self.room.booking_set.filter(
-            checked_in=True,
-            extended_check_out_date__lt=now
-        )
-
-        if bookings_to_cancel.exists():
-            for booking in bookings_to_cancel:
-                booking.checked_in = False
-                booking.checked_out = True
-                booking.status = 'cancelled'
-                booking.save()
-            self.room.room_status = 'vacant'
-        else:
-            # Check if any booking has checked_in as True
-            if self.room.booking_set.filter(checked_in=True).exists():
-                self.room.room_status = 'occupied'
-            # Check if any booking has checked_out as True
-            elif self.room.booking_set.filter(checked_out=True).exists():
-                self.room.room_status = 'vacant'
-            else:
-                self.room.room_status = 'vacant'
-
-        print(f"Room {self.room.room_number} status updated to {self.room.room_status}")
-        self.room.save()
     
     def has_receipt(self):
         return Receipt.objects.filter(booking=self).exists()
@@ -175,9 +133,5 @@ class RoomRating(models.Model):
     review = models.TextField()
     rating_date = models.DateTimeField(auto_now_add=True)
 
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
-@receiver(post_save, sender=Booking)
-def update_room_and_booking__status(sender, instance, **kwargs):
-    instance.update_room_and_booking__status()
+    def __str__(self):
+        return f"{self.room} - {self.rating}"

@@ -14,7 +14,7 @@
     {% endif %}
 </div>
 
-<h4 class="text-center mt-4 mb-4"><strong>Your Social Media Posts</strong></h4>
+<h4 class="text-center mt-4 mb-4"><strong>Social Media Posts</strong></h4>
 
 <div class="container-fluid mt-5">
     <!-- Search Form -->
@@ -39,6 +39,7 @@
                     <th scope="col">Posted by</th>
                     <th scope="col">Message</th>
                     <th scope="col">Date Posted</th>
+                    <th scope="col">Posted by</th>
                     <th scope="col">Status</th>
                     <th scope="col">Actions</th> <!-- New column for actions -->
                 </tr>
@@ -47,22 +48,30 @@
                 {% if posts %}
                     {% for post in posts %}
                     <tr>
-                        <td class="align-middle">{{ post.get_platforms_display }}</td>
+                        <td class="align-middle">{% if post.platforms %}{{ post.get_platforms_display }}{% else %} Post has been deleted from all platforms{% endif %} </td>
                         <td class="align-middle">{{ post.user.username }}</td>
                         <td class="align-middle">{{ post.message|truncatewords:5 }}</td>
                         <td class="align-middle">{{ post.post_date|date:"Y-m-d H:i" }}</td>
+                        <td class="align-middle">{{ post.user.username }}</td>
                         <td class="align-middle">{{ post.posted|yesno:"Posted,Not Posted" }}</td>
                         <td class="align-middle">
                             <a href="{% url 'post_detail' post.id %}" class="btn btn-link text-warning">
                                 <span class="material-symbols-outlined">info</span>
                             </a>&ensp;
-                            {% if post.posted %}
+                            {% if not post.posted %}
+                            <!-- Retry button -->
+                            <form action="{% url 'post_retry' post.id %}" method="post" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link text-primary">
+                                    <span class="material-symbols-outlined">autorenew</span>
+                                </button>
+                            </form>&ensp;
+                            {% endif %}
+                            {% if post.posted and post.platforms %}
                             <!-- Delete Button inside the table -->
-<button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-post-id="{{ post.id }}" data-platforms="{{ post.platforms }}">
-    <span class="material-symbols-outlined">delete_forever</span>
-</button>
-
-                            
+                            <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-post-id="{{ post.id }}" data-platforms="{{ post.platforms }}">
+                                <span class="material-symbols-outlined">delete_forever</span>
+                            </button>                            
                             {% endif %}
                         </td>
                     </tr>

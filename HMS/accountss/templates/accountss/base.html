@@ -129,8 +129,7 @@ body {
         <div class="navbar-nav ml-auto pt-1">
           <a class="nav-item nav-link text-warning" href="{% url 'home' %}">Home</a>
           <a class="nav-item nav-link text-warning" href="{% url 'about' %}">About</a>
-          <a class="nav-item nav-link text-warning" href="{% url 'spa:service_list' %}">Spa & Beauty</a>
-          <a class="nav-item nav-link text-warning" href="{% url 'spa:booking_list' %}">Spa Bookings</a>
+          
           <div class="dropdown ml-3">
             <a style="outline: none;" class="btn  pt-2 text-warning dropdown-toggle-no-caret nav-link"
               id="dropdownMenuButton" aria-haspopup="true" aria-expanded="false">Room</a>
@@ -143,6 +142,8 @@ body {
               {% endif %}
             </div>
           </div>
+          <a class="nav-item nav-link text-warning" href="{% url 'contact' %}">Restaurant</a>
+
           <div class="dropdown ml-3">
             <a style="outline: none;" class="btn  pt-2 text-warning dropdown-toggle-no-caret nav-link"
               id="dropdownMenuButton" aria-haspopup="true" aria-expanded="false">Hall</a>
@@ -158,13 +159,24 @@ body {
               id="dropdownMenuButton" aria-haspopup="true" aria-expanded="false">Fitness</a>
             <div class="dropdown-menu transparent-dropdown" aria-labelledby="dropdownMenuButton">
               <a class="dropdown-item nav-link text-warning" href="{% url 'membership_plans' %}">Gym</a>
-              {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
+              {% if user.is_authenticated  %}
               <a class="dropdown-item nav-link text-warning" href="{% url 'my_memberships' %}">My Memberships</a>
+              {% endif %}
+            </div>
+          </div>
+          <div class="dropdown ml-3">
+            <a style="outline: none;" class="btn  pt-2 text-warning dropdown-toggle-no-caret nav-link"
+              id="dropdownMenuButton" aria-haspopup="true" aria-expanded="false">Spa & Beauty</a>
+            <div class="dropdown-menu transparent-dropdown" aria-labelledby="dropdownMenuButton">
+              <a class="nav-item nav-link text-warning" href="{% url 'spa:service_list' %}">View Spa</a>
+              {% if user.is_authenticated %}
+              <a class="nav-item nav-link text-warning" href="{% url 'spa:booking_list' %}">My Spa Bookings</a>
               {% endif %}
             </div>
           </div>
 
           <a class="nav-item nav-link text-warning" href="{% url 'contact' %}">Contact</a>
+
           {% if user.is_authenticated and request.resolver_match.url_name != 'login' %}
           <div class="dropdown ml-3">
             <button style="outline: none;" class="btn p-0 nav-link" type="button" id="dropdownMenuButton"

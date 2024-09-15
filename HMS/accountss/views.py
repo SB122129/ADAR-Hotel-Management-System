@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import DetailView, UpdateView
 from django.views.generic.edit import CreateView
 from accountss.forms import *
-from accountss.models import Custom_user
+
 from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import authenticate, login

@@ -26,6 +26,8 @@ from django.contrib.auth.models import User
 from datetime import timedelta
 from django.db.models import Count, Sum
 from Spa.models import *
+from config import BASE_URL,TELEGRAM_BOT_TOKEN
+from django.views import View
 
 
 
@@ -246,7 +248,7 @@ def send_message_to_telegram(request):
         message_text = request.POST.get("message")
 
         user = get_object_or_404(Custom_user, id=user_id)
-        telegram_bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+        telegram_bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
         telegram_bot.send_message(chat_id=user.telegram_id, text=message_text)
         
@@ -311,30 +313,55 @@ def post_to_facebook(message, media_path=None):
 
 
 
+import requests
+from urllib.parse import quote
+
+from urllib.parse import quote
+
 def post_to_instagram(message, image_path):
     instagram_access_token = meta_access_token
     instagram_account_id = '17841468557520601'
-    relative_image_path = image_path.split('media')[-1].replace('\\', '/')
-    image_url = f'https://broadly-lenient-adder.ngrok-free.app/media/media/social_media{relative_image_path}'
-
+    
+    # Assuming image_path is something like "/media/social_media/"
+    relative_image_path = image_path.split('media')[-1].replace('\\', '/').lstrip('/')
+    
+    # Construct the full image URL
+    image_url = f'{BASE_URL.rstrip("/")}/media/media/social_media/{relative_image_path.split("/")[-1]}'
+    image_url = quote(image_url, safe=':/')
+    
+    print(f"Constructed Image URL: {image_url}")
+    
+    # Instagram API calls
     media_url = f'https://graph.facebook.com/v12.0/{instagram_account_id}/media'
-    data = {'image_url': image_url, 'caption': message, 'access_token': instagram_access_token}
+    data = {
+        'image_url': image_url,
+        'caption': message,
+        'access_token': instagram_access_token
+    }
     response = requests.post(media_url, data=data)
+    
     if response.status_code != 200:
+        print(f"Media Creation Response: {response.status_code} - {response.text}")
         return None
 
     creation_id = response.json().get('id')
     if not creation_id:
         return None
 
+    # Now publish the media
     publish_url = f'https://graph.facebook.com/v12.0/{instagram_account_id}/media_publish'
-    data = {'creation_id': creation_id, 'access_token': instagram_access_token}
+    data = {
+        'creation_id': creation_id,
+        'access_token': instagram_access_token
+    }
     response = requests.post(publish_url, data=data)
 
     if response.status_code == 200:
         return creation_id  # Return the media ID as the post ID
     else:
+        print(f"Failed to publish media: {response.status_code} - {response.text}")
         return None
+
 
 
 
@@ -399,15 +426,29 @@ def post_to_x_v2(message, image_url=None):
 import requests
 from urllib.parse import quote
 
-def post_to_telegram(message, image_url=None):
-    bot_token = settings.TELEGRAM_BOT_TOKEN
+import requests
+from urllib.parse import quote
+
+def post_to_telegram(message, relative_image_path=None):
+    bot_token = TELEGRAM_BOT_TOKEN
     channel_id = '@adarhotel'
     
-    if image_url:
+    image_url = None
+    if relative_image_path:
+        # Ensure relative_image_path does not contain the full URL
+        if relative_image_path.startswith('http://') or relative_image_path.startswith('https://'):
+            # Strip the base part of the URL if it accidentally contains it
+            relative_image_path = relative_image_path.split('/media/')[-1]
+            relative_image_path = f'/media/{relative_image_path}'
+        
+        # Construct the image URL
+        image_url = f'{BASE_URL.rstrip("/")}{relative_image_path}'
+        
         # Ensure the image URL is encoded
         image_url = quote(image_url, safe=':/')
-        
-        # Send a photo with a caption
+
+    if image_url:
+        # Send a photo with a caption using the constructed image URL
         base_url = f'https://api.telegram.org/bot{bot_token}/sendPhoto'
         data = {
             'chat_id': channel_id,
@@ -416,7 +457,7 @@ def post_to_telegram(message, image_url=None):
         }
         response = requests.post(base_url, data=data)
     else:
-        # Send a text message
+        # Send a text message if no image
         base_url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
         data = {
             'chat_id': channel_id,
@@ -431,6 +472,9 @@ def post_to_telegram(message, image_url=None):
     else:
         print(f"Failed to post to Telegram: {response.status_code} - {response.text}")
         return None
+
+
+    
 
 
 
@@ -476,6 +520,74 @@ class SocialMediaPostCreateView(LoginRequiredMixin, CreateView):
             form.instance.save()
 
         return response
+
+
+class SocialMediaPostRetryView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        # Get the social media post
+        post = get_object_or_404(SocialMediaPost, pk=pk)
+
+        failed_platforms = []
+        success_platforms = []
+
+        # Track success/failure of each platform
+        platform_success = {
+            'facebook': post.facebook_post_id is not None,
+            'x': post.x_post_id is not None,
+            'instagram': post.instagram_post_id is not None,
+            'telegram': post.telegram_message_id is not None
+        }
+
+        # Retry posting to platforms that failed
+        if 'facebook' in post.platforms and not platform_success['facebook']:
+            post_id = post_to_facebook(post.message, post.image.path if post.image else None)
+            if post_id:
+                post.facebook_post_id = post_id
+                success_platforms.append('Facebook')
+            else:
+                failed_platforms.append('Facebook')
+
+        if 'x' in post.platforms and not platform_success['x']:
+            post_id = post_to_x_v2(post.message, request.build_absolute_uri(post.image.url) if post.image else None)
+            if post_id:
+                post.x_post_id = post_id
+                success_platforms.append('X')
+            else:
+                failed_platforms.append('X')
+
+        if 'instagram' in post.platforms and not platform_success['instagram']:
+            post_id = post_to_instagram(post.message, post.image.path if post.image else None)
+            if post_id:
+                post.instagram_post_id = post_id
+                success_platforms.append('Instagram')
+            else:
+                failed_platforms.append('Instagram')
+
+        if 'telegram' in post.platforms and not platform_success['telegram']:
+            post_id = post_to_telegram(post.message, request.build_absolute_uri(post.image.url) if post.image else None)
+            if post_id:
+                post.telegram_message_id = post_id
+                success_platforms.append('Telegram')
+            else:
+                failed_platforms.append('Telegram')
+
+        # Only update the posted flag if all retry attempts were successful
+        if len(success_platforms) == len(post.platforms) - len(failed_platforms):
+            post.posted = True
+        else:
+            post.posted = False
+        
+        post.save()
+
+        # Set appropriate messages for success and failure
+        if success_platforms:
+            messages.success(request, f"Post successfully retried for: {', '.join(success_platforms)}.")
+        if failed_platforms:
+            messages.error(request, f"Post failed to retry for: {', '.join(failed_platforms)}.")
+
+        # Redirect to the post list view
+        return redirect(reverse_lazy('post_list'))
+
 
 
 from django.views.generic import View
@@ -616,7 +728,7 @@ def delete_from_instagram(post):
 def delete_from_telegram(post):
     telegram_message_id = post.telegram_message_id
     telegram_chat_id = '@adarhotel'
-    telegram_token = settings.TELEGRAM_BOT_TOKEN
+    telegram_token = TELEGRAM_BOT_TOKEN
 
     if not telegram_message_id:
         return False
@@ -649,7 +761,7 @@ class SocialMediaPostListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         # Get the user's posts and filter them
-        queryset = SocialMediaPost.objects.filter(user=self.request.user).order_by('-post_date')
+        queryset = SocialMediaPost.objects.all().order_by('-post_date')
         
         # Get search query from the request
         search_query = self.request.GET.get('search', '')

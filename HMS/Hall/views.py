@@ -439,6 +439,7 @@ class BookingListView(LoginRequiredMixin,ListView):
         past_bookings = Hall_Booking.objects.filter(end_date__lt=timezone.now().date()).exclude(status='cancelled')
         for booking in past_bookings:
             booking.status = 'cancelled'
+            booking.hall.status = 'available'
             booking.save()
         
         # Cancel pending bookings where created_at is more than 2 days ago
@@ -446,6 +447,7 @@ class BookingListView(LoginRequiredMixin,ListView):
         pending_bookings = Hall_Booking.objects.filter(status='pending', created_at__lt=two_days_ago)
         for booking in pending_bookings:
             booking.status = 'cancelled'
+            booking.hall.status = 'available'
             booking.save()
 
 

@@ -5,14 +5,20 @@ app_name = 'admins'
 
 urlpatterns = [
     path('admin_dashboard/', admin_dashboard, name='admin_dashboard'),
+    path('customers/', CustomerListView.as_view(), name='customer_list'),
+    path('customers/delete/<int:pk>/', CustomerDeleteView.as_view(), name='customer_delete'),
+    path('customer/<int:pk>/', CustomerDetailView.as_view(), name='customer_detail'),
+    
     
     path('managers/', ManagerListView.as_view(), name='manager_list'),
     path('managers/create/', ManagerCreateView.as_view(), name='manager_create'),
+    path('manager/<int:pk>/', ManagerDetailView.as_view(), name='manager_detail'),
     path('managers/update/<int:pk>/', ManagerUpdateView.as_view(), name='manager_update'),
     path('managers/delete/<int:pk>/', ManagerDeleteView.as_view(), name='manager_delete'),
 
     path('receptionists/', ReceptionistListView.as_view(), name='receptionist_list'),
     path('receptionists/create/', ReceptionistCreateView.as_view(), name='receptionist_create'),
+    path('receptionist/<int:pk>/', ReceptionistDetailView.as_view(), name='receptionist_detail'),
     path('receptionists/update/<int:pk>/', ReceptionistUpdateView.as_view(), name='receptionist_update'),
     path('receptionists/delete/<int:pk>/', ReceptionistDeleteView.as_view(), name='receptionist_delete'),
 

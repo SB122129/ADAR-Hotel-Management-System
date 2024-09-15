@@ -139,6 +139,9 @@ class BookingListView(LoginRequiredMixin, ListView):
         ).exclude(status='cancelled')
         for booking in past_bookings:
             booking.status = 'cancelled'
+            booking.room.room_status = 'vacant'
+            booking.checked_in = False
+            booking.checked_out = True
             booking.save()
 
         # Cancel pending bookings where created_at is more than 2 days ago
@@ -146,6 +149,7 @@ class BookingListView(LoginRequiredMixin, ListView):
         pending_bookings = Booking.objects.filter(status='pending', created_at__lt=two_days_ago)
         for booking in pending_bookings:
             booking.status = 'cancelled'
+            booking.room.room_status = 'vacant'
             booking.save()
 
 
@@ -179,7 +183,6 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         form.instance.room = room
         form.instance.status = 'pending'
         form.instance.tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
-        form.instance.update_room_and_booking__status()
         self.object = form.save()
         return redirect('payment_create', booking_id=self.object.id)
 
@@ -240,7 +243,6 @@ class BookingExtendView(View):
             else:
                 booking.extended_check_out_date = extended_check_out_date
                 booking.status = 'pending'
-                booking.update_room_and_booking__status()
                 booking.save()
                 return redirect('payment_extend', booking_id=booking.id)
         else:
@@ -1066,7 +1068,6 @@ class BookingCancelView(LoginRequiredMixin, View):
             booking = get_object_or_404(Booking, id=booking_id)
             booking.status = 'cancelled'
             booking.save()
-            booking.update_room_and_booking__status()
             booking_url = f"{BASE_URL}/room/my-bookings/"
             html_content = render_to_string('room/cancellation_email_template.html', {'booking': booking, 'booking_url': booking_url})
             
@@ -1184,13 +1185,3 @@ class UserRoomRatingsListView(LoginRequiredMixin, ListView):
 
 
 
-@receiver(post_save, sender=Booking)
-@receiver(post_delete, sender=Booking)
-def update_room_and_booking__status(sender, instance, **kwargs):
-    instance.update_room_and_booking__status()
-
-def update_room_and_booking__statuses():
-    now = timezone.now().date()
-    bookings = Booking.objects.all()
-    for booking in bookings:
-        booking.update_room_and_booking__status()

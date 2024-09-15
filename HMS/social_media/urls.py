@@ -10,5 +10,6 @@ urlpatterns = [
     path('post/', SocialMediaPostCreateView.as_view(), name='post_create'),
     path('posts/', SocialMediaPostListView.as_view(), name='post_list'),
     path('post/delete/<int:pk>/', DeletePostFromPlatformsView.as_view(), name='post_delete_from_platforms'),
-     path('post/<int:pk>/', SocialMediaPostDetailView.as_view(), name='post_detail'),
+    path('post/<int:pk>/', SocialMediaPostDetailView.as_view(), name='post_detail'),
+     path('post/retry/<int:pk>/', SocialMediaPostRetryView.as_view(), name='post_retry'),
 ]

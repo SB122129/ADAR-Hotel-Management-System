@@ -24,7 +24,7 @@ class Hall(models.Model):
 
 
     def __str__(self):
-        return self.hall_number
+        return f"{self.hall_number} - {self.hall_type}"
 
 class Hall_Booking(models.Model):
     Booking_STATUS_CHOICES = (

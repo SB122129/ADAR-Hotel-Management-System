@@ -16,6 +16,7 @@ class SocialMediaPost(models.Model):
     image = models.ImageField(upload_to='media/social_media/', blank=True, null=True)
     post_date = models.DateTimeField(auto_now_add=True)
     posted = models.BooleanField(default=False)
+    posted_by = models.CharField(max_length=100, blank=True, null=True)
     facebook_post_id = models.CharField(max_length=100, blank=True, null=True)
     instagram_post_id = models.CharField(max_length=100, blank=True, null=True)
     telegram_message_id = models.CharField(max_length=100, blank=True, null=True)

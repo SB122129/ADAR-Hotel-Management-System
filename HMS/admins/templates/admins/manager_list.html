@@ -56,6 +56,9 @@
                         <a href="{% url 'admins:manager_update' manager.id %}" class="btn btn-link text-primary">
                             <span class="material-symbols-outlined">edit_note</span>
                         </a>
+                        <a href="{% url 'admins:manager_detail' manager.pk %}" class="btn btn-link text-warning">
+                            <span class="material-symbols-outlined">info</span>
+                        </a>
                         <!-- Delete button with modal trigger -->
                         <button type="button" class="btn btn-link text-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ manager.id }}">
                             <span class="material-symbols-outlined">delete_forever</span>

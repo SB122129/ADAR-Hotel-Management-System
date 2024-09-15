@@ -15,23 +15,14 @@ import django
 django.setup()
 
 
-
-import asyncio
 from datetime import datetime, date
-from threading import Thread
 import requests
 import logging
 import paypalrestsdk
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
 from telegram import Update
-import json
-from config import BASE_URL
-from social_media.models import *
+from config import BASE_URL,TELEGRAM_BOT_TOKEN
+from social_media.models import ChatMessage
 import random,string
-from django.conf import settings
-from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
 from asgiref.sync import sync_to_async
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
@@ -49,7 +40,7 @@ from accountss.models import Custom_user
 logger = logging.getLogger(__name__)
 
 # Define states
-EMAIL, MENU, ROOM_SELECTION, CHECK_IN_DATE, CHECK_OUT_DATE, GUESTS, PAYMENT_METHOD, MY_BOOKINGS, PENDING_PAYMENT_PROCESS, PENDING_PAYMENTS, CANCEL_BOOKING, CHAT_STATE = range(12)
+EMAIL, MENU, PASSWORD,ROOM_SELECTION, CHECK_IN_DATE, CHECK_OUT_DATE, GUESTS, PAYMENT_METHOD, MY_BOOKINGS, PENDING_PAYMENT_PROCESS, PENDING_PAYMENTS, CANCEL_BOOKING, CHAT_STATE = range(13)
 
 # Helper function to generate the main menu buttons
 # Helper function to generate the main menu buttons
@@ -113,7 +104,43 @@ async def email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         'Welcome to Room Booking Bot! Please select an option:',
         reply_markup=get_main_menu_buttons()
     )
-    return MENU
+    return PASSWORD
+
+MAX_RETRIES = 5
+
+async def request_password(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # Retrieve user from the context, already set in the email step
+    user = context.user_data.get('user')
+    
+    # Retrieve the entered password from the message
+    entered_password = update.message.text
+
+    # Check if the account password matches the entered password
+    if user and await sync_to_async(user.check_password)(entered_password):
+        # If the password matches, reset retry count and proceed to the menu
+        context.user_data['password_retries'] = 0  # Reset retry count
+        await update.message.reply_text(
+            'Login successful! Please select an option:',
+            reply_markup=get_main_menu_buttons()
+        )
+        return MENU
+    else:
+        # If the password doesn't match, increment the retry count
+        retries = context.user_data.get('password_retries', 0) + 1
+        context.user_data['password_retries'] = retries
+
+        # Check if the user has reached the maximum number of retries
+        if retries >= MAX_RETRIES:
+            await update.message.reply_text(
+                'Too many incorrect attempts. Please start the process again.'
+            )
+            return ConversationHandler.END
+        
+        # If retries are still within the limit, allow the user to try again
+        await update.message.reply_text(
+            f'Incorrect password. You have {MAX_RETRIES - retries} attempts left. Please try again:'
+        )
+        return PASSWORD  # Return to the password prompt
 
 
 # Handle menu selection
@@ -164,7 +191,7 @@ async def handle_chat_message(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 # Start the booking process
 async def start_booking(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    available_rooms = await sync_to_async(Room.objects.filter)(room_status='vacant')
+    available_rooms = await sync_to_async(Room.objects.all())
     keyboard = []
 
     for room in available_rooms:
@@ -626,7 +653,7 @@ async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 
 def set_webhook():
-    application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     application.bot.set_webhook(url='{BASE_URL}/telegram/webhook/')
 
 
@@ -670,7 +697,7 @@ def set_webhook():
 
 
 def main():
-    application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
     # Add handlers to the application
     application.add_handler(CommandHandler('welcome', welcome))
@@ -679,6 +706,7 @@ def main():
         entry_points=[CommandHandler('start', start), CallbackQueryHandler(start, pattern='^start$')],
         states={
             EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, email)],
+            PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, request_password)],
             MENU: [CallbackQueryHandler(menu)],
             ROOM_SELECTION: [CallbackQueryHandler(room_selection)],
             CHECK_IN_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, check_in_date)],
@@ -699,5 +727,3 @@ def main():
     # Start the Bot
     application.run_polling()
 
-if __name__ == '__main__':
-    main()

@@ -17,6 +17,9 @@ import string
 from django.db.models import Count, Sum, Avg, F, ExpressionWrapper, fields
 from django.db.models.functions import TruncMonth,TruncDay
 from datetime import timedelta
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from premailer import transform
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.messages.views import SuccessMessageMixin
@@ -30,7 +33,7 @@ from django.shortcuts import render
 from django.db.models import Count, Sum
 from django.core.serializers.json import DjangoJSONEncoder
 import json
-from config import BASE_URL
+from config import BASE_URL,TELEGRAM_BOT_TOKEN
 
 
 def admin_dashboard(request):
@@ -179,7 +182,87 @@ def admin_dashboard(request):
 
     
 
+class CustomerDetailView(OwnerRequiredMixin,DetailView):
+    model = Custom_user
+    template_name = 'admins/customer_detail.html'
+    context_object_name = 'customer'
 
+    def get_queryset(self):
+        return Custom_user.objects.filter(role='customer')
+
+
+# Detail view for Receptionist
+
+
+class CustomerListView(OwnerRequiredMixin, ListView):
+    model = Custom_user
+    template_name = 'admins/customer_list.html'
+    context_object_name = 'customers'
+    paginate_by = 10
+
+    def get_queryset(self):
+        query = self.request.GET.get('search')
+        if query:
+            return Custom_user.objects.filter(role='customer', first_name__icontains=query)
+        return Custom_user.objects.filter(role='customer').order_by('-id')
+
+
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.contrib import messages
+from django.urls import reverse_lazy
+from django.views.generic import DeleteView
+
+class CustomerDeleteView(OwnerRequiredMixin, DeleteView):
+    model = Custom_user
+    template_name = 'admins/customer_list.html'
+    success_url = reverse_lazy('admins:customer_list')
+
+    def post(self, request, *args, **kwargs):
+        customer = self.get_object()  # Get the customer object
+        email = customer.email
+        full_name = customer.get_full_name()
+        print(full_name)
+        print(email)
+        
+        # Call the delete method
+        response = super().delete(request, *args, **kwargs)
+
+        # Send deletion confirmation email
+        subject = 'Account Deletion Confirmation - ADAR Hotel'
+        from_email = 'adarhotel33@gmail.com'
+
+        # Render email content from template
+        html_content = render_to_string('admins/customer_deletion_email_template.html', {
+            'full_name': full_name,
+            'support_email': 'adarhotel33@gmail.com',  # You can set your support email here
+        })
+
+        # Create plain text content by stripping HTML tags
+        text_content = strip_tags(html_content)
+
+        # Create email
+        email_message = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=from_email,
+            to=[email]
+        )
+
+        # Attach HTML content
+        email_message.attach_alternative(html_content, "text/html")
+        
+        # Send the email
+        email_message.send()
+        
+        # Add the success message
+        messages.success(request, f"Customer {full_name} has been deleted successfully.")
+
+        return response
+
+    
+        
 
 # owner views for creating manager and receptionsits
 
@@ -193,17 +276,16 @@ class ManagerListView(OwnerRequiredMixin, ListView):
         query = self.request.GET.get('search')
         if query:
             return Custom_user.objects.filter(role='manager', first_name__icontains=query)
-        return Custom_user.objects.filter(role='manager').order_by('first_name')
+        return Custom_user.objects.filter(role='manager').order_by('-id')
 
-class ManagerCreateView(OwnerRequiredMixin, CreateView):
+
+class ManagerDetailView(OwnerRequiredMixin,DetailView):
     model = Custom_user
-    form_class = CustomUserCreationForm
-    template_name = 'admins/manager_form.html'
-    success_url = reverse_lazy('admins:manager_list')
+    template_name = 'admins/manager_detail.html'
+    context_object_name = 'manager'
 
-    def form_valid(self, form):
-        form.instance.role = 'manager'
-        return super().form_valid(form)
+    def get_queryset(self):
+        return Custom_user.objects.filter(role='manager')
 
 class ManagerUpdateView(OwnerRequiredMixin, UpdateView):
     model = Custom_user
@@ -213,9 +295,16 @@ class ManagerUpdateView(OwnerRequiredMixin, UpdateView):
 
 class ManagerDeleteView(OwnerRequiredMixin, DeleteView):
     model = Custom_user
-    template_name = 'admins/manager_confirm_delete.html'
+    template_name = 'admins/manager_list.html'
     success_url = reverse_lazy('admins:manager_list')
+    def post(self, request, *args, **kwargs):
+        manager = self.get_object()
+        full_name = manager.get_full_name()
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f"Manager {full_name} has been deleted successfully.")
 
+        return response
+  
 class ReceptionistListView(OwnerOrManagerRequiredMixin, ListView):
     model = Custom_user
     template_name = 'admins/receptionist_list.html'
@@ -226,7 +315,71 @@ class ReceptionistListView(OwnerOrManagerRequiredMixin, ListView):
         query = self.request.GET.get('search')
         if query:
             return Custom_user.objects.filter(role='receptionist', first_name__icontains=query)
+        return Custom_user.objects.filter(role='receptionist').order_by('-id')
+
+
+class ManagerCreateView(OwnerRequiredMixin, CreateView):
+    model = Custom_user
+    form_class = CustomUserCreationForm
+    template_name = 'admins/manager_form.html'
+    success_url = reverse_lazy('admins:manager_list')
+
+    def form_valid(self, form):
+        form.instance.role = 'manager'
+        response = super().form_valid(form)
+
+        # Email confirmation logic
+        manager = form.instance
+        emails = form.cleaned_data.get('email')
+        password = form.cleaned_data.get('password1')  # Assuming this is the password field name
+        print(password)
+
+
+        
+        # URL for login
+        login_url = f"{BASE_URL}/login/"
+
+        # Render email content from template
+        html_content = render_to_string('admins/manager_account_creation_confirmation_email_template.html', {
+            'manager': manager,
+            'password': password,
+            'login_url': login_url,
+        })
+        
+        # Inline CSS
+        html_content = transform(html_content)
+        print(emails)
+        # Create the email message
+        email = EmailMultiAlternatives(
+            subject='Manager Account Created - Please Change Your Password',
+            from_email='adarhotel33@gmail.com',
+            to=[emails]
+        )
+        
+        # Attach the HTML content
+        email.attach_alternative(html_content, "text/html")
+        
+        # Send the email
+        email.send()
+
+        return response
+
+
+class ReceptionistUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
+    model = Custom_user
+    form_class = CustomUserChangeForm
+    template_name = 'admins/receptionist_form.html'
+    success_url = reverse_lazy('admins:receptionist_list')
+
+class ReceptionistDetailView(OwnerOrManagerRequiredMixin,DetailView):
+    model = Custom_user
+    template_name = 'admins/receptionist_detail.html'
+    context_object_name = 'receptionist'
+
+    def get_queryset(self):
         return Custom_user.objects.filter(role='receptionist')
+
+
 
 class ReceptionistCreateView(OwnerOrManagerRequiredMixin, CreateView):
     model = Custom_user
@@ -236,18 +389,53 @@ class ReceptionistCreateView(OwnerOrManagerRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.role = 'receptionist'
-        return super().form_valid(form)
+        response = super().form_valid(form)
 
-class ReceptionistUpdateView(OwnerOrManagerRequiredMixin, UpdateView):
-    model = Custom_user
-    form_class = CustomUserChangeForm
-    template_name = 'admins/receptionist_form.html'
-    success_url = reverse_lazy('admins:receptionist_list')
+        # Email confirmation logic
+        receptionist = form.instance
+        password = form.cleaned_data.get('password1')  # Assuming this is the password field name
+        receptionist_email = form.cleaned_data.get('email')  # Assuming this is the password field name
+        # URL for login
+        login_url = f"{BASE_URL}/login/"
+
+        # Render email content from template
+        html_content = render_to_string('admins/receptionist_account_creation_confirmation_email_template.html', {
+            'receptionist': receptionist,
+            'password': password,
+            'login_url': login_url,
+        })
+        
+        # Inline CSS
+        html_content = transform(html_content)
+
+        # Create the email message
+        email = EmailMultiAlternatives(
+            subject='Receptionist Account Created - Please Change Your Password',
+            from_email='adarhotel33@gmail.com',
+            to=[receptionist_email]
+        )
+        
+        # Attach the HTML content
+        email.attach_alternative(html_content, "text/html")
+        
+        # Send the email
+        email.send()
+
+        return response
+
+
 
 class ReceptionistDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     model = Custom_user
-    template_name = 'admins/receptionist_confirm_delete.html'
+    template_name = 'admins/receptionist_list.html'
     success_url = reverse_lazy('admins:receptionist_list')
+    def post(self, request, *args, **kwargs):
+        receptionist = self.get_object()
+        full_name = receptionist.get_full_name()
+        response = super().delete(request, *args, **kwargs)
+        messages.success(request, f"Receptionist {full_name} has been deleted successfully.")
+
+        return response
 
 
 
@@ -347,8 +535,10 @@ class RoomDeleteView(OwnerOrManagerRequiredMixin,  DeleteView):
 from django.views.generic import ListView
 from django.db.models import Q
 from room.models import Booking
+from datetime import timedelta
+from django.utils import timezone
 
-class BookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
+class BookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = Booking
     template_name = 'admins/booking_list.html'
     context_object_name = 'object_list'
@@ -357,13 +547,33 @@ class BookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
     def get_queryset(self):
         queryset = Booking.objects.all().order_by('-created_at')
 
-        # Get the current time
+        # Get the current time and two days ago
         now = timezone.now()
+        two_days_ago = now - timedelta(days=2)
 
-        # Automatically update the status of bookings with a past checkout date to 'Cancelled'
-        queryset.filter(check_out_date__lt=now, status__in=['pending', 'confirmed']).update(status='cancelled')
-        
-        queryset = Booking.objects.all().order_by('-created_at')  # Changed from 'id' to '-created_at'
+        # Fetch bookings that have a past checkout date and are either pending or confirmed
+        past_bookings = queryset.filter(check_out_date__lt=now, status__in=['pending', 'confirmed'])
+
+        for booking in past_bookings:
+            # Update booking status to 'cancelled'
+            booking.status = 'cancelled'
+
+            # Update room status and booking details
+            booking.room.room_status = 'vacant'
+            booking.checked_in = False
+            booking.checked_out = True
+
+            # Save the updates to room and booking
+            booking.room.save()
+            booking.save()
+
+        # Automatically cancel bookings that are pending and created more than two days ago
+        queryset.filter(created_at__lt=two_days_ago, status='pending').update(status='cancelled')
+
+        # Reapply ordering by '-created_at'
+        queryset = Booking.objects.all().order_by('-created_at')
+
+        # Handle search functionality
         search_query = self.request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(
@@ -372,8 +582,8 @@ class BookingListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
                 Q(user__username__icontains=search_query) |
                 Q(tx_ref__icontains=search_query) |
                 Q(status__icontains=search_query)
-
             )
+
         return queryset
 
 
@@ -404,7 +614,6 @@ class BookingCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
             duration = (booking.check_out_date - booking.check_in_date).days
             booking.original_booking_amount = booking.room.price_per_night * duration
             booking.total_amount = booking.original_booking_amount
-        booking.update_room_and_booking__status()
         booking.save()
         return redirect('admins:payment_create',booking_id=booking.id)
 
@@ -419,7 +628,6 @@ class BookingUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
     def form_valid(self, form):
         response = super().form_valid(form)
         booking = form.instance
-        booking.update_room_and_booking__status()
         return response
 
 
@@ -756,6 +964,7 @@ class MembershipPlanDeleteView(OwnerOrManagerRequiredMixin,  DeleteView):
     success_url = reverse_lazy('admins:membershipplan_list')
 
 # Membership Views
+
 class MembershipListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = Membership
     template_name = 'admins/membership_list.html'
@@ -765,14 +974,21 @@ class MembershipListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     def get_queryset(self):
         queryset = Membership.objects.all().order_by('-id')
 
-        # Get the current time
+        # Get the current time and two days ago
         now = timezone.now()
+        two_days_ago = now - timedelta(days=2)
 
         # Automatically update the status of memberships with a past end_date to 'Cancelled'
         queryset.filter(
             end_date__lt=now,
             status__in=['active', 'pending']  # Assuming these are the statuses before 'Cancelled'
         ).update(status='cancelled')
+
+        # Automatically update the status of memberships that are pending and created more than two days ago to 'Cancelled'
+        queryset.filter(created_at__lt=two_days_ago, status='pending').update(status='cancelled')
+
+        # Reapply ordering by '-id'
+        queryset = Membership.objects.all().order_by('-id')
 
         # Search logic
         search_query = self.request.GET.get('search', '')
@@ -1274,6 +1490,8 @@ class HallBookingUpdateView(OwnerManagerOrReceptionistRequiredMixin,UpdateView):
     success_url = reverse_lazy('admins:hall_booking_list')
 
 
+
+
 class HallBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = Hall_Booking
     template_name = 'admins/hall_booking_list.html'
@@ -1283,14 +1501,40 @@ class HallBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     def get_queryset(self):
         queryset = Hall_Booking.objects.all().order_by('-created_at')
 
-        # Get the current time
+        # Get the current time and two days ago
         now = timezone.now()
+        two_days_ago = now - timedelta(days=2)
 
-        # Automatically update the status of hall bookings with a past end_date to 'Cancelled'
-        queryset.filter(
-            end_date__lt=now,
-            status__in=['pending', 'confirmed']
-        ).update(status='cancelled')
+        # Fetch hall bookings that have a past end_date and are either pending or confirmed
+        past_hall_bookings = queryset.filter(end_date__lt=now, status__in=['pending', 'confirmed'])
+
+        for booking in past_hall_bookings:
+            # Update booking status to 'cancelled'
+            booking.status = 'cancelled'
+
+            # Set hall status to 'available'
+            booking.hall.status = 'available'
+
+            # Save the changes to the booking and hall
+            booking.hall.save()
+            booking.save()
+
+        # Automatically cancel hall bookings that are pending and created more than two days ago
+        pending_old_hall_bookings = queryset.filter(created_at__lt=two_days_ago, status='pending')
+        
+        for booking in pending_old_hall_bookings:
+            # Update booking status to 'cancelled'
+            booking.status = 'cancelled'
+
+            # Set hall status to 'available'
+            booking.hall.status = 'available'
+
+            # Save the changes to the booking and hall
+            booking.hall.save()
+            booking.save()
+
+        # Reapply ordering by '-created_at'
+        queryset = Hall_Booking.objects.all().order_by('-created_at')
 
         # Search logic
         search_query = self.request.GET.get('search', '')
@@ -1303,7 +1547,7 @@ class HallBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
             )
 
         return queryset
-# Hall Payment Views
+
 
 
 class HallPaymentDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
@@ -1634,6 +1878,7 @@ class SpaBookingUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
     success_message = "Spa Booking status was updated successfully."
 
 
+
 class SpaBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = SpaBooking
     template_name = 'admins/spa_booking_list.html'
@@ -1643,14 +1888,21 @@ class SpaBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     def get_queryset(self):
         queryset = SpaBooking.objects.all().order_by('-id')
 
-        # Get the current time
+        # Get the current time and two days ago
         now = timezone.now()
+        two_days_ago = now - timedelta(days=2)
 
         # Automatically update the status of spa bookings with a past appointment_date to 'Cancelled'
         queryset.filter(
             appointment_date__lt=now,
             status__in=['pending', 'confirmed']  # Assuming 'pending' and 'confirmed' are valid statuses
         ).update(status='cancelled')
+
+        # Automatically update the status of spa bookings that are pending and created more than two days ago to 'Cancelled'
+        queryset.filter(created_at__lt=two_days_ago, status='pending').update(status='cancelled')
+
+        # Reapply ordering by '-id'
+        queryset = SpaBooking.objects.all().order_by('-id')
 
         # Search logic
         search_query = self.request.GET.get('search', '')
@@ -1780,7 +2032,7 @@ from django.conf import settings
 from telegram import Bot
 
 # Create a Bot instance with your token
-bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 async def send_telegram_message_async(telegram_user_id, message):
     try:
@@ -1789,7 +2041,7 @@ async def send_telegram_message_async(telegram_user_id, message):
         print(f"An error occurred: {e}")
 
 def send_telegram_message(telegram_user_id, message):
-    bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+    bot = Bot(token=TELEGRAM_BOT_TOKEN)
     try:
         asyncio.run(bot.send_message(chat_id=telegram_user_id, text=message))
     except Exception as e:
