@@ -720,7 +720,8 @@ class ChapaWebhookView(View):
             html_content = render_to_string('room/checkout_date_extenstion_email_template.html', {'booking': booking, 'booking_url': booking_url})
         else:
             subject = 'Room Booking Confirmation'
-            html_content = render_to_string('room/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
+            bot_url = f"https://t.me/ADAR_HMS_bot"
+            html_content = render_to_string('room/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url,'bot_url':bot_url})
 
         # Inline CSS
         html_content = transform(html_content)
@@ -817,7 +818,7 @@ class ChapaWebhookView(View):
         booking.save()
 
         booking_url = f"{BASE_URL}/hall/my-bookings/"
-        html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking, 'booking_url': booking_url})
+        html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking})
 
         # Inline CSS
         html_content = transform(html_content)

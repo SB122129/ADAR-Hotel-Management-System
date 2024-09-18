@@ -86,7 +86,7 @@
             <h1>ADAR Hotel Hall Booking Confirmation</h1>
         </div>
         <div class="content">
-            <h3>Dear {{ booking.user.first_name }},</h3>
+            <h3>Dear {% if booking.user%} {{ booking.user.get_full_name }}{% else %}{{ booking.full_name}}{% endif %},</h3>
             <p>You have successfully booked your {{ booking.hall.hall_type }} suite with hall number {{ booking.hall.hall_number }}.</p>
             <p><strong>Booking Details</strong></p>
             <div class="row mb-2 clearfix">
@@ -113,9 +113,12 @@
                 <div class="col-6"><strong>Amount Paid</strong></div>
                 <div class="col-6">{{ booking.amount_due }} ETB</div>
             </div>
+            {% if booking_url %}
             <div class="centered-button">
                 <a href="{{ booking_url }}" class="button">View Bookings</a>
             </div>
+            {% endif %}
+        
         </div>
         <div class="footer">
             <p>Thank you for choosing our hotel!</p>

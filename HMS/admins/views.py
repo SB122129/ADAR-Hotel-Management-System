@@ -483,7 +483,7 @@ class CategoryDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
     success_url = reverse_lazy('admins:category_list')
 
 # Room Views
-class RoomListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
+class RoomListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
     model = Room
     template_name = 'admins/room_list.html'
     context_object_name = 'object_list'
@@ -491,9 +491,16 @@ class RoomListView(OwnerManagerOrReceptionistRequiredMixin,ListView):
 
     def get_queryset(self):
         queryset = Room.objects.all().order_by('id')
+        
+        # Annotate the queryset with the average rating
+        queryset = queryset.annotate(average_rating=Avg('roomrating__rating'))
+        
         search_query = self.request.GET.get('search', '')
         if search_query:
-            queryset = queryset.filter(Q(room_number__icontains=search_query) | Q(room_type__name__icontains=search_query))
+            queryset = queryset.filter(
+                Q(room_number__icontains=search_query) | 
+                Q(room_type__name__icontains=search_query)
+            )
         return queryset
 
 
@@ -714,6 +721,31 @@ class PaymentExtendView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
         pdf_name = f"room_booking_extend_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
         pdf_file = ContentFile(pdf_response) 
         payment.receipt_pdf.save(pdf_name, pdf_file)
+        if booking.email2:
+                    from_email = 'adarhotel33@gmail.com'
+                    subject = 'Room Booking Extend Confirmation'
+                    html_content = render_to_string('checkout_date_extenstion_email_template.html', {'booking': booking})
+                    # Inline CSS
+                    html_content = transform(html_content)
+
+                    # Render email content from template
+                    
+                    user_email = booking.email2 
+                    
+                    # Create email
+                    email_message = EmailMultiAlternatives(
+                        subject=subject,
+                        body=html_content,
+                        from_email=from_email,
+                        to=[user_email]
+                    )
+
+                    # Attach HTML content
+                    email_message.attach_alternative(html_content, "text/html")
+                    email_message.attach(f'receipt_{booking.id}_{booking.full_name}.pdf', pdf_response, 'application/pdf')
+                    
+                    # Send the email
+                    email_message.send()
 
         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return HttpResponse(pdf_response, content_type='application/pdf')
@@ -803,6 +835,31 @@ class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
                 pdf_name = f"room_booking_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
                 pdf_file = ContentFile(pdf_response) 
                 payment.receipt_pdf.save(pdf_name, pdf_file)
+                if booking.email2:
+                    from_email = 'adarhotel33@gmail.com'
+                    subject = 'Room Booking Confirmation'
+                    html_content = render_to_string('room/booking_confirmation_template.html', {'booking': booking})
+                    # Inline CSS
+                    html_content = transform(html_content)
+
+                    # Render email content from template
+                    
+                    user_email = booking.email2 
+                    
+                    # Create email
+                    email_message = EmailMultiAlternatives(
+                        subject=subject,
+                        body=html_content,
+                        from_email=from_email,
+                        to=[user_email]
+                    )
+
+                    # Attach HTML content
+                    email_message.attach_alternative(html_content, "text/html")
+                    email_message.attach(f'receipt_{booking.id}_{booking.full_name}.pdf', pdf_response, 'application/pdf')
+                    
+                    # Send the email
+                    email_message.send()
 
                 # Handle AJAX request for PDF download
                 if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -811,6 +868,10 @@ class PaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, CreateView):
                 # Regular response (fallback)
                 response = HttpResponse(pdf_response, content_type='application/pdf')
                 response['Content-Disposition'] = f'attachment; filename="receipt_{booking.id}_{booking.full_name}.pdf"'
+                
+            
+                
+                
                 
                 messages.success(self.request, 'Booking and Payment completed')
                 return response
@@ -1038,6 +1099,7 @@ class MembershipCreateView(OwnerManagerOrReceptionistRequiredMixin, View):
                 for_last_name=last_name,
                 for_phone_number=phone_number,
                 for_email=email,
+                tx_ref = self.generate_tx_ref(),
                 start_date=form.cleaned_data['start_date'],
                 end_date=form.cleaned_data['start_date'] + relativedelta(months=plan.duration_months),
                 status=status
@@ -1046,7 +1108,7 @@ class MembershipCreateView(OwnerManagerOrReceptionistRequiredMixin, View):
             # Create payment instance
             payment = MembershipPayment.objects.create(
                 membership=membership,
-                transaction_id=self.generate_tx_ref(),
+                transaction_id= membership.tx_ref,
                 payment_method=payment_method,
                 amount=plan.price,
                 status='completed'
@@ -1057,6 +1119,33 @@ class MembershipCreateView(OwnerManagerOrReceptionistRequiredMixin, View):
             pdf_name = f"membership_receipt_{membership.id}_{membership.for_first_name if membership.for_first_name else membership.user.username}.pdf"
             pdf_file = ContentFile(pdf_response) 
             payment.receipt_pdf.save(pdf_name, pdf_file)
+
+            if membership.for_email:
+                from_email = 'adarhotel33@gmail.com'
+                subject = 'Gym Membership Confirmation'
+                html_content = render_to_string('gym/membership_confirmation_template.html', {'membership': membership})
+
+                # Inline CSS
+                html_content = transform(html_content)
+
+                # Render email content from template
+                
+                user_email = membership.for_email 
+                
+                # Create email
+                email_message = EmailMultiAlternatives(
+                    subject=subject,
+                    body=html_content,
+                    from_email=from_email,
+                    to=[user_email]
+                )
+
+                # Attach HTML content
+                email_message.attach_alternative(html_content, "text/html")
+                email_message.attach(f'receipt_{membership.id}_{membership.for_first_name}.pdf', pdf_response, 'application/pdf')
+                
+                # Send the email
+                email_message.send()
 
             # Save and send the PDF response
             if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1188,35 +1277,6 @@ class MembershipPaymentDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
 
 
 
-# RoomRating Views
-class RoomRatingListView(OwnerOrManagerRequiredMixin,  ListView):
-    model = RoomRating
-    template_name = 'admins/room_rating_list.html'
-    context_object_name = 'room_ratings'
-    def get_queryset(self):
-        return Category.objects.order_by('name')
-
-
-class RoomRatingDetailView(OwnerOrManagerRequiredMixin,  DetailView):
-    model = RoomRating
-    template_name = 'admins/room_rating_detail.html'
-
-class RoomRatingCreateView(OwnerOrManagerRequiredMixin,  CreateView):
-    model = RoomRating
-    template_name = 'admins/room_rating_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:room_rating_list')
-
-class RoomRatingUpdateView(OwnerOrManagerRequiredMixin,  UpdateView):
-    model = RoomRating
-    template_name = 'admins/room_rating_form.html'
-    fields = '__all__'
-    success_url = reverse_lazy('admins:room_rating_list')
-
-class RoomRatingDeleteView(OwnerOrManagerRequiredMixin,  DeleteView):
-    model = RoomRating
-    template_name = 'admins/room_rating_confirm_delete.html'
-    success_url = reverse_lazy('admins:room_rating_list')
 
 
 
@@ -1304,6 +1364,7 @@ class HallAvailabilityView(OwnerManagerOrReceptionistRequiredMixin,FormView):
 
 class HallBookingCreateView(OwnerManagerOrReceptionistRequiredMixin,TemplateView):
     template_name = 'admins/hall_booking_form.html'
+    form_class = HallBookingForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1351,12 +1412,15 @@ class HallBookingCreateView(OwnerManagerOrReceptionistRequiredMixin,TemplateView
             # Handle case where booking data is missing
             return redirect('admins:hall_availability')
 
+
         start_date = booking_data['start_date']
         end_date = booking_data.get('end_date')
         start_time = booking_data['start_time']
         end_time = booking_data['end_time']
         total_cost = self.get_context_data(**kwargs)['total_cost']
         full_name = request.POST.get('full_name')
+        email = request.POST.get('email2')
+        id_image = request.FILES.get('id_image')
         tx_ref = f"booking-{full_name.replace(' ', '')}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
         # Create the booking
         booking = Hall_Booking.objects.create(
@@ -1368,6 +1432,8 @@ class HallBookingCreateView(OwnerManagerOrReceptionistRequiredMixin,TemplateView
             amount_due=total_cost,
             status='pending',
             full_name=full_name,
+            email2=email,
+            id_image=id_image,
             tx_ref=tx_ref    # Save the full name to the booking
         )
 
@@ -1413,6 +1479,33 @@ class HallPaymentCreateView(OwnerManagerOrReceptionistRequiredMixin, TemplateVie
             pdf_name = f"hall_booking_receipt_{booking.id}_{booking.full_name if booking.full_name else booking.user.username}.pdf"
             pdf_file = ContentFile(pdf_response) 
             payment.receipt_pdf.save(pdf_name, pdf_file)
+            if booking.email2:
+                from_email = 'adarhotel33@gmail.com'
+                subject = 'Hall Booking Confirmation'
+                html_content = render_to_string('hall/booking_confirmation_template.html', {'booking': booking})
+                # Inline CSS
+                html_content = transform(html_content)
+
+                # Render email content from template
+                
+                user_email = booking.email2 
+                
+                # Create email
+                email_message = EmailMultiAlternatives(
+                    subject=subject,
+                    body=html_content,
+                    from_email=from_email,
+                    to=[user_email]
+                )
+
+                # Attach HTML content
+                email_message.attach_alternative(html_content, "text/html")
+                email_message.attach(f'receipt_{booking.id}_{booking.full_name}.pdf', pdf_response, 'application/pdf')
+                
+                # Send the email
+                email_message.send()
+
+            
             
 
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1781,6 +1874,34 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
         pdf_data = self.generate_pdf(spa_booking)
         payment = self.create_payment(spa_booking, form, pdf_data)
 
+        if spa_booking.for_email:
+                from_email = 'adarhotel33@gmail.com'
+                subject = 'Spa Booking Confirmation'
+                html_content = render_to_string('spa/booking_confirmation_template.html', {'spa_booking': spa_booking})
+
+
+                # Inline CSS
+                html_content = transform(html_content)
+
+                # Render email content from template
+                
+                user_email = spa_booking.for_email 
+                
+                # Create email
+                email_message = EmailMultiAlternatives(
+                    subject=subject,
+                    body=html_content,
+                    from_email=from_email,
+                    to=[user_email]
+                )
+
+                # Attach HTML content
+                email_message.attach_alternative(html_content, "text/html")
+                email_message.attach(f'receipt_{spa_booking.id}_{spa_booking.for_first_name}.pdf', pdf_data, 'application/pdf')
+                
+                # Send the email
+                email_message.send()
+
         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return HttpResponse(pdf_data, content_type='application/pdf')
 
@@ -1969,7 +2090,7 @@ class ChatListView(ListView):
     context_object_name = 'users'
 
     def get_queryset(self):
-        return Custom_user.objects.filter(chatmessage__isnull=False).distinct()
+        return Custom_user.objects.filter(chatmessage__isnull=False, role='customer').distinct()
 
 
 
@@ -3001,3 +3122,15 @@ class ExportMembershipReportView(View):
 
         wb.save(response)
         return response
+
+
+class RoomRatingListView(ListView):
+    model = RoomRating
+    template_name = 'admins/room_ratings.html'
+    context_object_name = 'ratings'
+    paginate_by = 10  
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['room'] = get_object_or_404(Room, pk=self.kwargs['pk'])
+        return context

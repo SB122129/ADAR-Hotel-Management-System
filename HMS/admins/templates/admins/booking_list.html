@@ -44,6 +44,7 @@
                     <th scope="col">Checked-in</th>
                     <th scope="col">Checked-out</th>
                     <th scope="col">Status</th>
+                    <th scope="col">Transaction Id</th>
                     <th scope="col" class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -61,6 +62,8 @@
                     <td class="align-middle">{{ item.checked_in }}</td>
                     <td class="align-middle">{{ item.checked_out }}</td>
                     <td class="align-middle">{{ item.get_status_display }}</td>
+                    <td class="align-middle">{{ item.tx_ref }}</td>
+
                     <td class="text-center">
                         <div class="btn-group" role="group">
                             <!-- Extend button -->

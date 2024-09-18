@@ -42,6 +42,8 @@ class Booking(models.Model):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     original_booking_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     booking_extend_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    email2 = models.EmailField(null=True, blank=True)
+    id_image = models.ImageField(upload_to='media/id_images/', blank=True, null=True)
     check_in_date = models.DateField()
     check_out_date = models.DateField()
     extended_check_out_date = models.DateField(null=True, blank=True)  # New field for extended checkout date

@@ -1,6 +1,7 @@
 {% extends 'admins/base.html' %}
 
 {% block content %}
+
 <div class="container mt-3">
     {% if messages %}
         <div class="container">
@@ -39,6 +40,7 @@
                     <th scope="col">Status</th>
                     <th scope="col">Capacity</th>
                     <th scope="col">Floor</th>
+                    <th scope="col">Average Rating</th>
                     <th scope="col" class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -52,12 +54,19 @@
                     <td class="align-middle">{{ item.get_room_status_display }}</td>
                     <td class="align-middle">{{ item.capacity }}</td>
                     <td class="align-middle">{{ item.floor }}</td>
+                    <td class="align-middle">{% if item.average_rating %}{{ item.average_rating|floatformat:1 }} / 5{% else %} No ratings yet{% endif %}</td>
                     <td class="text-center">
                         <div class="btn-group" role="group">
                             <!-- Edit button -->
                             <a href="{% url 'admins:room_update' item.id %}" class="btn btn-link text-primary">
                                 <span class="material-symbols-outlined">edit_note</span>
                             </a>
+                            <a href="{% url 'admins:room_ratings' item.id %}" class="btn btn-link text-success">
+                                <span class="material-symbols-outlined">
+                                    family_star
+                                    </span>
+                            </a>
+                            
                             
                             <!-- View button -->
                             <a href="{% url 'admins:room_detail' item.id %}" class="btn btn-link text-warning">

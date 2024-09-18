@@ -72,13 +72,7 @@ urlpatterns = [
     path('membership/payment/<int:pk>/download/', MembershipPaymentDownloadReceiptView.as_view(), name='membershippayment_download_receipt'),
     
     
-    # RoomRating URLs
-    path('room_ratings/', RoomRatingListView.as_view(), name='room_rating_list'),
-    path('room_ratings/<int:pk>/', RoomRatingDetailView.as_view(), name='room_rating_detail'),
-    path('room_ratings/add/', RoomRatingCreateView.as_view(), name='room_rating_add'),
-    path('room_ratings/<int:pk>/update/', RoomRatingUpdateView.as_view(), name='room_rating_update'),
-    path('room_ratings/<int:pk>/delete/', RoomRatingDeleteView.as_view(), name='room_rating_delete'),
-
+    
     
     # Hall URLs
     path('hall/create/', HallCreateView.as_view(), name='hall_create'),
@@ -153,6 +147,7 @@ urlpatterns = [
     path('hall/reports/export/<str:report_type>/', ExportHallReportView.as_view(), name='export_hall_report'),
     path('membership_reports/', MembershipReportView.as_view(), name='membership_reports'),
     path('export_membership_report/<str:report_type>/', ExportMembershipReportView.as_view(), name='export_membership_report'),
+    path('room/<int:pk>/ratings/', RoomRatingListView.as_view(), name='room_ratings')
 ]
 
 

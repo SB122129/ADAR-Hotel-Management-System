@@ -20,7 +20,7 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         .header {
-            background-color: #f0f408;
+            background-color: #f9fd00;
             color: #000000;
             text-align: center;
             padding: 20px 0;
@@ -86,7 +86,7 @@
             <h1>ADAR Hotel Spa Booking Confirmation</h1>
         </div>
         <div class="content">
-            <h3>Dear {{ spa_booking.user.first_name }},</h3>
+            <h3>Dear {% if spa_booking.user.get_full_name %}{{ spa_booking.user.get_full_name }}{% else %}{{ spa_booking.for_first_name }}{% endif %},</h3>
             <p>Your spa booking has been successfully confirmed!</p>
             <p><strong>Booking Details</strong></p>
             <div class="row mb-2 clearfix">
@@ -113,9 +113,11 @@
                 <div class="col-6"><strong>For</strong></div>
                 <div class="col-6">{% if spa_booking.for_first_name %}{{ spa_booking.for_first_name }} {{ spa_booking.for_last_name }}{% else %}{{ spa_booking.user.first_name }}{% endif %}</div>
             </div>
+            {% if booking_url %}
             <div class="centered-button">
                 <a href="{{ booking_url }}" class="button">View Booking</a>
             </div>
+            {% endif %}
         </div>
         <div class="footer">
             <p>Thank you for choosing our hotel spa!</p>

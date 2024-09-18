@@ -106,10 +106,6 @@ INSTALLED_APPS = [
     'Hall',
     'django_countries',
     'paypal.standard.ipn',
-    # 'django_huey',
-     "huey.contrib.djhuey",
-    "hueymail",
-    'telegram_bot',
     'Spa',
 ]
 

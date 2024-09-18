@@ -42,6 +42,8 @@ class Hall_Booking(models.Model):
     amount_due = models.DecimalField(max_digits=10, decimal_places=2)
     is_paid = models.BooleanField(default=False)
     occupied = models.BooleanField(default=False)
+    email2 = models.EmailField(null=True, blank=True)
+    id_image = models.ImageField(upload_to='media/id_images/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     tx_ref = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=20, choices=Booking_STATUS_CHOICES, default='pending')

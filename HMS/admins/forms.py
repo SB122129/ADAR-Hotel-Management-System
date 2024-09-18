@@ -108,9 +108,14 @@ class BookingUpdateForm(forms.ModelForm):
         cleaned_data = super().clean()
         checked_in = cleaned_data.get("checked_in")
         checked_out = cleaned_data.get("checked_out")
+        check_in_date = self.instance.check_in_date  
+        today = timezone.now().date()
 
         if checked_in and checked_out:
             raise ValidationError("Both checked in and checked out cannot be true at the same time.")
+
+        if checked_in and check_in_date != today:
+            raise ValidationError("You can only check in on the check-in date.")
 
         return cleaned_data
 
@@ -122,7 +127,7 @@ import re
 class BookingCreateForm(forms.ModelForm):
     class Meta:
         model = Booking
-        fields = ['room', 'full_name', 'check_in_date', 'check_out_date', 'guests']
+        fields = ['room', 'full_name', 'check_in_date', 'check_out_date', 'guests', 'email2', 'id_image']
         widgets = {
             'room': forms.Select(attrs={'class': 'form-control rounded'}),
             'check_in_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control rounded'}),
@@ -262,7 +267,7 @@ class MembershipCreateForm(forms.ModelForm):
     start_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
     payment_method = forms.ChoiceField(choices=[('cash', 'Cash'),('paypal','Paypal'),('chapa','Chapa')], required=True)
     for_phone_number = forms.CharField(widget=forms.TextInput(attrs={'placeholder': '+2519xxxxxxxx or +2517xxxxxxxx'}))
-
+    for_email = forms.EmailField(required=False)
     class Meta:
         model = Membership
         fields = ['plan', 'start_date', 'for_first_name', 'for_last_name', 'for_phone_number', 'for_email', 'status']
@@ -378,7 +383,7 @@ class HallBookingUpdateForm(forms.ModelForm):
 class HallBookingForm(forms.ModelForm):
     class Meta:
         model = Hall_Booking
-        fields = ['full_name']
+        fields = ['full_name','email2','id_image']
         widgets = {
             'full_name': forms.TextInput(attrs={'class': 'form-control rounded'}),
         }

@@ -40,6 +40,7 @@
                     <th scope="col">End Date</th>
                     <th scope="col">Status</th>
                     <th scope="col">For</th>
+                    <th scope="col">Transaction Id</th>
                     <th scope="col" class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -53,6 +54,7 @@
                     <td class="align-middle">{{ item.end_date }}</td>
                     <td class="align-middle">{{ item.get_status_display }}</td>
                     <td class="align-middle">{% if item.for_first_name %}{{ item.for_first_name }}{% else %} Self {% endif %}</td>
+                    <td class="align-middle">{{ item.tx_ref }}</td>
                     <td class="text-center">
                         <div class="btn-group" role="group">
                             <!-- Edit button -->

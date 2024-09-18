@@ -44,6 +44,7 @@
                     <th>Amount Due</th>
                     <th>Status</th>
                     <th>Occupied</th>
+                    <th>Transaction Id</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -61,6 +62,7 @@
                     <td>{{ booking.amount_due }}</td>
                     <td>{{ booking.get_status_display }}</td>
                     <td>{{ booking.occupied }}</td>
+                    <td>{{ booking.tx_ref }}</td>
                     <td class="text-center">
                         <!-- Edit button -->
                         <a href="{% url 'admins:hall_booking_update' booking.pk %}" class="btn btn-link text-primary p-0">

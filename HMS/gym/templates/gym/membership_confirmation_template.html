@@ -86,7 +86,7 @@
             <h1>ADAR Hotel Membership Confirmation</h1>
         </div>
         <div class="content">
-            <h3>Dear {{ membership.user.first_name }},</h3>
+            <h3>Dear {% if membership.user %}{{ membership.user.first_name }}{% else %}{{ membership.for_first_name }}{% endif %},</h3>
             <p>You have successfully activated your gym {{ membership.plan.name }}.</p>
             <p><strong>Membership Details</strong></p>
             <div class="row mb-2 clearfix">
@@ -113,10 +113,11 @@
                 <div class="col-6"><strong>Amount</strong></div>
                 <div class="col-6">{{ membership.plan.price }} ETB</div>
             </div>
-            
+            {% if membership_url %}
             <div class="centered-button">
                 <a href="{{ membership_url }}" class="button">View Membership</a>
             </div>
+            {% endif %}
         </div>
         <div class="footer">
             <p>Thank you for choosing our hotel!</p>
