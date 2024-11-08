@@ -1,4 +1,3 @@
-```markdown
 # ADAR Hotel Management System
 
 ADAR Hotel Management System (HMS) is a comprehensive web application designed to streamline and manage various operations for ADAR hotel. Built with Django, this project includes modules for room management, gym memberships, spa bookings, hall reservations, customer sign-ups, and role-based access for different staff levels.
@@ -53,10 +52,26 @@ ADAR Hotel Management System (HMS) is a comprehensive web application designed t
 ### Chatbot Integration
 - **Real-Time Data Retrieval**: Staff can use an integrated chatbot for real-time data, with support for both typed messages and command shortcut buttons.
 
-## Security and Best Practices
-- **Environment Variables**: Sensitive keys are stored in a `.env` file for security.
-- **Password Hashing**: Passwords are securely hashed across custom forms.
+## UI/UX
+### Customer Side
+![room1](https://github.com/user-attachments/assets/8686559f-586e-42ab-b0e2-0a3e660ee33e)
 
----
+![room2](https://github.com/user-attachments/assets/e71b677a-45aa-469b-b193-0a84d6dc69db)
 
-```
+![room_book](https://github.com/user-attachments/assets/4d20eef3-34ea-44a0-a78b-c282f2db2864)
+
+![payemnt34](https://github.com/user-attachments/assets/20d7a66f-c69a-45ac-83e2-ed80c36f739b)
+
+### Staff Side
+![admin6](https://github.com/user-attachments/assets/b55090dd-375a-4379-a10e-409d044d7307)
+
+![admin1](https://github.com/user-attachments/assets/b3d95a6b-3758-49af-8ab7-4d99ef2be3e4)
+
+![admin2](https://github.com/user-attachments/assets/0a1d0540-162f-45c2-aea5-707218632d78)
+
+![socila](https://github.com/user-attachments/assets/641f7395-ecff-41d2-a65c-04e467212a48)
+
+
+
+
+
