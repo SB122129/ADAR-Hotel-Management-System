@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -160,19 +164,6 @@ SITE_ID = 1
 
 
 
-# SOCIAL_ACCOUNT_PROVIDERS = {
-#     'google': {
-#         'SCOPE': [
-#             'profile',
-#             'email',
-#         ],
-#         'AUTH_PARAMS': {
-#             'access_type': 'online',
-#         },
-#         'OAUTH2_CLIENT_ID': '74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com',
-#         'OAUTH2_CLIENT_SECRET': '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',
-#     }
-# }
 
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
@@ -187,24 +178,15 @@ SOCIAL_AUTH_PIPELINE = (
 )
 
 from config import BASE_URL
-ACCOUNT_EMAIL_VERIFICATION = 'non'  # Options are 'mandatory', 'optional', or 'none'
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Options are 'mandatory', 'optional', or 'none'
 ACCOUNT_EMAIL_REQUIRED = True
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = "74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com"
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = "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"
-# SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = f'{BASE_URL}/social/complete/google-oauth2/'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = f'{os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY1")}'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET =f'{os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET1")}'
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 SOCIAL_AUTH_LOGIN_ERROR_URL = 'login'
 SOCIAL_AUTH_RAISE_EXCEPTIONS = False
 
-# SOCIAL_AUTH_GOOGLE_OAUTH2 = {
-#     'CLIENT_ID': '74473012892-ctm56bol2bdfta1ghpatnrfveqpu9ss9.apps.googleusercontent.com',
-#     'SECRET_KEY': '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',
-#     'SCOPE': [
-#         'https://www.googleapis.com/auth/userinfo.email',
-#         'https://www.googleapis.com/auth/userinfo.profile',
-#     ]
-# }
 
 
 ROOT_URLCONF = 'HMS.urls'
@@ -305,8 +287,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
 EMAIL_PORT = 587  # SMTP server port (587 for TLS, 465 for SSL)
 EMAIL_USE_TLS = True  # True for TLS, False for SSL
-EMAIL_HOST_USER = 'adarhotel33@gmail.com'  # SMTP server username
-EMAIL_HOST_PASSWORD = 'akxamsudgtdbvgpl'  # SMTP server password
+EMAIL_HOST_USER = f'{os.getenv("EMAIL_HOST_USER1")}'  
+EMAIL_HOST_PASSWORD = f'{os.getenv("EMAIL_HOST_PASSWORD1")}'  
 EMAIL_USE_SSL = False  # Set to True if using SSL
-DEFAULT_FROM_EMAIL = 'adarhotel33@gmail.com'  # Default sender email address
+DEFAULT_FROM_EMAIL = f'{os.getenv("EMAIL_HOST_USER1")}'  # Default sender email address
 

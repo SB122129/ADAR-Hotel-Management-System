@@ -49,7 +49,8 @@ class CategoryForm(forms.ModelForm):
 
     class Meta:
         model = Category
-        fields = ['name']
+        fields = ['name','rank']
+
 
     def clean_name(self):
         name = self.cleaned_data.get('name')
@@ -102,7 +103,7 @@ class BookingUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Booking
-        fields = ['checked_in', 'checked_out', 'status']
+        fields = ['checked_in', 'checked_out', 'status','id_image']
 
     def clean(self):
         cleaned_data = super().clean()
@@ -366,7 +367,7 @@ class HallBookingUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Hall_Booking
-        fields = ['occupied', 'status']
+        fields = ['occupied', 'status','id_image']
 
     def clean(self):
         cleaned_data = super().clean()

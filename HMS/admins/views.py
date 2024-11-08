@@ -637,9 +637,20 @@ class BookingUpdateView(OwnerManagerOrReceptionistRequiredMixin, UpdateView):
         booking = form.instance
         return response
 
+from django.http import HttpResponse, Http404
 
-
-
+class DownloadIDImageView(View):
+    def get(self, request, pk):
+        try:
+            booking = Booking.objects.get(pk=pk)
+            if booking.id_image:
+                response = HttpResponse(booking.id_image, content_type='image/jpeg')
+                response['Content-Disposition'] = f'attachment; filename="{booking.id_image.name}"'
+                return response
+            else:
+                raise Http404("No ID image available for this booking.")
+        except Booking.DoesNotExist:
+            raise Http404("Booking not found.")
 
 
 
@@ -1582,7 +1593,18 @@ class HallBookingUpdateView(OwnerManagerOrReceptionistRequiredMixin,UpdateView):
     template_name = 'admins/hall_booking_update_form.html'
     success_url = reverse_lazy('admins:hall_booking_list')
 
-
+class HallDownloadIDImageView(View):
+    def get(self, request, pk):
+        try:
+            booking = Hall_Booking.objects.get(pk=pk)
+            if booking.id_image:
+                response = HttpResponse(booking.id_image, content_type='image/jpeg')
+                response['Content-Disposition'] = f'attachment; filename="{booking.id_image.name}"'
+                return response
+            else:
+                raise Http404("No ID image available for this booking.")
+        except Booking.DoesNotExist:
+            raise Http404("Booking not found.")
 
 
 class HallBookingListView(OwnerManagerOrReceptionistRequiredMixin, ListView):
@@ -2084,13 +2106,17 @@ class SpaPaymentDeleteView(OwnerOrManagerRequiredMixin, DeleteView):
 
 from django.http import JsonResponse
 from django.utils.dateparse import parse_datetime
+from django.db.models import Q
+from django.db.models import Q
+
 class ChatListView(ListView):
     model = Custom_user
     template_name = 'admins/chat_list.html'
     context_object_name = 'users'
 
     def get_queryset(self):
-        return Custom_user.objects.filter(chatmessage__isnull=False, role='customer').distinct()
+        logged_in_user = self.request.user.role
+        return Custom_user.objects.exclude(role=logged_in_user).filter(chatmessage__isnull=False).distinct()
 
 
 
@@ -2114,35 +2140,6 @@ class ChatDetailView(DetailView):
         context['messages'] = messages
         context['logged_in_user'] = self.request.user
         return context
-
-
-from django.utils.dateparse import parse_datetime
-
-def fetch_new_messages(request, user_id):
-    user = get_object_or_404(Custom_user, pk=user_id)
-    last_timestamp = request.GET.get('last_timestamp')
-    
-    if last_timestamp:
-        try:
-            last_timestamp = parse_datetime(last_timestamp)
-        except ValueError:
-            return JsonResponse({'error': 'Invalid timestamp format'}, status=400)
-
-    if last_timestamp:
-        messages = ChatMessage.objects.filter(timestamp__gt=last_timestamp).order_by('timestamp')
-    else:
-        messages = ChatMessage.objects.all().order_by('timestamp')
-
-    message_list = [{
-        'id': message.id,
-        'timestamp': message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-        'message': message.message,
-        'role': message.user.role
-    } for message in messages]
-
-    return JsonResponse({'messages': message_list})
-
-
 
 
 
@@ -2171,6 +2168,8 @@ class SendMessageView(View):
     def post(self, request, user_id):
         recipient = get_object_or_404(Custom_user, pk=user_id)
         message_text = request.POST.get('message')
+        success_url = reverse('admins:chat_detail', kwargs={'user_id': user_id})
+
 
         # Create the message with the sender being the logged-in user
         new_message = ChatMessage.objects.create(user=request.user, message=message_text)
@@ -2179,12 +2178,9 @@ class SendMessageView(View):
         if request.user.role != 'customer':
             send_telegram_message(recipient.telegram_user_id, message_text)
 
-        return JsonResponse({
-            'id': new_message.id,
-            'timestamp': new_message.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'message': new_message.message,
-            'role': request.user.role  # Include the role to determine message type on client side
-        })
+        return HttpResponseRedirect(success_url)
+
+
 
 
 
@@ -2671,6 +2667,7 @@ class ExportRoomReportView(View):
                         user_display = booking.user.username if booking.user else booking.full_name
                         bookings_data.append([
                             booking.id,
+                            booking.created_at.replace(tzinfo=None) if booking.created_at else None,
                             booking.room.room_number,
                             user_display,
                             booking.check_in_date,
@@ -2682,7 +2679,7 @@ class ExportRoomReportView(View):
                     current_date = next_month_start  # move to the next month
 
                 # Write booking details
-                ws.append(['Booking ID', 'Room Number', 'User', 'Check-in Date', 'Check-out Date', 'Total Amount', 'Status'])
+                ws.append(['Booking ID','Booking Date', 'Room Number', 'User', 'Check-in Date', 'Check-out Date', 'Total Amount', 'Status'])
                 for row in bookings_data:
                     ws.append(row)
 
@@ -3128,8 +3125,7 @@ class RoomRatingListView(ListView):
     model = RoomRating
     template_name = 'admins/room_ratings.html'
     context_object_name = 'ratings'
-    paginate_by = 10  
-    
+    paginate_by = 5
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['room'] = get_object_or_404(Room, pk=self.kwargs['pk'])

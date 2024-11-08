@@ -42,6 +42,7 @@ urlpatterns = [
     path('bookings/add/', BookingCreateView.as_view(), name='booking_create'),
     path('bookings/<int:pk>/update/', BookingUpdateView.as_view(), name='booking_update'),
     path('booking/<int:pk>/extend/', BookingExtendView.as_view(), name='booking_extend'),
+    path('booking/<int:pk>/download_id_image/', DownloadIDImageView.as_view(), name='download_id_image'),
     path('verify/<int:booking_id>/', BookingVerifyView.as_view(), name='booking_verify'),
     
     
@@ -87,6 +88,7 @@ urlpatterns = [
     path('hall_booking/<int:pk>/update/', HallBookingUpdateView.as_view(), name='hall_booking_update'),
     path('hall_booking/', HallBookingListView.as_view(), name='hall_booking_list'),
     path('hall_booking/<int:pk>/', HallBookingDetailView.as_view(), name='hall_booking_detail'),
+    path('hall_booking/<int:pk>/download_id_image/', HallDownloadIDImageView.as_view(), name='hall_download_id_image'),
     path('verify_hall_booking/<int:booking_id>/', HallBookingVerifyView.as_view(), name='booking_verify'),
     # Hall Payment URLs
     path('hall_payment/<int:pk>/delete/', HallPaymentDeleteView.as_view(), name='hall_payment_delete'),
@@ -138,7 +140,7 @@ urlpatterns = [
     path('chats/', ChatListView.as_view(), name='chat_list'),
     path('chats/<int:user_id>/', ChatDetailView.as_view(), name='chat_detail'),
     path('chats/<int:user_id>/send/', SendMessageView.as_view(), name='send_message'),
-    path('fetch_new_messages/<int:user_id>/', fetch_new_messages, name='fetch_new_messages'),
+    # path('fetch_new_messages/<int:user_id>/', fetch_new_messages, name='fetch_new_messages'),
     path('spa-report/', SpaReportView.as_view(), name='spa_reports'),
     path('export-spa-report/<str:report_type>/', ExportSpaReportView.as_view(), name='export_spa_report'),
     path('room-reports/', RoomReportView.as_view(), name='room_reports'),

@@ -29,7 +29,14 @@ import paypalrestsdk
 from .models import SpaBooking, SpaPayment
 from django.utils.safestring import mark_safe
 from django.db.models import Q
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+
+chapa_api_key = os.getenv('CHAPA_API_KEY')
+paypal_client_id = os.getenv('PAYPAL_CLIENT_ID')
+paypal_client_secret = os.getenv('PAYPAL_CLIENT_SECRET')
 
 
 class ServiceListView(ListView):
@@ -212,7 +219,7 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
 
         url = "https://api.chapa.co/v1/transaction/initialize"
         redirect_url = f'{BASE_URL}/spa/bookings'
-        webhook_url = f'{BASE_URL}/room/chapa-webhook/'
+        webhook_url = f'{BASE_URL}room/chapa-webhook/'
 
         payload = {
             "amount": amount,
@@ -226,9 +233,10 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
             "callback_url": webhook_url,
         }
         headers = {
-            'Authorization': 'Bearer CHASECK_TEST-h6dv4n5s2yutNrgiwTgWUpJKSma6Wsh9',
+            'Authorization': f'Bearer {chapa_api_key}',
             'Content-Type': 'application/json'
         }
+        print(headers)
 
         response = requests.post(url, json=payload, headers=headers)
         data = response.json()
@@ -243,8 +251,8 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
     def initiate_paypal_payment(self, spa_booking):
         configure({
             "mode": "sandbox",
-            "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
-            "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
+            "client_id": f'{paypal_client_id}',
+            "client_secret": f'{paypal_client_secret}'
         })
         amount = spa_booking.amount_due / 50  # Assuming the price is converted to USD
         payment = Payment({

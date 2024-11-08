@@ -36,6 +36,7 @@
             <thead class="thead-light">
                 <tr>
                     <th scope="col">Category Name</th>
+                    <th scope="col">Category Rank</th>
                     <th scope="col" class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -44,6 +45,7 @@
                 {% for category in categories %}
                 <tr>
                     <td class="align-middle">{{ category.name }}</td>
+                    <td class="align-middle">{{ category.rank }}</td>
                     <td class="text-center">
                         <div class="btn-group" role="group">
                             <!-- Edit button -->

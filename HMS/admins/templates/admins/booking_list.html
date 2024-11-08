@@ -64,20 +64,28 @@
                     <td class="align-middle">{{ item.get_status_display }}</td>
                     <td class="align-middle">{{ item.tx_ref }}</td>
 
-                    <td class="text-center">
+                    <td class="">
                         <div class="btn-group" role="group">
-                            <!-- Extend button -->
-                            <a href="{% url 'admins:booking_extend' item.id %}" class="btn btn-link text-primary">
-                                <span class="material-symbols-outlined">add</span>
-                            </a>
-                            <!-- Edit button -->
-                            <a href="{% url 'admins:booking_update' item.id %}" class="btn btn-link text-primary">
-                                <span class="material-symbols-outlined">edit_note</span>
-                            </a>
-                            <!-- View button -->
-                            <a href="{% url 'admins:booking_detail' item.id %}" class="btn btn-link text-warning">
-                                <span class="material-symbols-outlined">info</span>
-                            </a>
+        <!-- View button -->
+        <a href="{% url 'admins:booking_detail' item.id %}" class="btn btn-link text-warning">
+            <span class="material-symbols-outlined">info</span>
+        </a>
+
+        
+                            <!-- Edit button (shown only if booking is not canceled) -->
+        {% if item.status != 'cancelled' %}
+        <a href="{% url 'admins:booking_update' item.id %}" class="btn btn-link text-primary">
+            <span class="material-symbols-outlined">edit_note</span>
+        </a>
+        {% endif %}
+        
+        
+        <!-- Download ID Image button (shown only if ID image exists) -->
+        {% if item.id_image %}
+        <a href="{% url 'admins:download_id_image' item.id %}" class="btn btn-link text-info">
+            <span class="material-symbols-outlined">download</span>
+        </a>
+        {% endif %}
                             {% if item.status == 'pending' %}
                             {% if item.extended_check_out_date %}
                             {% with payment=item.payment %}

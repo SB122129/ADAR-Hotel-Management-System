@@ -32,6 +32,17 @@ import base64
 from django.utils.safestring import mark_safe
 from django.utils import timezone
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+chapa_api_key = os.getenv('CHAPA_API_KEY')
+paypal_client_id = os.getenv('PAYPAL_CLIENT_ID')
+paypal_client_secret = os.getenv('PAYPAL_CLIENT_SECRET')
+
+
+
 
 
 
@@ -193,7 +204,7 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
             "callback_url": webhook_url,
         }
         headers = {
-            'Authorization': 'Bearer CHASECK_TEST-h6dv4n5s2yutNrgiwTgWUpJKSma6Wsh9',
+            'Authorization': f'Bearer {chapa_api_key}',
             'Content-Type': 'application/json'
         }
 
@@ -209,8 +220,8 @@ class MembershipSignupView(LoginRequiredMixin, FormView):
     def initiate_paypal_payment(self, membership, plan_id):
         configure({
             "mode": "sandbox",
-            "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
-            "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
+            "client_id": f'{paypal_client_id}',
+            "client_secret": f'{paypal_client_secret}'
         })
         amount = membership.plan.price/50
         payment = Payment({

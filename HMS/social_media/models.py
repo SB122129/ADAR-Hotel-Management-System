@@ -27,12 +27,14 @@ class SocialMediaPost(models.Model):
 
 
 class ChatMessage(models.Model):
-    user = models.ForeignKey(Custom_user, on_delete=models.CASCADE)
+    user = models.ForeignKey(Custom_user, on_delete=models.CASCADE,blank=True,null=True)
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f'Message by {self.user.username} on {self.timestamp}'
+
+
     
 
 class ChatBot(models.Model):

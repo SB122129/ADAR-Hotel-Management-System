@@ -14,6 +14,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HMS.settings')
 import django
 django.setup()
 
+from dotenv import load_dotenv
+
+load_dotenv()
+chapa_api_key = os.getenv('CHAPA_API_KEY')
+paypal_client_id = os.getenv('PAYPAL_CLIENT_ID')
+paypal_client_secret = os.getenv('PAYPAL_CLIENT_SECRET')
+
 
 from datetime import datetime, date
 import requests
@@ -57,7 +64,7 @@ def get_main_menu_buttons():
             InlineKeyboardButton("Cancel Booking", callback_data='cancel_booking')
         ],
         [
-            InlineKeyboardButton("Chat with Staff", callback_data='start_chat'),
+            InlineKeyboardButton("Message Staff", callback_data='start_chat'),
             InlineKeyboardButton("Restart", callback_data='restart')
         ]
     ]
@@ -170,7 +177,6 @@ async def start_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return CHAT_STATE
 
 # Handle chat messages
-# Handle chat messages
 async def handle_chat_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
     user = await sync_to_async(Custom_user.objects.filter(telegram_user_id=user_id).first)()
@@ -187,7 +193,6 @@ async def handle_chat_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     else:
         await update.message.reply_text('User not found. Please restart the bot and provide your email.', reply_markup=get_main_menu_buttons())
         return MENU
-
 
 
 
@@ -383,7 +388,7 @@ async def payment_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             "callback_url": webhook_url,
         }
         headers = {
-            'Authorization': 'Bearer CHASECK_TEST-h6dv4n5s2yutNrgiwTgWUpJKSma6Wsh9',
+            'Authorization': f'Bearer {chapa_api_key}',
             'Content-Type': 'application/json'
         }
 
@@ -407,8 +412,8 @@ async def payment_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     elif payment_method == 'paypal':
         paypalrestsdk.configure({
             "mode": "sandbox",
-            "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
-            "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
+            "client_id": f'{paypal_client_id}',
+            "client_secret": f'{paypal_client_secret}'
         })
 
         payment = paypalrestsdk.Payment({
@@ -675,57 +680,6 @@ async def restart_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     await update.callback_query.message.reply_text('Bot restarted. Please enter your email to start booking:')
     return EMAIL
 
-# @csrf_exempt
-# def webhook(request):
-#     if request.method == "POST":
-#         update = Update.de_json(json.loads(request.body), bot)
-#         dispatcher.process_update(update)
-#         return JsonResponse({'status': 'ok'})
-#     return JsonResponse({'status': 'bad request'}, status=400)
-
-
-def set_webhook():
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-    application.bot.set_webhook(url='{BASE_URL}/telegram/webhook/')
-
-
-# @csrf_exempt
-# def start_bot(request):
-#     def run_bot():
-#         loop = asyncio.new_event_loop()
-#         asyncio.set_event_loop(loop)
-
-#         application = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
-
-#         conv_handler = ConversationHandler(
-#             entry_points=[CommandHandler('start', start)],
-#             states={
-#                 EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, email)],
-#                 MENU: [CallbackQueryHandler(menu)],
-#                 ROOM_SELECTION: [CallbackQueryHandler(room_selection)],
-#                 CHECK_IN_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, check_in_date)],
-#                 CHECK_OUT_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, check_out_date)],
-#                 GUESTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, guests)],
-#                 PAYMENT_METHOD: [CallbackQueryHandler(payment_method)],
-#                 MY_BOOKINGS: [CallbackQueryHandler(my_bookings)],
-#                 PENDING_PAYMENTS: [CallbackQueryHandler(pending_payments)],
-#                 PENDING_PAYMENT_PROCESS: [CallbackQueryHandler(pay_pending)],
-#                 CANCEL_BOOKING: [CallbackQueryHandler(confirm_cancellation)]
-#             },
-#             fallbacks=[
-#                 CommandHandler('cancel', cancel),
-#                 MessageHandler(filters.TEXT & ~filters.COMMAND, restart_bot)
-#             ],
-#         )
-
-#         application.add_handler(conv_handler)
-
-#         loop.run_until_complete(application.run_polling())
-
-#     bot_thread = Thread(target=run_bot)
-#     bot_thread.start()
-
-#     return HttpResponse('Bot started')
 
 
 def main():

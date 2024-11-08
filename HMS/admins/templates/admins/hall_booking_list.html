@@ -63,15 +63,29 @@
                     <td>{{ booking.get_status_display }}</td>
                     <td>{{ booking.occupied }}</td>
                     <td>{{ booking.tx_ref }}</td>
-                    <td class="text-center">
-                        <!-- Edit button -->
-                        <a href="{% url 'admins:hall_booking_update' booking.pk %}" class="btn btn-link text-primary p-0">
-                            <span class="material-symbols-outlined">edit_note</span>
-                        </a>
-                        <!-- View button -->
-                        <a href="{% url 'admins:hall_booking_detail' booking.pk %}" class="btn btn-link text-warning p-0">
-                            <span class="material-symbols-outlined">info</span>
-                        </a>
+                    <td class="">
+        <!-- View button -->
+        <a href="{% url 'admins:hall_booking_detail' booking.pk %}" class="btn btn-link text-warning p-0">
+            <span class="material-symbols-outlined">info</span>
+        </a>
+                        <!-- Edit button (only show if booking is not cancelled) -->
+        
+        
+                         {% if booking.status != 'cancelled' %}
+        <a href="{% url 'admins:hall_booking_update' booking.pk %}" class="btn btn-link text-primary p-0">
+            <span class="material-symbols-outlined">edit_note</span>
+        </a>
+        {% endif %}
+        
+        
+        
+        <!-- Download ID Image button (only show if id_image exists) -->
+        {% if booking.id_image %}
+        <a href="{% url 'admins:hall_download_id_image' booking.pk %}" class="btn btn-link text-info p-0">
+            <span class="material-symbols-outlined">download</span>
+        </a>
+        {% endif %}
+
                         {% if booking.status == 'pending' %}
                             <a href="{% url 'admins:hall_payment_create' pk=booking.pk %}" class="btn btn-link text-warning">
                                 <span class="material-symbols-outlined">payments</span>

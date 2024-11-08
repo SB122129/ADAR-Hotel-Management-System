@@ -1,22 +1,23 @@
 {% extends 'admins/base.html' %}
 {% load static %}
 
-
-
-
 {% block content %}
-
-{% load widget_tweaks %}
 <div id="chatbox">
     <div id="messages">
         {% for message in messages %}
-            <p><strong>{{ message.user.username }}</strong>: {{ message.message }}</p>
+            {% if message.sender == request.user %}
+                <p><strong>You:</strong> {{ message.message }}</p>
+            {% else %}
+                <p><strong>{{ message.sender.username }}:</strong> {{ message.message }}</p>
+            {% endif %}
+        {% empty %}
+            <p>No messages to display.</p>
         {% endfor %}
     </div>
     <form id="message-form" method="post">
         {% csrf_token %}
-        <input type="hidden" name="user_id" value="{{ request.user.id }}">
-        <textarea name="message" id="message-input"></textarea>
+        <input type="hidden" name="recipient_id" value="{{ user.id }}">
+        <textarea name="message" id="message-input" rows="4"></textarea>
         <button type="submit">Send</button>
     </form>
 </div>
@@ -39,11 +40,7 @@
                 messageInput.value = '';
                 // Optionally refresh the chatbox with the new message
             }
-        });
+        }).catch(error => console.error('Error:', error));
     });
 </script>
-
 {% endblock content %}
-    
-
-

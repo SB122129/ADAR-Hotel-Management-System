@@ -12,6 +12,7 @@ urlpatterns = [
     path('social/', include('social_media.urls') ),
     path('', home, name='home'),
     path('room/', include('room.urls')),
+    path('restaurant/', restaurant, name='restaurant'),
     path('about', about, name='about'),
     path('contact', contact, name='contact'),
     path('accounts/', include('allauth.urls')),

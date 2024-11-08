@@ -28,13 +28,18 @@ from django.db.models import Count, Sum
 from Spa.models import *
 from config import BASE_URL,TELEGRAM_BOT_TOKEN
 from django.views import View
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
+gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 import google.generativeai as genai
 
 # Configure the Gemini API key
-genai.configure(api_key="AIzaSyBfK-J0sAekVr5GMfof-QjyiDlcuFCPaO8")
+genai.configure(api_key=f'{gemini_api_key}')
 
 
 
@@ -274,17 +279,18 @@ from tempfile import NamedTemporaryFile
 
 # Functions to handle posting to various platforms
 
-facebook_app_secret = 'f67d5b305bbc09cac226063be6e47acf'
-facebook_app_id = '3433472120208474'
+facebook_app_secret = f'{os.getenv("FACEBOOK_APP_SECRET")}'
+facebook_app_id = f'{os.getenv("FACEBOOK_APP_ID")}'
 
-meta_access_token = 'EAAwyuYYSPFoBOxa0HFZANR4urHmHgTa4wtTrQhsoe7ZC0MXzKmldjcjZCvUHAYV6CZBcY7e3h90eL4bmOw3o0WYcUN9fKycs5ed1g27IKQxIS6rpqjUTKyt6DKXGhQnVunryCN0ZCaMaHozjvac8MIYLAZCsfT2ERAmEw3ubpC3f7Gq1Qt7FodNUGwDqGRgIA6w7yEHtHX'
+meta_access_token = f'{os.getenv("META_ACCESS_TOKEN")}'
 
 
 import requests
 
 def post_to_facebook(message, media_path=None):
     access_token = meta_access_token
-    page_id = '61564722219150'
+    print(f"Access Token: {access_token}")
+    page_id = f'{os.getenv("FACEBOOK_PAGE_ID")}'
     api_version = 'v17.0'  
 
     if media_path:
@@ -320,7 +326,7 @@ from urllib.parse import quote
 
 def post_to_instagram(message, image_path):
     instagram_access_token = meta_access_token
-    instagram_account_id = '17841468557520601'
+    instagram_account_id = f'{os.getenv("INSTAGRAM_ACCOUNT_ID")}'
     
     # Assuming image_path is something like "/media/social_media/"
     relative_image_path = image_path.split('media')[-1].replace('\\', '/').lstrip('/')
@@ -369,20 +375,21 @@ def post_to_instagram(message, image_path):
 
 
 
+twitter_api_key = f'{os.getenv("TWITTER_API_KEY")}'
+twitter_api_key_secret = f'{os.getenv("TWITTER_API_KEY_SECRET")}'
+twitter_bearer_token = f'{os.getenv("TWITTER_BEARER_TOKEN")}'
+twitter_access_token = f'{os.getenv("TWITTER_ACCESS_TOKEN")}'
+twitter_access_token_secret = f'{os.getenv("TWITTER_ACCESS_TOKEN_SECRET")}'
+twitter_client_id = f'{os.getenv("TWITTER_CLIENT_ID")}'
+twitter_client_secret = f'{os.getenv("TWITTER_CLIENT_SECRET")}'
 
-twitter_API_key = 'wuOoH0b4ZNSxfedPUh1IEFvF7'
-twitter_API_key_secret = 'bxzrnz6erCkPJvNKtJZQIdFzVxYWAtA1UmMc6JvPv1GKEXK2kI'
-twitter_bearer_token = 'AAAAAAAAAAAAAAAAAAAAAOw0vgEAAAAA6SgZUQN8Ipj8DPPMxWa9a6Odjsc%3D1qPjDb0TbOgP0OCW2CqDS506Iz4qRTRJUG1qABYpjOzcdI2y0Z'
-twitter_access_token = '1827809612294225920-r3NmY7AvxXW9PyoawwVdy5YqZXHt7i'
-twitter_access_token_secret = 'oyIJtyGf128w92yl8UJFqINOQ0oA2y7hFV18pxwlz5eVp'
-twitter_client_id = 'bl9BVk5jbXY4ZGVfTDl4Mm1ZRHY6MTpjaQ'
-twitter_client_secret = 'f1cjZw2it8uZfXuLs-VfX8hZ6_re4Xtv8YkZa0n7RJ5HKxZ6Sm'
+
 
 
 
 
 def post_to_x_v2(message, image_url=None):
-    auth = OAuth1(twitter_API_key, twitter_API_key_secret, twitter_access_token, twitter_access_token_secret)
+    auth = OAuth1(twitter_api_key, twitter_api_key_secret, twitter_access_token, twitter_access_token_secret)
     media_id = None
 
     if image_url:
@@ -620,7 +627,7 @@ class DeletePostFromPlatformsView(View):
             elif platform == 'telegram':
                 success &= delete_from_telegram(post)
             elif platform == 'instagram':
-                pass  # Add logic if needed
+                pass  
 
         if success:
             # Remove the selected platforms from the post's platforms list
@@ -669,8 +676,8 @@ def delete_from_x(post):
     if not x_post_id:
         return False
 
-    api_key = twitter_API_key
-    api_secret_key = twitter_API_key_secret
+    api_key = twitter_api_key
+    api_secret_key = twitter_api_key_secret
     access_token = twitter_access_token
     access_token_secret = twitter_access_token_secret
 

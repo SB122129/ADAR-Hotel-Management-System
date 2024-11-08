@@ -19,7 +19,7 @@ class Custom_user(AbstractUser):
     last_login = models.DateTimeField(null=True, blank=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    telegram_user_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    telegram_user_id = models.CharField(max_length=100, null=True, blank=True)
     country = CountryField(blank_label='(select country)', default='ET')
     profile_picture = models.ImageField(upload_to='media',blank=True, null=True)
 

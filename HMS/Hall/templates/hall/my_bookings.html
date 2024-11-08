@@ -76,12 +76,13 @@
                                 </div>
 
                                 <div class="d-flex justify-content-center m-3">
+                                    {% if booking.status != 'cancelled' %}
                                     {% if not booking.is_paid %}
                                         <a href="{% url 'payment_page' booking.id %}" class="btn btn-sm btn-success rounded">
                                             Pay
                                         </a> &ensp;
                                     {% endif %}
-                                    {% if booking.status != 'cancelled' %}
+
                                     <button type="button" class="btn btn-sm btn-danger rounded" data-toggle="modal" data-target="#cancelModal{{ booking.pk }}">
                                         Cancel Booking
                                     </button>

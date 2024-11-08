@@ -16,24 +16,41 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
                 {% endif %}
+
                 {% for field in form %}
-                    <div class="mb-3">
-                        <label class="form-label font-weight-bold" for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
-                        {% if field.field.widget.input_type == 'checkbox' %}
-                            {{ field|add_class:"form-check-input" }}
-                        {% elif field.field.widget.input_type == 'select' %}
-                            {{ field|add_class:"form-select" }}
-                        {% else %}
-                            {{ field|add_class:"form-control rounded" }}
-                        {% endif %}
-                        {% if field.errors %}
-                            <div class="alert alert-danger mt-2">
-                                {% for error in field.errors %}
-                                    {{ error }}<br>
-                                {% endfor %}
+                    {% if field.name == 'id_image' %}
+                        {% if not form.instance.id_image %}
+                            <div class="mb-3">
+                                <label class="form-label font-weight-bold" for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
+                                {{ field|add_class:"form-control rounded" }}
+                                {% if field.errors %}
+                                    <div class="alert alert-danger mt-2">
+                                        {% for error in field.errors %}
+                                            {{ error }}<br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                         {% endif %}
-                    </div>
+                    {% else %}
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold" for="{{ field.id_for_label }}"><strong>{{ field.label }}</strong></label>
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                                {{ field|add_class:"form-check-input" }}
+                            {% elif field.field.widget.input_type == 'select' %}
+                                {{ field|add_class:"form-select" }}
+                            {% else %}
+                                {{ field|add_class:"form-control rounded" }}
+                            {% endif %}
+                            {% if field.errors %}
+                                <div class="alert alert-danger mt-2">
+                                    {% for error in field.errors %}
+                                        {{ error }}<br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                 {% endfor %}
 
                 <div class="d-flex flex-column flex-md-row justify-content-center mt-3">

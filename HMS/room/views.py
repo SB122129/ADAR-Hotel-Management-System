@@ -62,6 +62,15 @@ from io import BytesIO
 import qrcode
 import base64
 from Spa.models import *
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+chapa_api_key = os.getenv('CHAPA_API_KEY')
+paypal_client_id = os.getenv('PAYPAL_CLIENT_ID')
+paypal_client_secret = os.getenv('PAYPAL_CLIENT_SECRET')
+
 
 
 
@@ -109,6 +118,9 @@ class RoomListView(ListView):
 def about(request):
     return render(request, 'room/about.html')
 
+
+def restaurant(request):
+    return render(request, 'room/restaurant.html')
 
 def contact(request):
     return render(request, 'room/contact.html')
@@ -172,7 +184,8 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         context['room_image'] = room.room_image
         context['room_number'] = room.room_number  # Assuming 'number' is the field for room number
         context['room_type'] = room.room_type
-        context['price_per_night'] = room.price_per_night  
+        context['price_per_night'] = room.price_per_night 
+
         context['capacity'] = room.capacity  
 
         return context
@@ -192,6 +205,123 @@ class BookingCreateView(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
 
+
+
+class PaymentView(View):
+    template_name = 'room/payment_create.html'
+    success_url = reverse_lazy('bookings')
+
+    def dispatch(self, request, *args, **kwargs):
+        self.booking = self.get_booking()
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = {}
+        context['booking'] = self.booking
+        context['user'] = self.booking.user
+        context['amount'] = self.booking.original_booking_amount
+        context['data'] = {
+            "customization": {
+                "title": "Payment for my booking",
+                "description": "Confirming my booking"
+            }
+        }
+        return context
+    
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, self.get_context_data())
+    
+    def post(self, request, *args, **kwargs):
+        payment_method = request.POST.get('payment_method')
+        if payment_method == 'chapa':
+            return self.process_chapa_payment()
+        elif payment_method == 'paypal':
+            return self.process_paypal_payment()
+        else:
+            messages.error(request, 'Invalid payment method selected.')
+            return render(request, self.template_name, self.get_context_data())
+
+    def get_booking(self):
+        booking_id = self.kwargs.get('booking_id')
+        return get_object_or_404(Booking, id=booking_id)
+    
+    def process_chapa_payment(self):
+        if self.booking.is_paid or self.booking.status != 'pending':
+            messages.warning(self.request, 'Payment already completed')
+            return redirect('bookings')
+        amount = str(self.booking.original_booking_amount)
+        tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
+        self.booking.tx_ref = tx_ref  # Store the new tx_ref in booking
+        self.booking.save()
+
+        url = "https://api.chapa.co/v1/transaction/initialize"
+        redirect_url = f"{BASE_URL}"
+        webhook_url = f"{BASE_URL}/room/chapa-webhook/"
+        payload = {
+            "amount": amount,
+            "currency": "ETB",
+            "email": self.booking.user.email,
+            "first_name": self.booking.user.first_name,
+            "last_name": self.booking.user.last_name,
+            "phone_number": self.booking.user.phone_number,
+            "redirect_url": redirect_url,
+            "tx_ref": tx_ref,
+            "callback_url": webhook_url,
+        }
+        headers = {
+            'Authorization': f'Bearer {chapa_api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.post(url, json=payload, headers=headers)
+        data = response.json()
+        if response.status_code == 200:
+            checkout_url = data['data']['checkout_url']
+            return redirect(checkout_url)
+        else:
+            return HttpResponse(response)
+    
+
+    def process_paypal_payment(self):
+        if self.booking.is_paid or self.booking.status != 'pending':
+            messages.warning(self.request, 'Payment already completed')
+            return render(self.request, self.template_name, self.get_context_data())
+        paypalrestsdk.configure({
+            "mode": "sandbox",  # sandbox or live
+            "client_id": f'{paypal_client_id}',
+            "client_secret": f'{paypal_client_secret}'
+        })
+        amount_in_dollars= self.booking.original_booking_amount/50
+        payment = paypalrestsdk.Payment({
+            "intent": "sale",
+            "payer": {
+                "payment_method": "paypal"},
+            "redirect_urls": {
+                "return_url": f"{BASE_URL}/room/paypal-return/?booking_id={self.booking.id}",
+                "cancel_url": f"{BASE_URL}/room/paypal-cancel/?booking_id={self.booking.id}"},
+            "transactions": [{
+                "item_list": {
+                    "items": [{
+                        "name": "room booking",
+                        "sku": "item",
+                        "price": str(amount_in_dollars),
+                        "currency": "USD",
+                        "quantity": 1}]},
+                "amount": {
+                    "total": str(amount_in_dollars),
+                    "currency": "USD"},
+                "description": "This is the payment transaction description."}]})
+
+        if payment.create():
+            for link in payment.links:
+                if link.rel == "approval_url":
+                    approval_url = link.href
+                    break
+            else:
+                return HttpResponse("No approval URL returned by PayPal")
+            return HttpResponseRedirect(approval_url)
+        else:
+            return HttpResponse("Error: " + payment.error)
 
 
 from django.middleware.csrf import get_token
@@ -345,7 +475,7 @@ class PaymentExtendView(View):
             "callback_url": webhook_url,
         }
         headers = {
-            'Authorization': 'Bearer CHASECK_TEST-h6dv4n5s2yutNrgiwTgWUpJKSma6Wsh9',
+            'Authorization': f'Bearer {chapa_api_key}',
             'Content-Type': 'application/json'
         }
 
@@ -360,8 +490,8 @@ class PaymentExtendView(View):
     def process_paypal_payment(self, booking, amount):
         paypalrestsdk.configure({
             "mode": "sandbox",  # sandbox or live
-            "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
-            "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
+            "client_id": f'{paypal_client_id}',
+            "client_secret": f'{paypal_client_secret}'
         })
         amount_in_dollars = amount/50
         payment = paypalrestsdk.Payment({
@@ -402,121 +532,6 @@ logger = logging.getLogger(__name__)
 import paypalrestsdk
 
 from django.http import JsonResponse
-class PaymentView(View):
-    template_name = 'room/payment_create.html'
-    success_url = reverse_lazy('bookings')
-
-    def dispatch(self, request, *args, **kwargs):
-        self.booking = self.get_booking()
-        return super().dispatch(request, *args, **kwargs)
-    
-    def get_context_data(self, **kwargs):
-        context = {}
-        context['booking'] = self.booking
-        context['user'] = self.booking.user
-        context['amount'] = self.booking.original_booking_amount
-        context['data'] = {
-            "customization": {
-                "title": "Payment for my booking",
-                "description": "Confirming my booking"
-            }
-        }
-        return context
-    
-    def get(self, request, *args, **kwargs):
-        return render(request, self.template_name, self.get_context_data())
-    
-    def post(self, request, *args, **kwargs):
-        payment_method = request.POST.get('payment_method')
-        if payment_method == 'chapa':
-            return self.process_chapa_payment()
-        elif payment_method == 'paypal':
-            return self.process_paypal_payment()
-        else:
-            messages.error(request, 'Invalid payment method selected.')
-            return render(request, self.template_name, self.get_context_data())
-
-    def get_booking(self):
-        booking_id = self.kwargs.get('booking_id')
-        return get_object_or_404(Booking, id=booking_id)
-    
-    def process_chapa_payment(self):
-        if self.booking.is_paid or self.booking.status != 'pending':
-            messages.warning(self.request, 'Payment already completed')
-            return redirect('bookings')
-        amount = str(self.booking.original_booking_amount)
-        tx_ref = f"booking-{self.request.user.first_name}-tx-{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}"
-        self.booking.tx_ref = tx_ref  # Store the new tx_ref in booking
-        self.booking.save()
-
-        url = "https://api.chapa.co/v1/transaction/initialize"
-        redirect_url = f"{BASE_URL}"
-        webhook_url = f"{BASE_URL}/room/chapa-webhook/"
-        payload = {
-            "amount": amount,
-            "currency": "ETB",
-            "email": self.booking.user.email,
-            "first_name": self.booking.user.first_name,
-            "last_name": self.booking.user.last_name,
-            "phone_number": self.booking.user.phone_number,
-            "redirect_url": redirect_url,
-            "tx_ref": tx_ref,
-            "callback_url": webhook_url,
-        }
-        headers = {
-            'Authorization': 'Bearer CHASECK_TEST-h6dv4n5s2yutNrgiwTgWUpJKSma6Wsh9',
-            'Content-Type': 'application/json'
-        }
-        
-        response = requests.post(url, json=payload, headers=headers)
-        data = response.json()
-        if response.status_code == 200:
-            checkout_url = data['data']['checkout_url']
-            return redirect(checkout_url)
-        else:
-            return HttpResponse(response)
-    
-
-    def process_paypal_payment(self):
-        if self.booking.is_paid or self.booking.status != 'pending':
-            messages.warning(self.request, 'Payment already completed')
-            return render(self.request, self.template_name, self.get_context_data())
-        paypalrestsdk.configure({
-            "mode": "sandbox",  # sandbox or live
-            "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
-            "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
-        })
-        amount_in_dollars= self.booking.original_booking_amount/50
-        payment = paypalrestsdk.Payment({
-            "intent": "sale",
-            "payer": {
-                "payment_method": "paypal"},
-            "redirect_urls": {
-                "return_url": f"{BASE_URL}/room/paypal-return/?booking_id={self.booking.id}",
-                "cancel_url": f"{BASE_URL}/room/paypal-cancel/?booking_id={self.booking.id}"},
-            "transactions": [{
-                "item_list": {
-                    "items": [{
-                        "name": "room booking",
-                        "sku": "item",
-                        "price": str(amount_in_dollars),
-                        "currency": "USD",
-                        "quantity": 1}]},
-                "amount": {
-                    "total": str(amount_in_dollars),
-                    "currency": "USD"},
-                "description": "This is the payment transaction description."}]})
-
-        if payment.create():
-            for link in payment.links:
-                if link.rel == "approval_url":
-                    approval_url = link.href
-                    break
-            else:
-                return HttpResponse("No approval URL returned by PayPal")
-            return HttpResponseRedirect(approval_url)
-        else:
-            return HttpResponse("Error: " + payment.error)
     
     
 
@@ -541,11 +556,6 @@ class PayPalReturnView(View):
                     booking.total_amount = booking.original_booking_amount
                 booking.save()
 
-                if booking.extended_check_out_date:
-                    booking.check_out_date = booking.extended_check_out_date
-                    if booking.booking_extend_amount is not None:
-                        booking.total_amount += booking.booking_extend_amount 
-                    booking.save()
 
                 payment, created = Payment.objects.get_or_create(
                     booking=booking,
@@ -640,21 +650,31 @@ class PayPalCancelView(View):
 
 
 
+from django.http import HttpResponse, HttpResponseBadRequest
+
 @method_decorator(csrf_exempt, name='dispatch')
 class ChapaWebhookView(View):
-    
-    def post(self, request, *args, **kwargs):
-        print("Webhook received")
-        payload = json.loads(request.body)
-        print("Payload:", payload)
+
+    def get(self, request, *args, **kwargs):
+        print("Webhook received via GET")
         
-        tx_ref = payload.get('tx_ref')
+        try:
+            # Parse JSON data from the request body
+            payload = json.loads(request.body)
+            print("Payload:", payload)
+        except json.JSONDecodeError:
+            print("Invalid JSON data")
+            return HttpResponseBadRequest("Invalid JSON data")
+
+        # Extract the transaction reference
+        tx_ref = payload.get('trx_ref')
         print("Transaction reference:", tx_ref)
 
         if not tx_ref:
             print("Invalid tx_ref")
             return HttpResponseBadRequest("Invalid tx_ref")
 
+        # Process the transaction based on tx_ref prefix
         if tx_ref.startswith('booking'):
             return self.process_booking_payment(tx_ref, payload)
         elif tx_ref.startswith('hall_booking'):
@@ -666,6 +686,9 @@ class ChapaWebhookView(View):
         else:
             print("Invalid tx_ref prefix")
             return HttpResponseBadRequest("Invalid tx_ref prefix")
+
+    # Existing payment processing methods remain the same
+
 
     def process_booking_payment(self, tx_ref, payload):
         try:
@@ -712,8 +735,10 @@ class ChapaWebhookView(View):
                 print("", booking.total_amount)
                 print("", booking.booking_extend_amount)
                 booking.total_amount += booking.booking_extend_amount
+            
             booking.save()
 
+        
         booking_url = f"{BASE_URL}/room/my-bookings/"
         if booking.extended_check_out_date:
             subject = 'Room Booking Extension Confirmation'
@@ -747,6 +772,8 @@ class ChapaWebhookView(View):
         email.send()
             
         print("Booking and room updated")
+        booking.status = 'confirmed'
+        booking.save()
         return HttpResponse("Booking webhook processed successfully")
 
     def generate_pdf(self, booking):
@@ -874,13 +901,15 @@ class ChapaWebhookView(View):
             return HttpResponseServerError("Multiple memberships found")
 
         print("Membership found:", membership)
+        amount = membership.plan.price
+        print("Amount due:", amount)
 
         membership_payment, created = MembershipPayment.objects.get_or_create(
             membership=membership,
             defaults={
                 'status': 'completed',
                 'transaction_id': tx_ref,
-                'amount': payload.get('amount'),
+                'amount': amount,
                 'payment_method' : 'chapa'
             }
         )
@@ -965,13 +994,15 @@ class ChapaWebhookView(View):
             return HttpResponseServerError("Multiple spa bookings found")
 
         print("Spa booking found:", spa_booking)
+        amount  = spa_booking.amount_due
+        print("Amount due:", amount)
 
         payment, created = SpaPayment.objects.get_or_create(
             spa_booking=spa_booking,
             defaults={
                 'status': 'completed',
                 'transaction_id': tx_ref,
-                'amount': payload.get('amount'),
+                'amount': amount,
                 'payment_method': 'chapa'
             }
         )

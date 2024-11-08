@@ -42,6 +42,18 @@ from datetime import timedelta
 import base64
 from django.utils.safestring import mark_safe
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+chapa_api_key = os.getenv('CHAPA_API_KEY')
+paypal_client_id = os.getenv('PAYPAL_CLIENT_ID')
+paypal_client_secret = os.getenv('PAYPAL_CLIENT_SECRET')
+
+
+
+
 class HallListView(ListView):
     model = Hall
     template_name = 'hall/hall_list.html'
@@ -249,8 +261,8 @@ class PaymentView(LoginRequiredMixin,TemplateView):
         booking.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
-        redirect_url = f"{BASE_URL}/hall/chapa-return/"
-        webhook_url = f"{BASE_URL}/hall/chapa-webhook/"
+        redirect_url = f"{BASE_URL}room/chapa-return/"
+        webhook_url = f"{BASE_URL}room/chapa-webhook/"
         payload = {
             "amount": amount,
             "currency": "ETB",
@@ -263,7 +275,7 @@ class PaymentView(LoginRequiredMixin,TemplateView):
             "callback_url": webhook_url,
         }
         headers = {
-            'Authorization': 'Bearer CHASECK_TEST-h6dv4n5s2yutNrgiwTgWUpJKSma6Wsh9',
+            'Authorization': f'Bearer {chapa_api_key}',
             'Content-Type': 'application/json'
         }
 
@@ -282,8 +294,8 @@ class PaymentView(LoginRequiredMixin,TemplateView):
 
         paypalrestsdk.configure({
             "mode": "sandbox",  # sandbox or live
-            "client_id": "ARbeUWx-il1YsBMeVLQpy2nFI4l3vsuwipJXyhWo1Bmee4YYyuxQWrzX7joSU0IZfytEJ4s3rteXh5kj",
-            "client_secret": "EFph5hrjs9Pok_vmU3JbkY2RVZ0FA8HlG-uhkEytPrxn6k1YwWz6_t4ph03eesiYTFhsYsgJgyRYkLuF"
+            "client_id": f'{paypal_client_id}',
+            "client_secret": f'{paypal_client_secret}'
         })
         amount_in_dollars = "{:.2f}".format(booking.amount_due / 50)
         payment = paypalrestsdk.Payment({

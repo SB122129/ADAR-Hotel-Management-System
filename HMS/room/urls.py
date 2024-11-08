@@ -4,15 +4,11 @@ from .views import *
 urlpatterns = [
     path('', RoomListView.as_view(), name='rooms'),
     path('<int:pk>/', RoomDetailView.as_view(), name='room_detail'),
-     path('my-bookings/', BookingListView.as_view(), name='bookings'),
+    path('my-bookings/', BookingListView.as_view(), name='bookings'),
     path('<int:room_id>/book/', BookingCreateView.as_view(), name='booking_create'),
     path('booking/<int:booking_id>/pay/', PaymentView.as_view(), name='payment_create'),
-    # path('booking/<int:booking_id>/pays/', payment_view2, name='payment'),
-    #path('/<int:room_id>/rate/', RoomRatingCreateView.as_view(), name='room_rating_create'),
-    #path('payment_details/', PaymentDetailsView.as_view(), name='payment_details'),
     path('booking/extend/<int:booking_id>/', BookingExtendView.as_view(), name='booking_extend'),
     path('payment/extend/<int:booking_id>/', PaymentExtendView.as_view(), name='payment_extend'),
-    # path('booking/delete/<int:pk>/', BookingDeleteView.as_view(), name='booking_delete'),
     path('booking/<int:pk>/cancel/', BookingCancelView.as_view(), name='booking_cancel'),
     path('chapa-webhook/', ChapaWebhookView.as_view(), name='chapa_webhook'),
     path('booking/<int:booking_id>/upload_receipt/', ReceiptUploadView.as_view(), name='upload_receipt'),
@@ -23,6 +19,6 @@ urlpatterns = [
     path('rating/edit/<int:rating_id>/', EditRoomRatingView.as_view(), name='edit_room_rating'),
     path('rating/delete/<int:rating_id>/', DeleteRoomRatingView.as_view(), name='delete_room_rating'),
     path('my-ratings/', UserRoomRatingsListView.as_view(), name='my_room_ratings'),
-     path('rating/test/ratings/<int:pk>/', test_view, name='test_view'),
+    path('rating/test/ratings/<int:pk>/', test_view, name='test_view'),
 
 ]
