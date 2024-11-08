@@ -63,11 +63,12 @@ MESSAGE_TAGS = {
 
 
 
-ALLOWED_HOSTS = [ '*']
+ALLOWED_HOSTS = [ '.vercel.app','broadly-lenient-adder.ngrok-free.app','adarhotel33.loophole.site','127.0.0.1:8000','localhost']
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000/',
     'https://broadly-lenient-adder.ngrok-free.app',
     'https://adarhotel33.loophole.site',
+    '.vercel.app',
 ]
 
 CSRF_COOKIE_SECURE = False
