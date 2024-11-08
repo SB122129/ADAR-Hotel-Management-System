@@ -54,9 +54,9 @@ ADAR Hotel Management System (HMS) is a comprehensive web application designed t
 
 ## UI/UX
 ### Customer Side
-![room1](https://github.com/user-attachments/assets/8686559f-586e-42ab-b0e2-0a3e660ee33e)
+![room1](https://github.com/user-attachments/assets/1150a936-6304-4e3e-80e3-7905a9d31b60)
 
-![room2](https://github.com/user-attachments/assets/e71b677a-45aa-469b-b193-0a84d6dc69db)
+![room2](https://github.com/user-attachments/assets/5f3bdd9d-e247-45a2-a086-835a67f54147)
 
 ![room_book](https://github.com/user-attachments/assets/4d20eef3-34ea-44a0-a78b-c282f2db2864)
 
