@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-kvg73ir99on-u4xg=d#))cu8bfm*ig8(hvrb8xj$n$h=@5=(bj'
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # LOGGING = {
 #     'version': 1,
@@ -63,7 +63,7 @@ MESSAGE_TAGS = {
 
 
 
-ALLOWED_HOSTS = [ '.vercel.app','broadly-lenient-adder.ngrok-free.app','adarhotel33.loophole.site','127.0.0.1:8000','localhost']
+ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000/',
     'https://broadly-lenient-adder.ngrok-free.app',
