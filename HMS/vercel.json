@@ -1,13 +1,13 @@
 {
     "builds": [{
-        "src": "HMS/wsgi.py",
+        "src": "HMS/HMS/wsgi.py",
         "use": "@vercel/python",
         "config": { "maxLambdaSize": "15mb", "runtime": "python3.9" }
     }],
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "HMS/wsgi.py"
+            "dest": "HMS/HMS/wsgi.py"
         }
     ]
 }
