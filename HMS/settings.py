@@ -93,8 +93,6 @@ INSTALLED_APPS = [
     'accountss',
     'room',
     'social_media',
-    'crispy_forms',
-    'bootstrap4',
     'widget_tweaks',
     'django.contrib.sites',
     'allauth',
@@ -154,7 +152,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
 
-CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

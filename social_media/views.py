@@ -1,5 +1,4 @@
 import re
-import openai
 from django.conf import settings
 from django.urls import reverse_lazy
 from django.views.generic import FormView, ListView
