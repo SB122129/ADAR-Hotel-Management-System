@@ -63,7 +63,7 @@ MESSAGE_TAGS = {
 
 
 
-ALLOWED_HOSTS = ['.vercel.app']
+ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000/',
     'https://broadly-lenient-adder.ngrok-free.app',
@@ -119,11 +119,14 @@ OPENAI_API_KEY = env('OPENAI_API_KEY')
 
 
 
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
@@ -136,20 +139,11 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
-
-STATIC_URL = 'static/'
-
-
-
-# Define the directories where static files will be collected from
-STATICFILES_DIRS = [os.path.join(BASE_DIR, '/static')]
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-
-
-
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.0/howto/static-files/
+
 
 
 
@@ -269,7 +263,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
