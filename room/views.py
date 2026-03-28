@@ -70,6 +70,7 @@ load_dotenv()
 chapa_api_key = os.getenv('CHAPA_API_KEY')
 paypal_client_id = os.getenv('PAYPAL_CLIENT_ID')
 paypal_client_secret = os.getenv('PAYPAL_CLIENT_SECRET')
+chapa_redirect_url = os.getenv('CHAPA_REDIRECT_URL')
 
 
 
@@ -255,7 +256,7 @@ class PaymentView(View):
         self.booking.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
-        redirect_url = f"{BASE_URL}"
+        redirect_url = chapa_redirect_url or f"{BASE_URL}"
         webhook_url = f"{BASE_URL}/room/chapa-webhook/"
         payload = {
             "amount": amount,
@@ -459,7 +460,7 @@ class PaymentExtendView(View):
 
     def process_chapa_payment(self, booking, amount, tx_ref):
         url = "https://api.chapa.co/v1/transaction/initialize"
-        redirect_url = f"{BASE_URL}"
+        redirect_url = chapa_redirect_url or f"{BASE_URL}"
         webhook_url = f"{BASE_URL}/room/chapa-webhook/"
         print(webhook_url)
 
@@ -657,22 +658,31 @@ class ChapaWebhookView(View):
 
     def get(self, request, *args, **kwargs):
         print("Webhook received via GET")
-        
-        try:
-            # Parse JSON data from the request body
-            payload = json.loads(request.body)
-            print("Payload:", payload)
-        except json.JSONDecodeError:
-            print("Invalid JSON data")
-            return HttpResponseBadRequest("Invalid JSON data")
+        return self._handle_callback(request)
 
-        # Extract the transaction reference
-        tx_ref = payload.get('trx_ref')
+    def post(self, request, *args, **kwargs):
+        print("Webhook received via POST")
+        return self._handle_callback(request)
+
+    def _handle_callback(self, request):
+        payload, error_response = self._extract_payload(request)
+        if error_response:
+            return error_response
+
+        tx_ref = payload.get('trx_ref') or payload.get('tx_ref')
+        status = (payload.get('status') or '').lower()
+
+        print("Payload:", payload)
         print("Transaction reference:", tx_ref)
 
         if not tx_ref:
             print("Invalid tx_ref")
             return HttpResponseBadRequest("Invalid tx_ref")
+
+        # Keep processing idempotent; ignore explicit failure/cancel callbacks.
+        if status and status not in {'success', 'successful'}:
+            print(f"Ignoring callback with status: {status}")
+            return HttpResponse("Callback ignored")
 
         # Process the transaction based on tx_ref prefix
         if tx_ref.startswith('booking'):
@@ -686,6 +696,24 @@ class ChapaWebhookView(View):
         else:
             print("Invalid tx_ref prefix")
             return HttpResponseBadRequest("Invalid tx_ref prefix")
+
+    def _extract_payload(self, request):
+        # Chapa commonly sends browser callback params on GET.
+        tx_ref_from_query = request.GET.get('trx_ref') or request.GET.get('tx_ref')
+        if tx_ref_from_query:
+            return request.GET.dict(), None
+
+        if request.body:
+            try:
+                return json.loads(request.body.decode('utf-8')), None
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                print("Invalid JSON data")
+                return None, HttpResponseBadRequest("Invalid JSON data")
+
+        if request.POST:
+            return request.POST.dict(), None
+
+        return {}, None
 
     # Existing payment processing methods remain the same
 

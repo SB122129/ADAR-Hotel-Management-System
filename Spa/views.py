@@ -37,6 +37,7 @@ load_dotenv()
 chapa_api_key = os.getenv('CHAPA_API_KEY')
 paypal_client_id = os.getenv('PAYPAL_CLIENT_ID')
 paypal_client_secret = os.getenv('PAYPAL_CLIENT_SECRET')
+chapa_redirect_url = os.getenv('CHAPA_REDIRECT_URL')
 
 
 class ServiceListView(ListView):
@@ -218,7 +219,7 @@ class SpaBookingCreateView(LoginRequiredMixin, FormView):
         spa_booking.save()
 
         url = "https://api.chapa.co/v1/transaction/initialize"
-        redirect_url = f'{BASE_URL}/spa/bookings'
+        redirect_url = chapa_redirect_url or f'{BASE_URL}/spa/bookings'
         webhook_url = f'{BASE_URL}room/chapa-webhook/'
 
         payload = {
