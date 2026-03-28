@@ -1,5 +1,5 @@
 # config.py
-BASE_URL = 'https://broadly-lenient-adder.ngrok-free.app/'
+BASE_URL = 'http://127.0.0.1:8000/'
 import os
 from dotenv import load_dotenv
 

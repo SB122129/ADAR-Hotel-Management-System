@@ -34,6 +34,8 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash, logout
+from django.conf import settings
+import smtplib
 
 
 from django.contrib import admin
@@ -105,8 +107,13 @@ class RegisterView(CreateView):
         if user.role == 'customer':  # Assuming 'customer' is the role name
             user.is_active = False
             user.save()
-            self.send_verification_email(user)
-            messages.success(self.request, 'Please verify your email address to complete the registration.')
+            email_sent = self.send_verification_email(user)
+            if email_sent:
+                messages.success(self.request, 'Please verify your email address to complete the registration.')
+            else:
+                user.delete()
+                messages.error(self.request, 'Could not send verification email. Please check email settings and try again.')
+                return redirect('signup')
         else:
             user.is_active = True
             user.save()
@@ -124,11 +131,15 @@ class RegisterView(CreateView):
         email = EmailMultiAlternatives(
             subject=subject,
             body='Activation link',
-            from_email='adarhotel33@gmail.com',
+            from_email=settings.DEFAULT_FROM_EMAIL,
             to=[user.email],
         )
         email.attach_alternative(html_content, "text/html")
-        email.send()
+        try:
+            email.send()
+            return True
+        except smtplib.SMTPException:
+            return False
 
 
 def activate(request, uidb64, token):

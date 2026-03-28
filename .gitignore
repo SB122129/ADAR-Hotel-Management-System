@@ -1,1 +1,4 @@
 envirh1/
+.env
+.env.*
+!.env.example

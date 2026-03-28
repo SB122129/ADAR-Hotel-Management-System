@@ -11,23 +11,46 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 
+def get_env(name, default="", aliases=None, required=False):
+    keys = [name]
+    if aliases:
+        keys.extend(aliases)
 
+    for key in keys:
+        value = os.getenv(key)
+        if value is not None and value != "":
+            return value
+
+    if required:
+        raise ImproperlyConfigured(f"Missing required environment variable: {name}")
+
+    return default
+
+
+def get_bool_env(name, default=False):
+    return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kvg73ir99on-u4xg=d#))cu8bfm*ig8(hvrb8xj$n$h=@5=(bj'
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = get_bool_env("DEBUG", True)
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = get_env(
+    "SECRET_KEY",
+    default="dev-insecure-change-me",
+    required=not DEBUG,
+)
 
 # LOGGING = {
 #     'version': 1,
@@ -76,11 +99,11 @@ CSRF_USE_SESSIONS = False
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 # Application definition
 
-import paypalrestsdk
-from django.conf import settings
-
-
-TELEGRAM_BOT_TOKEN='7334373491:AAGp_FxEOXa18iOMTCdNYsNOYkcFBvob3ls'
+TELEGRAM_BOT_TOKEN = get_env(
+    "TELEGRAM_BOT_TOKEN",
+    aliases=["TELEGRAM_TOKEN"],
+    default="",
+)
 
 
 INSTALLED_APPS = [
@@ -109,20 +132,9 @@ INSTALLED_APPS = [
     'Spa',
 ]
 
-import environ
-
-env = environ.Env()
-environ.Env.read_env()
-
 # OpenAI API Key
-OPENAI_API_KEY = env('OPENAI_API_KEY')
+OPENAI_API_KEY = get_env("OPENAI_API_KEY", default="")
 
-
-
-import os
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -183,8 +195,16 @@ from config import BASE_URL
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Options are 'mandatory', 'optional', or 'none'
 ACCOUNT_EMAIL_REQUIRED = True
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = f'{os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY1")}'
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET =f'{os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET1")}'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = get_env(
+    "SOCIAL_AUTH_GOOGLE_OAUTH2_KEY",
+    aliases=["SOCIAL_AUTH_GOOGLE_OAUTH2_KEY1"],
+    default="",
+)
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = get_env(
+    "SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET",
+    aliases=["SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET1"],
+    default="",
+)
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 SOCIAL_AUTH_LOGIN_ERROR_URL = 'login'
 SOCIAL_AUTH_RAISE_EXCEPTIONS = False
@@ -219,12 +239,12 @@ WSGI_APPLICATION = 'HMS.wsgi.application'
 
 DATABASES = {
      'default': {
-         'ENGINE': 'django.db.backends.postgresql',
-         'NAME': 'HMS',
-         'USER': 'postgres',
-         'PASSWORD': '2112',
-         'HOST': 'localhost',
-         'PORT': '5432',
+         'ENGINE': get_env('DB_ENGINE', default='django.db.backends.postgresql'),
+         'NAME': get_env('DB_NAME', aliases=['POSTGRES_DB'], default='HMS'),
+         'USER': get_env('DB_USER', aliases=['POSTGRES_USER'], default='postgres'),
+         'PASSWORD': get_env('DB_PASSWORD', aliases=['POSTGRES_PASSWORD'], default=''),
+         'HOST': get_env('DB_HOST', aliases=['POSTGRES_HOST'], default='localhost'),
+         'PORT': get_env('DB_PORT', aliases=['POSTGRES_PORT'], default='5432'),
      }
 }
 
@@ -280,16 +300,20 @@ AUTHENTICATION_BACKENDS = (
     'social_core.backends.google.GoogleOAuth2',
 )
 
-RUN_TELEGRAM_BOT = True
+RUN_TELEGRAM_BOT = get_bool_env("RUN_TELEGRAM_BOT", True)
 
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-# EMAIL_BACKEND = 'hueymail.backends.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
-EMAIL_PORT = 587  # SMTP server port (587 for TLS, 465 for SSL)
-EMAIL_USE_TLS = True  # True for TLS, False for SSL
-EMAIL_HOST_USER = f'{os.getenv("EMAIL_HOST_USER1")}'  
-EMAIL_HOST_PASSWORD = f'{os.getenv("EMAIL_HOST_PASSWORD1")}'  
-EMAIL_USE_SSL = False  # Set to True if using SSL
-DEFAULT_FROM_EMAIL = f'{os.getenv("EMAIL_HOST_USER1")}'  # Default sender email address
+EMAIL_HOST = get_env("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_PORT = int(get_env("EMAIL_PORT", default="587"))
+EMAIL_USE_TLS = get_bool_env("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = get_bool_env("EMAIL_USE_SSL", False)
+EMAIL_HOST_USER = get_env("EMAIL_HOST_USER", aliases=["EMAIL_HOST_USER1"], default="")
+EMAIL_HOST_PASSWORD = get_env("EMAIL_HOST_PASSWORD", aliases=["EMAIL_HOST_PASSWORD1"], default="")
+DEFAULT_FROM_EMAIL = get_env("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER or "noreply@localhost")
+
+# In local DEBUG mode, avoid crashing account flows when SMTP credentials are missing.
+if DEBUG and (not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD):
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
